@@ -447,7 +447,8 @@ void G_WriteDemoExtraData(void)
 	{
 		static UINT8 timeout = 0;
 
-		if (timeout) timeout--;
+		if (timeout)
+			timeout--;
 
 		if (demo_writerng == 1 || (demo_writerng == 2 && timeout == 0))
 		{
@@ -467,6 +468,7 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	if (!demobuf.p || !demo.deferstart)
 		return;
+
 	ziptic = READUINT8(demobuf.p);
 
 	if (ziptic & ZT_FWD)
@@ -488,11 +490,12 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	// what in the actual fuck is this???
 	// SRB2kart: Copy-pasted from ticcmd building, removes that crappy demo cam
-	if (((players[displayplayers[0]].mo && players[displayplayers[0]].speed > 0) // Moving
+	const player_t *player = &players[displayplayers[0]];
+	if (((player->mo && player->speed > 0) // Moving
 		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
-		|| (players[displayplayers[0]].kartstuff[k_respawn]) // Respawning
-		|| (players[displayplayers[0]].spectator || objectplacing)) // Not a physical player
-		&& !(players[displayplayers[0]].kartstuff[k_spinouttimer] && players[displayplayers[0]].kartstuff[k_sneakertimer])) // Spinning and boosting cancels out spinout
+		|| (player->kartstuff[k_respawn]) // Respawning
+		|| (player->spectator || objectplacing)) // Not a physical player
+		&& !(player->kartstuff[k_spinouttimer] && player->kartstuff[k_sneakertimer])) // Spinning and boosting cancels out spinout
 		localangle[0] += (cmd->angleturn<<16);
 
 	if (!(demoflags & DF_GHOST) && *demobuf.p == DEMOMARKER)
@@ -515,49 +518,49 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	if (cmd->forwardmove != oldcmd[playernum].forwardmove)
 	{
-		WRITEUINT8(demobuf.p,cmd->forwardmove);
+		WRITEUINT8(demobuf.p, cmd->forwardmove);
 		oldcmd[playernum].forwardmove = cmd->forwardmove;
 		ziptic |= ZT_FWD;
 	}
 
 	if (cmd->sidemove != oldcmd[playernum].sidemove)
 	{
-		WRITEUINT8(demobuf.p,cmd->sidemove);
+		WRITEUINT8(demobuf.p, cmd->sidemove);
 		oldcmd[playernum].sidemove = cmd->sidemove;
 		ziptic |= ZT_SIDE;
 	}
 
 	if (cmd->angleturn != oldcmd[playernum].angleturn)
 	{
-		WRITEINT16(demobuf.p,cmd->angleturn);
+		WRITEINT16(demobuf.p, cmd->angleturn);
 		oldcmd[playernum].angleturn = cmd->angleturn;
 		ziptic |= ZT_ANGLE;
 	}
 
 	if (cmd->buttons != oldcmd[playernum].buttons)
 	{
-		WRITEUINT16(demobuf.p,cmd->buttons);
+		WRITEUINT16(demobuf.p, cmd->buttons);
 		oldcmd[playernum].buttons = cmd->buttons;
 		ziptic |= ZT_BUTTONS;
 	}
 
 	if (cmd->aiming != oldcmd[playernum].aiming)
 	{
-		WRITEINT16(demobuf.p,cmd->aiming);
+		WRITEINT16(demobuf.p, cmd->aiming);
 		oldcmd[playernum].aiming = cmd->aiming;
 		ziptic |= ZT_AIMING;
 	}
 
 	if (cmd->driftturn != oldcmd[playernum].driftturn)
 	{
-		WRITEINT16(demobuf.p,cmd->driftturn);
+		WRITEINT16(demobuf.p, cmd->driftturn);
 		oldcmd[playernum].driftturn = cmd->driftturn;
 		ziptic |= ZT_DRIFT;
 	}
 
 	if (cmd->latency != oldcmd[playernum].latency)
 	{
-		WRITEUINT8(demobuf.p,cmd->latency);
+		WRITEUINT8(demobuf.p, cmd->latency);
 		oldcmd[playernum].latency = cmd->latency;
 		ziptic |= ZT_LATENCY;
 	}
@@ -726,8 +729,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 	// GZT_XYZ is only useful if you've moved 256 FRACUNITS or more in a single tic.
 	if (abs(ghost->x-oldghost[playernum].x) > MAXMOM
-	|| abs(ghost->y-oldghost[playernum].y) > MAXMOM
-	|| abs(ghost->z-oldghost[playernum].z) > MAXMOM
+	||  abs(ghost->y-oldghost[playernum].y) > MAXMOM
+	||  abs(ghost->z-oldghost[playernum].z) > MAXMOM
 	|| ((UINT8)(leveltime & 255) > 0 && (UINT8)(leveltime & 255) <= (UINT8)cv_netdemosyncquality.value)) // Hack to enable slightly nicer resyncing
 	{
 		oldghost[playernum].x = ghost->x;
@@ -1344,7 +1347,7 @@ fadeghost:
 					}
 					else
 					{
-						mobj = P_SpawnMobj(g->mo->x, g->mo->y, g->mo->z - FixedDiv(FixedMul(g->mo->info->height, g->mo->scale) - g->mo->height,3*FRACUNIT), MT_THOK);
+						mobj = P_SpawnMobj(g->mo->x, g->mo->y, g->mo->z - FixedDiv(FixedMul(g->mo->info->height, g->mo->scale) - g->mo->height, 3*FRACUNIT), MT_THOK);
 						mobj->sprite = states[mobjinfo[type].spawnstate].sprite;
 						mobj->frame = (states[mobjinfo[type].spawnstate].frame & FF_FRAMEMASK) | tr_trans60<<FF_TRANSSHIFT;
 						mobj->tics = -1; // nope.
@@ -1375,7 +1378,7 @@ fadeghost:
 				UINT16 i, health;
 				UINT16 count = READUINT16(g->p);
 				//UINT32 type;
-				fixed_t x,y,z;
+				fixed_t x, y, z;
 				angle_t angle;
 				mobj_t *poof;
 
@@ -1518,7 +1521,9 @@ void G_PreviewRewind(tic_t previewtime)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		player_t *player = &players[i];
+
+		if (!playeringame[i] || player->spectator)
 		{
 			if (info->playerinfo[i].player.mo)
 			{
@@ -1530,35 +1535,35 @@ void G_PreviewRewind(tic_t previewtime)
 
 		if (!info->playerinfo[i].ingame || !info->playerinfo[i].player.mo)
 		{
-			if (players[i].mo)
-				players[i].mo->flags2 |= MF2_DONTDRAW;
+			if (player->mo)
+				player->mo->flags2 |= MF2_DONTDRAW;
 
 			continue;
 		}
 
-		if (!players[i].mo)
+		if (!player->mo)
 			continue; //@TODO spawn temp object to act as a player display
 
-		players[i].mo->flags2 &= ~MF2_DONTDRAW;
+		player->mo->flags2 &= ~MF2_DONTDRAW;
 
-		P_UnsetThingPosition(players[i].mo);
+		P_UnsetThingPosition(player->mo);
 #define TWEEN(pr) info->playerinfo[i].mobj.pr + FixedMul((INT32) (next_info->playerinfo[i].mobj.pr - info->playerinfo[i].mobj.pr), tweenvalue)
-		players[i].mo->x = TWEEN(x);
-		players[i].mo->y = TWEEN(y);
-		players[i].mo->z = TWEEN(z);
-		players[i].mo->angle = TWEEN(angle);
+		player->mo->x = TWEEN(x);
+		player->mo->y = TWEEN(y);
+		player->mo->z = TWEEN(z);
+		player->mo->angle = TWEEN(angle);
 #undef TWEEN
-		P_SetThingPosition(players[i].mo);
+		P_SetThingPosition(player->mo);
 
-		players[i].frameangle = info->playerinfo[i].player.frameangle + FixedMul((INT32) (next_info->playerinfo[i].player.frameangle - info->playerinfo[i].player.frameangle), tweenvalue);
+		player->frameangle = info->playerinfo[i].player.frameangle + FixedMul((INT32) (next_info->playerinfo[i].player.frameangle - info->playerinfo[i].player.frameangle), tweenvalue);
 
-		players[i].mo->sprite = info->playerinfo[i].mobj.sprite;
-		players[i].mo->frame = info->playerinfo[i].mobj.frame;
+		player->mo->sprite = info->playerinfo[i].mobj.sprite;
+		player->mo->frame = info->playerinfo[i].mobj.frame;
 
-		players[i].realtime = info->playerinfo[i].player.realtime;
+		player->realtime = info->playerinfo[i].player.realtime;
 
 		for (j = 0; j < NUMKARTSTUFF; j++)
-			players[i].kartstuff[j] = info->playerinfo[i].player.kartstuff[j];
+			player->kartstuff[j] = info->playerinfo[i].player.kartstuff[j];
 	}
 
 	for (i = splitscreen; i >= 0; i--)
@@ -1691,7 +1696,7 @@ void G_BeginRecording(void)
 		return;
 	}
 
-	memset(name,0,sizeof(name));
+	memset(name, 0, sizeof(name));
 
 	demobuf.p = demobuf.buffer;
 	demoflags = DF_GHOST|(multiplayer ? DF_MULTIPLAYER : (modeattacking<<DF_ATTACKSHIFT));
@@ -1705,9 +1710,9 @@ void G_BeginRecording(void)
 
 	// Setup header.
 	memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
-	WRITEUINT8(demobuf.p,VERSION);
-	WRITEUINT8(demobuf.p,SUBVERSION);
-	WRITEUINT16(demobuf.p,DEMOVERSION);
+	WRITEUINT8(demobuf.p, VERSION);
+	WRITEUINT8(demobuf.p, SUBVERSION);
+	WRITEUINT16(demobuf.p, DEMOVERSION);
 
 	// Full replay title
 	demobuf.p += 64;
@@ -1736,7 +1741,7 @@ void G_BeginRecording(void)
 
 	// game data
 	memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
-	WRITEINT16(demobuf.p,gamemap);
+	WRITEINT16(demobuf.p, gamemap);
 	memcpy(demobuf.p, mapmd5, 16); demobuf.p += 16;
 
 	WRITEUINT8(demobuf.p, demoflags);
@@ -1768,8 +1773,8 @@ void G_BeginRecording(void)
 			break;
 		case ATTACKING_RECORD: // 1
 			demotime_p = demobuf.p;
-			WRITEUINT32(demobuf.p,UINT32_MAX); // time
-			WRITEUINT32(demobuf.p,UINT32_MAX); // lap
+			WRITEUINT32(demobuf.p, UINT32_MAX); // time
+			WRITEUINT32(demobuf.p, UINT32_MAX); // lap
 			break;
 		default: // 3
 			break;
@@ -1826,9 +1831,9 @@ void G_BeginRecording(void)
 	if (demoflags & DF_LUAVARS)
 		LUA_Archive(&demobuf, false);
 
-	memset(&oldcmd,0,sizeof(oldcmd));
-	memset(&oldghost,0,sizeof(oldghost));
-	memset(&ghostext,0,sizeof(ghostext));
+	memset(&oldcmd, 0, sizeof(oldcmd));
+	memset(&oldghost, 0, sizeof(oldghost));
+	memset(&ghostext, 0, sizeof(ghostext));
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -1868,19 +1873,19 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT
 	// Name
 	memset(temp, 0, 16);
 	strncpy(temp, name, 16);
-	memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p, temp, 16);
 	demobuf.p += 16;
 
 	// Skin
 	memset(temp, 0, 16);
 	strncpy(temp, skins[skinnum].name, 16);
-	memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p, temp, 16);
 	demobuf.p += 16;
 
 	// Color
 	memset(temp, 0, 16);
 	strncpy(temp, KartColor_Names[color], 16);
-	memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p, temp, 16);
 	demobuf.p += 16;
 
 	// Score/time/whatever
@@ -2339,7 +2344,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		extrainfo_p += 16;
 
 		// Skin
-		memcpy(temp,extrainfo_p,16);
+		memcpy(temp, extrainfo_p, 16);
 		extrainfo_p += 16;
 		pdemo->standings[count].skin = UINT8_MAX;
 
@@ -2353,12 +2358,12 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		}
 
 		// Color
-		memcpy(temp,extrainfo_p,16);
+		memcpy(temp, extrainfo_p, 16);
 		extrainfo_p += 16;
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
 		{
-			if (fasticmp(KartColor_Names[i],temp)) // SRB2kart
+			if (fasticmp(KartColor_Names[i], temp)) // SRB2kart
 			{
 				pdemo->standings[count].color = i;
 				break;
@@ -2827,15 +2832,15 @@ void G_DoPlayDemo(char *defdemoname)
 	if (demo.version == 0x0001)
 	{
 		// Player name
-		memcpy(player_names[0],demobuf.p,16);
+		memcpy(player_names[0], demobuf.p, 16);
 		demobuf.p += 16;
 
 		// Skin
-		memcpy(skin,demobuf.p,16);
+		memcpy(skin, demobuf.p, 16);
 		demobuf.p += 16;
 
 		// Color
-		memcpy(color,demobuf.p,16);
+		memcpy(color, demobuf.p, 16);
 		demobuf.p += 16;
 
 		demobuf.p += 5; // Backwards compat - some stats
@@ -2868,7 +2873,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// Set color
 		for (i = 0; i < MAXSKINCOLORS; i++)
 		{
-			if (fasticmp(KartColor_Names[i],color)) // SRB2kart
+			if (fasticmp(KartColor_Names[i], color)) // SRB2kart
 			{
 				players[0].skincolor = i;
 				break;
@@ -2888,9 +2893,9 @@ void G_DoPlayDemo(char *defdemoname)
 			return;
 		}
 
-		memset(&oldcmd,0,sizeof(oldcmd));
-		memset(&oldghost,0,sizeof(oldghost));
-		memset(&ghostext,0,sizeof(ghostext));
+		memset(&oldcmd, 0, sizeof(oldcmd));
+		memset(&oldghost, 0, sizeof(oldghost));
+		memset(&ghostext, 0, sizeof(ghostext));
 
 		CONS_Alert(CONS_WARNING, M_GetText("Demo version does not match game version. Desyncs may occur.\n"));
 
@@ -2994,16 +2999,16 @@ void G_DoPlayDemo(char *defdemoname)
 		players[p].spectator = spectator;
 
 		// Name
-		memcpy(player_names[p],demobuf.p,16);
+		memcpy(player_names[p], demobuf.p, 16);
 		demobuf.p += 16;
 
 		// Skin
-		memcpy(skin,demobuf.p,16);
+		memcpy(skin, demobuf.p, 16);
 		demobuf.p += 16;
 		SetPlayerSkin(p, skin);
 
 		// Color
-		memcpy(color,demobuf.p,16);
+		memcpy(color, demobuf.p, 16);
 		demobuf.p += 16;
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
@@ -3221,15 +3226,15 @@ void G_AddGhost(char *defdemoname)
 	if (ghostversion == 0x0001)
 	{
 		// Player name (TODO: Display this somehow if it doesn't match cv_playername!)
-		memcpy(name, p,16);
+		memcpy(name, p, 16);
 		p += 16;
 
 		// Skin
-		memcpy(skin, p,16);
+		memcpy(skin, p, 16);
 		p += 16;
 
 		// Color
-		memcpy(color, p,16);
+		memcpy(color, p, 16);
 		p += 16;
 
 		// Ghosts do not have a player structure to put this in.
@@ -3381,7 +3386,7 @@ void G_AddGhost(char *defdemoname)
 
 	for (i = 0; i < MAXSKINCOLORS; i++)
 	{
-		if (fasticmp(KartColor_Names[i],color)) // SRB2kart
+		if (fasticmp(KartColor_Names[i], color)) // SRB2kart
 		{
 			gh->mo->color = (UINT8)i;
 			break;
@@ -3473,7 +3478,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	if (ghostversion == 0x0001)
 	{
 		// Player name
-		memcpy(dummystaffname, p,16);
+		memcpy(dummystaffname, p, 16);
 		dummystaffname[16] = '\0';
 		return; // Not really a failure but whatever
 	}

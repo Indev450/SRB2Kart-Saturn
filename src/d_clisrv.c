@@ -3497,6 +3497,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	while ((doomcom->numslots > 1) && !playeringame[doomcom->numslots-1])
 		doomcom->numslots--;
 
+	// Unmute slot if player was muted
+	player_muted[playernum] = false;
+
 	// Reset the name
 	sprintf(player_names[playernum], "Player %d", playernum+1);
 
@@ -4795,7 +4798,7 @@ void CL_RemoveSplitscreenPlayer(UINT8 p)
 // is there a game running
 boolean Playing(void)
 {
-	return (server && serverrunning) || (client && cl_mode == CL_CONNECTED);
+	return ((server && serverrunning) || (client && cl_mode == CL_CONNECTED));
 }
 
 boolean SV_SpawnServer(void)

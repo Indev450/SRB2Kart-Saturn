@@ -729,7 +729,7 @@ static void HWR_PrecacheLevelTextures(void)
 		for (j = 0; j < 2; j++)
 		{
 			// check if single-sided linedef
-			if (line->sidenum[j] == 0xffff)
+			if (line->sidenum[j] == NO_INDEX)
 				continue;
 
 			const side_t *side = &sides[line->sidenum[j]];

@@ -150,6 +150,7 @@ static void Command_ListWADS_f(void);
 static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_ListUnusedSprites_f(void);
+static void Command_ListUnusedMapSlots_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -645,6 +646,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("locatelump", Command_LocateLump_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
+	COM_AddCommand("listunusedmapslots", Command_ListUnusedMapSlots_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
@@ -1548,8 +1550,8 @@ static void SendNameAndColor(UINT8 splitplayer)
 	// TODO: make those cvars arrays
 	consvar_t *playercolor, *playername, *playerskin;
 	consvar_t *colorvars[] = {&cv_playercolor, &cv_playercolor2, &cv_playercolor3, &cv_playercolor4};
-	consvar_t *namevars[] = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
-	consvar_t *skinvars[] = {&cv_skin, &cv_skin2, &cv_skin3, &cv_skin4};
+	consvar_t *namevars[]  = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
+	consvar_t *skinvars[]  = {&cv_skin, &cv_skin2, &cv_skin3, &cv_skin4};
 
 	playercolor = colorvars[splitplayer];
 	playername  = namevars[splitplayer];
@@ -4591,6 +4593,23 @@ void Command_ListUnusedSprites_f(void)
 	}
 }
 
+void Command_ListUnusedMapSlots_f(void)
+{
+	INT32 i;
+
+	CONS_Printf("\x82Printing map slot non-usage...\n");
+
+	for (i = 0; i < NUMMAPS; i++)
+	{
+		// is checking this enough?
+		if (mapheaderinfo[i])
+			continue;
+
+		CONS_Printf("%s\n", G_BuildMapName(i+1));
+	}
+}
+
+
 // =========================================================================
 //                            MISC. COMMANDS
 // =========================================================================
@@ -5471,7 +5490,6 @@ static void Name_OnChange(void)
 	}
 
 	SendNameAndColor(0);
-
 }
 
 static void Name2_OnChange(void)

@@ -80,8 +80,8 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 	gl_portal_t *portal = HWR_Portal_Add(seg);
 
 	// Offset the portal view by the linedef centers
-	line_t* start	= &lines[line1];
-	line_t* dest	= &lines[line2];
+	line_t* start = &lines[line1];
+	line_t* dest  = &lines[line2];
 
 	angle_t dangle = R_PointToAngle2(0, 0, dest->dx, dest->dy) - R_PointToAngle2(start->dx, start->dy, 0, 0);
 
@@ -99,7 +99,7 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 	dest_c.y = dest->v1->y/2 + dest->v2->y/2;
 
 	disttopoint = R_PointToDist2(start_c.x, start_c.y, viewx, viewy);
-	angtopoint = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
+	angtopoint  = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
 	angtopoint += dangle;
 
 	portal->viewx = dest_c.x + FixedMul(FINECOSINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
@@ -220,9 +220,9 @@ boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
 	if (!portalclipline)
 		return true;
 
-	if (HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXTOP]) ||
-		HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) ||
-		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) ||
+	if (HWR_PortalCheckPointSide(bspcoord[BOXLEFT],  bspcoord[BOXTOP])    ||
+		HWR_PortalCheckPointSide(bspcoord[BOXLEFT],  bspcoord[BOXBOTTOM]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP])    ||
 		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]))
 	{
 		return true;

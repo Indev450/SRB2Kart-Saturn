@@ -644,20 +644,22 @@ static int libd_drawScaled(lua_State *L)
 // KART: draw patch on minimap from x, y coordinates on the map
 static int libd_drawOnMinimap(lua_State *L)
 {
-	fixed_t x, y, scale;	// coordinates of the object
-	patch_t *patch;	// patch we want to draw
-	UINT8 *colormap = NULL;	// do we want to colormap this patch?
-	boolean centered;	// the patch is centered and doesn't need readjusting on x/y coordinates.
+	fixed_t x, y, scale;    // coordinates of the object
+	patch_t *patch;         // patch we want to draw
+	UINT8 *colormap = NULL; // do we want to colormap this patch?
+	boolean centered;       // the patch is centered and doesn't need readjusting on x/y coordinates.
 	huddrawlist_h list;
-	patch_t *AutomapPic = NULL;
 	drawinfo_t info;
+
+	// variables used to replicate k_kart's mmap drawer:
+	patch_t *AutomapPic;
 
 	// variables used for actually drawing the icon:
 	INT32 splitflags, minimaptrans;
 	fixed_t amnumxpos, amnumypos;
 	fixed_t amxpos, amypos;
 	INT32 mm_x, mm_y;
-	fixed_t patchw = 0, patchh = 0;
+	fixed_t patchw, patchh;
 
 	HUDONLY // only run this function in hud hooks
 
@@ -722,8 +724,11 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	mm_y -= AutomapPic->topoffset;
 
-	// patch is supposedly already centered, don't butt in.
-	if (!centered)
+	if (centered)
+	{
+		patchw = patchh = 0; // patch is supposedly already centered, don't butt in.
+	}
+	else
 	{
 		// scale patch coords
 		patchw = (patch->width * scale / 2);

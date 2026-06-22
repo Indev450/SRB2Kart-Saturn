@@ -691,7 +691,7 @@ static void ArchiveLines(savebuffer_t *save)
 		if (spawnli->special == 321 || spawnli->special == 322) // only reason li->callcount would be non-zero is if either of these are involved
 			diff |= LD_CLLCOUNT;
 
-		if (li->sidenum[0] != 0xffff)
+		if (li->sidenum[0] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[0]];
 			spawnsi = &spawnsides[li->sidenum[0]];
@@ -706,7 +706,8 @@ static void ArchiveLines(savebuffer_t *save)
 			if (si->midtexture != spawnsi->midtexture)
 				diff |= LD_S1MIDTEX;
 		}
-		if (li->sidenum[1] != 0xffff)
+
+		if (li->sidenum[1] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[1]];
 			spawnsi = &spawnsides[li->sidenum[1]];
@@ -786,6 +787,7 @@ static void UnArchiveFFloors(savebuffer_t *save, const sector_t *ss)
 		I_Error("Sector does not have any ffloors!");
 
 	fflr_i = READUINT16(save->p); // get first modified ffloor's number ready
+
 	for (;;) // for some reason the usual for (rover = x; ...) thing doesn't work here?
 	{
 		if (fflr_i == 0xffff) // end of modified ffloors list, let's stop already
@@ -3510,7 +3512,7 @@ static void P_ReloadSaveLevelData(void)
 		li->firsttag = spawnli->firsttag;
 		li->nexttag  = spawnli->nexttag;
 
-		if (li->sidenum[0] != 0xffff)
+		if (li->sidenum[0] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[0]];
 			spawnsi = &spawnsides[li->sidenum[0]];
@@ -3521,7 +3523,7 @@ static void P_ReloadSaveLevelData(void)
 			si->midtexture = spawnsi->midtexture;
 		}
 
-		if (li->sidenum[1] != 0xffff)
+		if (li->sidenum[1] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[1]];
 			spawnsi = &spawnsides[li->sidenum[1]];
@@ -3588,8 +3590,11 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 		if (!P_SetupLevel(true, reloading))
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+			P_FreeCorruptMapWarnings();
 			return false;
 		}
+
+		P_PrintCorruptMapWarnings();
 	}
 	else
 	{

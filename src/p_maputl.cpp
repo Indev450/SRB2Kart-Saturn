@@ -242,7 +242,7 @@ void P_CameraLineOpening(line_t *linedef)
 	sector_t *back;
 	fixed_t frontfloor, frontceiling, backfloor, backceiling;
 
-	if (linedef->sidenum[1] == 0xffff)
+	if (linedef->sidenum[1] == NO_INDEX)
 	{
 		// single sided line
 		openrange = 0;
@@ -398,7 +398,7 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 {
 	sector_t *front, *back;
 
-	if (linedef->sidenum[1] == 0xffff)
+	if (linedef->sidenum[1] == NO_INDEX)
 	{
 		// single sided line
 		openrange = 0;
@@ -972,6 +972,10 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, boolean (*func)(line_t *))
 	// First index is really empty, so +1 it.
 	for (list = blockmaplump + offset + 1; *list != -1; list++)
 	{
+#ifdef RANGECHECK
+		if (*list < 0 || (UINT32)*list >= numlines)
+			I_Error("P_BlockLinesIterator: index >= numlines");
+#endif
 		ld = &lines[*list];
 
 		if (ld->validcount == validcount)
@@ -1000,11 +1004,13 @@ boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 	for (mobj = blocklinks[y*bmapwidth + x]; mobj; mobj = bnext)
 	{
 		P_SetTarget(&bnext, mobj->bnext); // We want to note our reference to bnext here incase it is MF_NOTHINK and gets removed!
+
 		if (!func(mobj))
 		{
 			P_SetTarget(&bnext, NULL);
 			return false;
 		}
+
 		if (P_MobjWasRemoved(tmthing) // func just popped our tmthing, cannot continue.
 		|| (bnext && P_MobjWasRemoved(bnext))) // func just broke blockmap chain, cannot continue.
 		{
@@ -1012,6 +1018,7 @@ boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 			return true;
 		}
 	}
+
 	P_SetTarget(&bnext, NULL);
 	return true;
 }

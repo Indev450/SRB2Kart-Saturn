@@ -114,6 +114,9 @@ size_t P_PrecacheLevelFlats(void);
 
 void P_AllocMapHeader(INT16 i);
 
+void P_PrintCorruptMapWarnings(void);
+void P_FreeCorruptMapWarnings(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -1249,7 +1249,6 @@ static void P_PushableCheckBustables(mobj_t *mo)
 			if (rover->master->frontsector->crumblestate)
 				continue;
 
-			topheight    = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 			bottomheight = P_GetFOFBottomZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 
 			// Height checks
@@ -1261,29 +1260,34 @@ static void P_PushableCheckBustables(mobj_t *mo)
 				if (mo->z+mo->height > bottomheight)
 					continue;
 			}
-			else if (rover->flags & FF_SPINBUST)
-			{
-				if (mo->z+mo->momz > topheight)
-					continue;
-
-				if (mo->z+mo->height < bottomheight)
-					continue;
-			}
-			else if (rover->flags & FF_SHATTER)
-			{
-				if (mo->z+mo->momz > topheight)
-					continue;
-
-				if (mo->z+mo->momz + mo->height < bottomheight)
-					continue;
-			}
 			else
 			{
-				if (mo->z >= topheight)
-					continue;
+				topheight = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 
-				if (mo->z+mo->height < bottomheight)
-					continue;
+				if (rover->flags & FF_SPINBUST)
+				{
+					if (mo->z+mo->momz > topheight)
+						continue;
+
+					if (mo->z+mo->height < bottomheight)
+						continue;
+				}
+				else if (rover->flags & FF_SHATTER)
+				{
+					if (mo->z+mo->momz > topheight)
+						continue;
+
+					if (mo->z+mo->momz + mo->height < bottomheight)
+						continue;
+				}
+				else
+				{
+					if (mo->z >= topheight)
+						continue;
+
+					if (mo->z+mo->height < bottomheight)
+						continue;
+				}
 			}
 
 			EV_CrumbleChain(node->m_sector, rover);
@@ -2950,7 +2954,8 @@ void P_MobjCheckWater(mobj_t *mobj)
 		if ((mobj->eflags & MFE_VERTICALFLIP) && mobj->ceilingz-mobj->waterbottom <= FixedMul(mobj->info->height, mobj->scale)>>1)
 			return;
 
-		if ((mobj->eflags & MFE_GOOWATER || wasingoo)) { // Decide what happens to your momentum when you enter/leave goopy water.
+		if ((mobj->eflags & MFE_GOOWATER || wasingoo)) // Decide what happens to your momentum when you enter/leave goopy water.
+		{
 			if (P_MobjFlip(mobj)*mobj->momz < 0) // You are entering the goo?
 				mobj->momz = FixedMul(mobj->momz, FixedDiv(2*FRACUNIT, 5*FRACUNIT)); // kill momentum significantly, to make the goo feel thick.
 		}
@@ -2964,6 +2969,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 			{
 				// Spawn a splash
 				mobj_t *splish;
+
 				if (mobj->eflags & MFE_VERTICALFLIP)
 				{
 					splish = P_SpawnMobj(mobj->x, mobj->y, mobj->waterbottom-FixedMul(mobjinfo[MT_SPLISH].height, mobj->scale), MT_SPLISH);
@@ -2972,6 +2978,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 				}
 				else
 					splish = P_SpawnMobj(mobj->x, mobj->y, mobj->watertop, MT_SPLISH);
+
 				splish->destscale = mobj->scale;
 				P_SetScale(splish, mobj->scale);
 			}
@@ -3372,7 +3379,11 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	I_Assert(mobj->player != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return;
 
 	P_MobjCheckWater(mobj);
@@ -5161,9 +5172,9 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		{
 			// Stunned after vector form
 			if (mobj->movedir > ANGLE_180)
-				mobj->angle -= FixedAngle(FixedMul(AngleFixed(InvAngle(mobj->movedir)),FixedDiv(mobj->reactiontime<<FRACBITS,24<<FRACBITS)));
+				mobj->angle -= FixedAngle(FixedMul(AngleFixed(InvAngle(mobj->movedir)), FixedDiv(mobj->reactiontime<<FRACBITS,24<<FRACBITS)));
 			else
-				mobj->angle += FixedAngle(FixedMul(AngleFixed(mobj->movedir),FixedDiv(mobj->reactiontime<<FRACBITS,24<<FRACBITS)));
+				mobj->angle += FixedAngle(FixedMul(AngleFixed(mobj->movedir), FixedDiv(mobj->reactiontime<<FRACBITS,24<<FRACBITS)));
 
 			mobj->reactiontime--;
 
@@ -5205,99 +5216,99 @@ static void P_Boss9Thinker(mobj_t *mobj)
 			// It's time to attack! What are we gonna do?!
 			switch(mobj->movecount)
 			{
-			case 0:
-			default:
-				// Fly up and prepare for an attack!
-				// We have to charge up first, so let's go up into the air
-				P_SetMobjState(mobj, mobj->info->raisestate);
-				if (mobj->floorz >= mobj->target->floorz)
-					mobj->watertop = mobj->floorz + 256*FRACUNIT;
-				else
-					mobj->watertop = mobj->target->floorz + 256*FRACUNIT;
-				break;
-
-			case 1:
-			{
-				// Okay, we're up? Good, time to gather energy...
-				if (mobj->health > mobj->info->damage)
-				{ // No more bubble if we're broken (pinch phase)
-					mobj_t *shield = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_MSSHIELD_FRONT);
-					P_SetTarget(&mobj->tracer, shield);
-					P_SetTarget(&shield->target, mobj);
-				}
-				else
-					P_LinedefExecute(LE_PINCHPHASE, mobj, NULL);
-				mobj->fuse = 4*TICRATE;
-				mobj->flags |= MF_PAIN;
-				if (mobj->info->attacksound)
-					S_StartSound(mobj, mobj->info->attacksound);
-				A_FaceTarget(mobj);
-				break;
-			}
-
-			case 2:
-				// We're all charged and ready now! Unleash the fury!!
-				if (mobj->health > mobj->info->damage)
-				{
-					mobj_t *removemobj = mobj->tracer;
-					P_SetTarget(&mobj->tracer, mobj->hnext);
-					P_RemoveMobj(removemobj);
-				}
-				if (mobj->health <= mobj->info->damage)
-				{
-					// Attack 1: Pinball dash!
-					if (mobj->health == 1)
-						mobj->movedir = 0;
+				case 0:
+				default:
+					// Fly up and prepare for an attack!
+					// We have to charge up first, so let's go up into the air
+					P_SetMobjState(mobj, mobj->info->raisestate);
+					if (mobj->floorz >= mobj->target->floorz)
+						mobj->watertop = mobj->floorz + 256*FRACUNIT;
 					else
-						mobj->movedir = 2;
-					if (mobj->info->seesound)
-						S_StartSound(mobj, mobj->info->seesound);
-					P_SetMobjState(mobj, mobj->info->seestate);
-					if (mobj->movedir == 2)
-						mobj->threshold = 16; // bounce 16 times
-					else
-						mobj->threshold = 32; // bounce 32 times
-					mobj->watertop = mobj->target->floorz + 16*FRACUNIT;
-					P_LinedefExecute(LE_PINCHPHASE, mobj, NULL);
-				}
-				else
+						mobj->watertop = mobj->target->floorz + 256*FRACUNIT;
+					break;
+
+				case 1:
 				{
-					// Attack 2: Energy shot!
-					mobj->movedir = 1;
-
-					if (mobj->health >= 8)
-						mobj->extravalue1 = 0;
-					else if (mobj->health >= 5)
-						mobj->extravalue1 = 2;
-					else if (mobj->health >= 4)
-						mobj->extravalue1 = 1;
-					else
-						mobj->extravalue1 = 3;
-
-					switch(mobj->extravalue1)
-					{
-					case 0: // shoot once
-					case 2: // spread-shot
-					default:
-						mobj->threshold = 2;
-						break;
-					case 1: // shoot 3 times
-						mobj->threshold = 3*2;
-						break;
-					case 3: // shoot like a goddamn machinegun
-						mobj->threshold = 8*2;
-						break;
+					// Okay, we're up? Good, time to gather energy...
+					if (mobj->health > mobj->info->damage)
+					{ // No more bubble if we're broken (pinch phase)
+						mobj_t *shield = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_MSSHIELD_FRONT);
+						P_SetTarget(&mobj->tracer, shield);
+						P_SetTarget(&shield->target, mobj);
 					}
+					else
+						P_LinedefExecute(LE_PINCHPHASE, mobj, NULL);
+					mobj->fuse = 4*TICRATE;
+					mobj->flags |= MF_PAIN;
+					if (mobj->info->attacksound)
+						S_StartSound(mobj, mobj->info->attacksound);
+					A_FaceTarget(mobj);
+					break;
 				}
-				break;
 
-			case 3:
-				// Return to idle.
-				mobj->watertop = mobj->target->floorz + 32*FRACUNIT;
-				P_SetMobjState(mobj, mobj->info->spawnstate);
-				mobj->flags &= ~MF_PAIN;
-				mobj->fuse = 10*TICRATE;
-				break;
+				case 2:
+					// We're all charged and ready now! Unleash the fury!!
+					if (mobj->health > mobj->info->damage)
+					{
+						mobj_t *removemobj = mobj->tracer;
+						P_SetTarget(&mobj->tracer, mobj->hnext);
+						P_RemoveMobj(removemobj);
+					}
+					if (mobj->health <= mobj->info->damage)
+					{
+						// Attack 1: Pinball dash!
+						if (mobj->health == 1)
+							mobj->movedir = 0;
+						else
+							mobj->movedir = 2;
+						if (mobj->info->seesound)
+							S_StartSound(mobj, mobj->info->seesound);
+						P_SetMobjState(mobj, mobj->info->seestate);
+						if (mobj->movedir == 2)
+							mobj->threshold = 16; // bounce 16 times
+						else
+							mobj->threshold = 32; // bounce 32 times
+						mobj->watertop = mobj->target->floorz + 16*FRACUNIT;
+						P_LinedefExecute(LE_PINCHPHASE, mobj, NULL);
+					}
+					else
+					{
+						// Attack 2: Energy shot!
+						mobj->movedir = 1;
+
+						if (mobj->health >= 8)
+							mobj->extravalue1 = 0;
+						else if (mobj->health >= 5)
+							mobj->extravalue1 = 2;
+						else if (mobj->health >= 4)
+							mobj->extravalue1 = 1;
+						else
+							mobj->extravalue1 = 3;
+
+						switch (mobj->extravalue1)
+						{
+							case 0: // shoot once
+							case 2: // spread-shot
+							default:
+								mobj->threshold = 2;
+								break;
+							case 1: // shoot 3 times
+								mobj->threshold = 3*2;
+								break;
+							case 3: // shoot like a goddamn machinegun
+								mobj->threshold = 8*2;
+								break;
+						}
+					}
+					break;
+
+				case 3:
+					// Return to idle.
+					mobj->watertop = mobj->target->floorz + 32*FRACUNIT;
+					P_SetMobjState(mobj, mobj->info->spawnstate);
+					mobj->flags &= ~MF_PAIN;
+					mobj->fuse = 10*TICRATE;
+					break;
 			}
 			mobj->movecount++;
 			mobj->movecount %= 4;
@@ -5315,6 +5326,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 			// Face your target
 			angle = R_PointToAngle2(mobj->x, mobj->y, mobj->target->x, mobj->target->y); // absolute angle
 			angle = (angle-mobj->angle); // relative angle
+
 			if (angle < ANGLE_180)
 				mobj->angle += angle/8;
 			else
@@ -5326,18 +5338,19 @@ static void P_Boss9Thinker(mobj_t *mobj)
 			|| mobj->target->player->powers[pw_invulnerability]
 			|| mobj->target->player->powers[pw_super]))
 				danger = false;
-			if (mobj->target->x+mobj->target->radius+abs(mobj->target->momx*2) < mobj->x-mobj->radius)
+			else if (mobj->target->x+mobj->target->radius+abs(mobj->target->momx*2) < mobj->x-mobj->radius)
 				danger = false;
-			if (mobj->target->x-mobj->target->radius-abs(mobj->target->momx*2) > mobj->x+mobj->radius)
+			else if (mobj->target->x-mobj->target->radius-abs(mobj->target->momx*2) > mobj->x+mobj->radius)
 				danger = false;
-			if (mobj->target->y+mobj->target->radius+abs(mobj->target->momy*2) < mobj->y-mobj->radius)
+			else if (mobj->target->y+mobj->target->radius+abs(mobj->target->momy*2) < mobj->y-mobj->radius)
 				danger = false;
-			if (mobj->target->y-mobj->target->radius-abs(mobj->target->momy*2) > mobj->y+mobj->radius)
+			else if (mobj->target->y-mobj->target->radius-abs(mobj->target->momy*2) > mobj->y+mobj->radius)
 				danger = false;
-			if (mobj->target->z+mobj->target->height+mobj->target->momz*2 < mobj->z)
+			else if (mobj->target->z+mobj->target->height+mobj->target->momz*2 < mobj->z)
 				danger = false;
-			if (mobj->target->z+mobj->target->momz*2 > mobj->z+mobj->height)
+			else if (mobj->target->z+mobj->target->momz*2 > mobj->z+mobj->height)
 				danger = false;
+
 			if (danger)
 			{
 				// An incoming attack is detected! What should we do?!
@@ -5345,21 +5358,27 @@ static void P_Boss9Thinker(mobj_t *mobj)
 				mobj->movedir = ANGLE_11hh - FixedAngle(FixedMul(AngleFixed(ANGLE_11hh), FixedDiv((mobj->info->spawnhealth - mobj->health)<<FRACBITS, (mobj->info->spawnhealth-1)<<FRACBITS)));
 				if (P_RandomChance(FRACUNIT/2))
 					mobj->movedir = InvAngle(mobj->movedir);
+
 				mobj->threshold = 6 + (FixedMul(24<<FRACBITS, FixedDiv((mobj->info->spawnhealth - mobj->health)<<FRACBITS, (mobj->info->spawnhealth-1)<<FRACBITS))>>FRACBITS);
+
 				if (mobj->info->activesound)
 					S_StartSound(mobj, mobj->info->activesound);
 				if (mobj->info->painchance)
 					P_SetMobjState(mobj, mobj->info->painchance);
+
 				return;
 			}
 
 			// Move normally: Approach the player using normal thrust and simulated friction.
 			dist = P_AproxDistance(mobj->x-mobj->target->x, mobj->y-mobj->target->y);
+
 			P_Thrust(mobj, R_PointToAngle2(0, 0, mobj->momx, mobj->momy), -3*FRACUNIT/8);
+
 			if (dist < 64*FRACUNIT)
 				P_Thrust(mobj, mobj->angle, -4*FRACUNIT);
 			else if (dist > 180*FRACUNIT)
 				P_Thrust(mobj, mobj->angle, FRACUNIT);
+
 			mobj->momz += P_AproxDistance(mobj->momx, mobj->momy)/12; // Move up higher the faster you're going.
 		}
 	}
@@ -5614,7 +5633,11 @@ void P_SetScale(mobj_t *mobj, fixed_t newscale)
 	player_t *player;
 	fixed_t oldscale;
 
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return;
 
 	oldscale = mobj->scale; //keep for adjusting stuff below
@@ -8663,14 +8686,15 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					{
 						const angle_t fa = (i*FINEANGLES/16) & FINEMASK;
 						ns = FixedMul(64 * FRACUNIT, mobj->scale);
-						x = mobj->x + FixedMul(FINESINE(fa),ns);
-						y = mobj->y + FixedMul(FINECOSINE(fa),ns);
+						x = mobj->x + FixedMul(FINESINE(fa), ns);
+						y = mobj->y + FixedMul(FINECOSINE(fa), ns);
 
 						mo2 = P_SpawnMobj(x, y, z, MT_EXPLODE);
 						ns = FixedMul(16 * FRACUNIT, mobj->scale);
-						mo2->momx = FixedMul(FINESINE(fa),ns);
-						mo2->momy = FixedMul(FINECOSINE(fa),ns);
+						mo2->momx = FixedMul(FINESINE(fa), ns);
+						mo2->momy = FixedMul(FINECOSINE(fa), ns);
 					}
+
 					z -= FixedMul(32*FRACUNIT, mobj->scale);
 				}
 				P_SetMobjState(mobj, mobj->info->deathstate);
@@ -8864,9 +8888,9 @@ static void P_IceBlockFuseThink(mobj_t *mobj)
 	for (i = 0; i < 5; i++)
 	{
 		mobj_t *debris = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_SMK_ICEBLOCK_DEBRIS);
-		debris->angle = FixedAngle(P_RandomRange(0,360)<<FRACBITS);
-		P_InstaThrust(debris, debris->angle, P_RandomRange(3,18)*(FRACUNIT/4));
-		debris->momz = P_RandomRange(4,8)<<FRACBITS;
+		debris->angle = FixedAngle(P_RandomRange(0, 360)<<FRACBITS);
+		P_InstaThrust(debris, debris->angle, P_RandomRange(3, 18)*(FRACUNIT/4));
+		debris->momz = P_RandomRange(4, 8)<<FRACBITS;
 		if (!i) // kinda hacky :V
 			S_StartSound(debris, sfx_s3k82);
 	}
@@ -8962,7 +8986,11 @@ static boolean P_FuseThink(mobj_t *mobj)
 static boolean P_MobjPushableThink(mobj_t *mobj)
 {
 	// would be cool if we could use P_MobjWasRemoved Zzz...
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return false;
 
 	P_MobjCheckWater(mobj);
@@ -9167,6 +9195,14 @@ void P_MobjThinker(mobj_t *mobj)
 		|| P_WeaponOrPanel(mobj->type))
 	{
 		P_TryMove(mobj, mobj->x, mobj->y, true); // Sets mo->standingslope correctly
+
+#ifndef COMPAT_VANILLA
+		if (P_MobjWasRemoved(mobj)) // anything that calls checkposition can be lethal
+#else
+		if (!mobj) // anything that calls checkposition can be lethal
+#endif
+			return;
+
 		P_ButteredSlope(mobj);
 	}
 
@@ -9191,6 +9227,13 @@ void P_MobjThinker(mobj_t *mobj)
 			return;
 		}
 	}
+
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
+	if (!mobj)
+#endif
+		return; // obligatory paranoia check
 
 	// Can end up here if a player dies.
 	P_CycleMobjState(mobj);
@@ -9249,7 +9292,11 @@ void P_PushableThinker(mobj_t *mobj)
 
 	I_Assert(!P_MobjWasRemoved(mobj));
 
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return;
 
 	sec = mobj->subsector->sector;

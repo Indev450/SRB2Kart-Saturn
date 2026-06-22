@@ -3739,7 +3739,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	fixed_t f1, f2;
 
 	// We probably shouldn't move the camera if there is no player or player mobj somehow
-	if (!player || !player->mo)
+	if (!player || P_MobjWasRemoved(player->mo))
 		return true;
 
 	// This can happen when joining

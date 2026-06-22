@@ -133,6 +133,7 @@ static void Command_Say_f(void);
 static void Command_Sayto_f(void);
 static void Command_Sayteam_f(void);
 static void Command_CSay_f(void);
+static void Command_Mute_f(void);
 static void Got_Saycmd(const UINT8 **p, INT32 playernum);
 
 void HU_LoadGraphics(void)
@@ -259,6 +260,8 @@ void HU_Init(void)
 	COM_AddCommand("sayteam", Command_Sayteam_f);
 	COM_AddCommand("csay", Command_CSay_f);
 	RegisterNetXCmd(XD_SAY, Got_Saycmd);
+
+	COM_AddCommand("muteplayer", Command_Mute_f);
 
 	if (dedicated || rendermode == render_none)
 		return;
@@ -963,7 +966,7 @@ void HU_Ticker(void)
 		size_t i = 0;
 
 		// handle spam while we're at it:
-		for(; (i < MAXPLAYERS); i++)
+		for (; (i < MAXPLAYERS); i++)
 		{
 			if (stop_spamming[i] > 0)
 				stop_spamming[i]--;
@@ -1022,21 +1025,42 @@ static boolean HU_clearChatSpaces(void)
 	return nothingbutspaces;
 }
 
-static void DoMute(const char *name)
+static void DoMute(const char *name, boolean chat)
 {
 	INT32 pnum = D_LookupPlayer(name);
 
-	if (pnum < 0)
+	// Shortcut to reuse this function for console and chat command
+#define PRINT(msg, sound) do { \
+	if (chat) \
+		HU_AddChatText((msg), (sound)); \
+	else \
+		CONS_Printf("%s\n", msg); \
+} while (0)
+
+	if (pnum < 0 || !playeringame[pnum])
 	{
-		HU_AddChatText("\x85""ERROR: \x80Player not found.", false);
+		PRINT("\x85""ERROR: \x80Player not found.", false);
 		return;
 	}
 
 	player_muted[pnum] = !player_muted[pnum];
 
-	HU_AddChatText(va("Player '%s' has been %smuted.", player_names[pnum], player_muted[pnum] ? "" : "un"), false);
+	PRINT(va("Player '%s' has been %smuted.", player_names[pnum], player_muted[pnum] ? "" : "un"), false);
 	if (player_muted[pnum])
-		HU_AddChatText("Use same command to unmute them.", false);
+		PRINT("Use same command to unmute them.", false);
+
+#undef PRINT
+}
+
+static void Command_Mute_f(void)
+{
+	if (COM_Argc() < 2)
+	{
+		CONS_Printf(M_GetText("mute <playername|playernum>: mute/unmute a player\n"));
+		return;
+	}
+
+	DoMute(COM_Argv(1), false);
 }
 
 static void HU_SendChatMessage(void)
@@ -1070,7 +1094,7 @@ static void HU_SendChatMessage(void)
 	if (msglength >= 5 && strnicmp(msg, "/mute", 5) == 0) // Used /mute
 	{
 		if (msglength > 6)
-			DoMute(msg+6);
+			DoMute(msg+6, true);
 		else
 			HU_AddChatText("\x82NOTICE: \x80Usage: /mute <name|node>", false);
 
@@ -1111,6 +1135,7 @@ static void HU_SendChatMessage(void)
 				return;
 			}
 		}
+
 		// I'm very bad at C, I swear I am, additional checks eww!
 		if (spc != 0)
 		{
@@ -1257,13 +1282,15 @@ boolean HU_Responder(event_t *ev)
 			chat_on = false;
 			I_SetTextInput(false);
 		}
-		else if ((c == KEY_UPARROW || c == KEY_MOUSEWHEELUP) && chat_scroll > 0 && !OLDCHAT) // CHAT SCROLLING YAYS!
+		else if ((c == KEY_UPARROW || c == KEY_PGUP || c == KEY_MOUSEWHEELUP) &&
+			     ((chat_scroll > 0) && !OLDCHAT)) // CHAT SCROLLING YAYS!
 		{
 			chat_scroll--;
 			justscrolledup = true;
 			chat_scrolltime = 4;
 		}
-		else if ((c == KEY_DOWNARROW || c == KEY_MOUSEWHEELDOWN) && chat_scroll < chat_maxscroll && chat_maxscroll > 0 && !OLDCHAT)
+		else if ((c == KEY_DOWNARROW || c == KEY_PGDN || c == KEY_MOUSEWHEELDOWN) &&
+			    ((chat_scroll < chat_maxscroll) && (chat_maxscroll > 0) && !OLDCHAT))
 		{
 			chat_scroll++;
 			justscrolleddown = true;

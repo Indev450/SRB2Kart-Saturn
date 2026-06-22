@@ -1462,49 +1462,15 @@ boolean P_CheckRacers(void)
 	return false;
 }
 
-/** Kills an object.
-  *
-  * \param target    The victim.
-  * \param inflictor The attack weapon. May be NULL (environmental damage).
-  * \param source    The attacker. May be NULL.
-  * \todo Cleanup, refactor, split up.
-  * \sa P_DamageMobj
-  */
-void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
+static void P_UpdateRemovedOrbital(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 {
-	mobjtype_t item;
-	mobj_t *mo;
-	int ms;
-
-	if (target->flags & (MF_ENEMY|MF_BOSS))
-		target->momx = target->momy = target->momz = 0;
-
-	// SRB2kart
-	if (target->type != MT_PLAYER && !(target->flags & MF_MONITOR)
-		 && !(target->type == MT_ORBINAUT || target->type == MT_ORBINAUT_SHIELD
-		 || target->type == MT_JAWZ || target->type == MT_JAWZ_DUD || target->type == MT_JAWZ_SHIELD
-		 || target->type == MT_BANANA || target->type == MT_BANANA_SHIELD
-		 || target->type == MT_EGGMANITEM || target->type == MT_EGGMANITEM_SHIELD
-		 || target->type == MT_BALLHOG || target->type == MT_SPB)) // kart dead items
-		target->flags |= MF_NOGRAVITY; // Don't drop Tails 03-08-2000
-	else
-		target->flags &= ~MF_NOGRAVITY; // lose it if you for whatever reason have it, I'm looking at you shields
-	//
-
-	if (target->flags2 & MF2_NIGHTSPULL)
-		P_SetTarget(&target->tracer, NULL);
-
-	// dead target is no more shootable
-	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SPECIAL);
-	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
-	target->health = 0; // This makes it easy to check if something's dead elsewhere.
-
-	if (LUA_HookMobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
-		return;
-
 	// SRB2kart
 	// I wish I knew a better way to do this
+#ifndef COMPAT_VANILLA
+	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
+#else
 	if (target->target && target->target->player && target->target->player->mo)
+#endif
 	{
 		if (target->target->player->kartstuff[k_eggmanheld] && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->kartstuff[k_eggmanheld] = 0;
@@ -1517,7 +1483,11 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->kartstuff[k_itemamount])
 				{
+#ifndef COMPAT_VANILLA
+					if (!P_MobjWasRemoved(target->target->hnext))
+#else
 					if (target->target->hnext)
+#endif
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 
 					target->target->player->kartstuff[k_itemamount] = 0;
@@ -1546,14 +1516,60 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				P_SetTarget(&target->target->hnext, NULL);
 		}
 	}
-	// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
+}
+
+
+/** Kills an object.
+  *
+  * \param target    The victim.
+  * \param inflictor The attack weapon. May be NULL (environmental damage).
+  * \param source    The attacker. May be NULL.
+  * \todo Cleanup, refactor, split up.
+  * \sa P_DamageMobj
+  */
+void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
+{
+	mobjtype_t item;
+	mobj_t *mo;
+	int ms;
+
+	if (target->flags & (MF_ENEMY|MF_BOSS))
+		target->momx = target->momy = target->momz = 0;
+
+	// SRB2kart
+	if (target->type != MT_PLAYER
+		 && !(target->flags & MF_MONITOR)
+		 && !(target->type == MT_ORBINAUT || target->type == MT_ORBINAUT_SHIELD
+		 || target->type == MT_JAWZ || target->type == MT_JAWZ_DUD || target->type == MT_JAWZ_SHIELD
+		 || target->type == MT_BANANA || target->type == MT_BANANA_SHIELD
+		 || target->type == MT_EGGMANITEM || target->type == MT_EGGMANITEM_SHIELD
+		 || target->type == MT_BALLHOG || target->type == MT_SPB)) // kart dead items
+		target->flags |= MF_NOGRAVITY; // Don't drop Tails 03-08-2000
+	else
+		target->flags &= ~MF_NOGRAVITY; // lose it if you for whatever reason have it, I'm looking at you shields
+	//
+
+	if (target->flags2 & MF2_NIGHTSPULL)
+		P_SetTarget(&target->tracer, NULL);
+
+	// dead target is no more shootable
+	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SPECIAL);
+	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
+	target->health = 0; // This makes it easy to check if something's dead elsewhere.
+
+	if (LUA_HookMobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
+		return;
+
+	P_UpdateRemovedOrbital(target, inflictor, source);
+
 	if (target->player)
+	{
+		// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
 		K_DropRocketSneaker(target->player);
 
-	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
-	if (target->player && !target->player->spectator)
-	{
-		target->flags2 &= ~MF2_DONTDRAW;
+		// Let EVERYONE know what happened to a player! 01-29-2002 Tails
+		if (!target->player->spectator)
+			target->flags2 &= ~MF2_DONTDRAW;
 	}
 
 	// if killed by a player
@@ -1563,6 +1579,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		{
 			P_SetTarget(&target->target, source);
 			source->player->numboxes++;
+
 			if (cv_itemrespawn.value && (netgame || multiplayer))
 			{
 				target->fuse = cv_itemrespawntime.value*TICRATE + 2; // Random box generation
@@ -1580,35 +1597,41 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_fading.value && P_IsLocalPlayer(target->player))
+		if (P_IsLocalPlayer(target->player))
 		{
-			if (netgame || multiplayer)
-				ms = cv_respawntime.value * 1000;
-			else
-				ms = 1000;
+			if (cv_fading.value)
+			{
+				if (netgame || multiplayer)
+					ms = cv_respawntime.value * 1000;
+				else
+					ms = 1000;
 
-			/*
-			If the time spent with the music paused is less than half
-			a second, continue playing the song (just mute it).
-			*/
-			if ((ms - cv_respawnfademusicout.value) < 500)
-				S_FadeMusic(0, cv_respawnfademusicout.value);
-			else
-				S_FadeOutStopMusic(cv_respawnfademusicout.value);
-		}
+				/*
+				 * If the time spent with the music paused is less than half
+				 * a second, continue playing the song (just mute it).
+				 */
+				if ((ms - cv_respawnfademusicout.value) < 500)
+					S_FadeMusic(0, cv_respawnfademusicout.value);
+				else
+					S_FadeOutStopMusic(cv_respawnfademusicout.value);
+			}
 
-		for (UINT8 i = 0; i <= splitscreen; i++)
-		{
-			if (target->player == P_GetLocalPlayerForNum(i))
+			if (target->player == &players[consoleplayer])
 			{
 				// don't die in auto map,
 				// switch view prior to dying
-				if (i == 0 && automapactive)
+				if (automapactive)
 					AM_Stop();
+			}
 
-				// added : 22-02-98: recenter view for next life...
-				localaiming[i] = 0;
-				break;
+			for (UINT8 i = 0; i <= splitscreen; i++)
+			{
+				if (target->player == P_GetLocalPlayerForNum(i))
+				{
+					// added : 22-02-98: recenter view for next life...
+					localaiming[i] = 0;
+					break;
+				}
 			}
 		}
 
@@ -1678,7 +1701,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 					else
 						prandom = P_RandomKey(5); // No placable object, just use a random number.
 
-					switch(prandom)
+					switch (prandom)
 					{
 						default: item = MT_BUNNY; break;
 						case 1: item = MT_BIRD; break;
@@ -2222,16 +2245,26 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		return false;
 
 	// well no clue but this may happen ig
-	if (!target || (target->health <= 0))
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(target))
+#else
+	if (!target)
+#endif
+		return false;
+
+	if (target->health <= 0)
 		return false;
 
 	// Spectator handling
 	if (netgame)
 	{
-		if (damage == DMG_SPECTATOR && target->player && target->player->spectator)
-			damage = DMG_INSTAKILL;
-		else if (target->player && target->player->spectator)
-			return false;
+		if (target->player && target->player->spectator)
+		{
+			if (damage == DMG_SPECTATOR)
+				damage = DMG_INSTAKILL;
+			else
+				return false;
+		}
 
 		if (source && source->player && source->player->spectator)
 			return false;
@@ -2337,6 +2370,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				if (source == target)
 					return false; // Don't hit yourself with your own paraloop, baka
+
 				if (source && source->player && !cv_friendlyfire.value
 				&& (gametype == GT_COOP
 				|| (G_GametypeHasTeams() && target->player->ctfteam == source->player->ctfteam)))
@@ -2386,7 +2420,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 		else if (player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->powers[pw_flashing])
 		{
-			if (!force)	// shoulddamage bypasses all of that.
+			if (!force) // shoulddamage bypasses all of that.
 			{
 				K_DoInstashield(player);
 				return false;

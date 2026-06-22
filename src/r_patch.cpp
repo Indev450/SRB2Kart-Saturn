@@ -289,7 +289,7 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum)
 	sprinfoLumpLength = W_LumpLengthPwad(wadNum, lumpNum);
 	sprinfoText = (char *)Z_Malloc((sprinfoLumpLength+1)*sizeof(char),PU_STATIC,NULL);
 	// Now move the contents of the lump into this new location.
-	memmove(sprinfoText,sprinfoLump,sprinfoLumpLength);
+	memmove(sprinfoText, sprinfoLump, sprinfoLumpLength);
 	// Make damn well sure the last character in our new memory location is \0.
 	sprinfoText[sprinfoLumpLength] = '\0';
 	// Finally, free up the memory from the first data load, because we really
