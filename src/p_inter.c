@@ -1701,7 +1701,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 					else
 						prandom = P_RandomKey(5); // No placable object, just use a random number.
 
-					switch(prandom)
+					switch (prandom)
 					{
 						default: item = MT_BUNNY; break;
 						case 1: item = MT_BIRD; break;
@@ -2284,16 +2284,26 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		return false;
 
 	// well no clue but this may happen ig
-	if (!target || (target->health <= 0))
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(target))
+#else
+	if (!target)
+#endif
+		return false;
+
+	if (target->health <= 0)
 		return false;
 
 	// Spectator handling
 	if (netgame)
 	{
-		if (damage == DMG_SPECTATOR && target->player && target->player->spectator)
-			damage = DMG_INSTAKILL;
-		else if (target->player && target->player->spectator)
-			return false;
+		if (target->player && target->player->spectator)
+		{
+			if (damage == DMG_SPECTATOR)
+				damage = DMG_INSTAKILL;
+			else
+				return false;
+		}
 
 		if (source && source->player && source->player->spectator)
 			return false;
@@ -2399,6 +2409,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				if (source == target)
 					return false; // Don't hit yourself with your own paraloop, baka
+
 				if (source && source->player && !cv_friendlyfire.value
 				&& (gametype == GT_COOP
 				|| (G_GametypeHasTeams() && target->player->ctfteam == source->player->ctfteam)))
@@ -2448,7 +2459,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 		else if (player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->powers[pw_flashing])
 		{
-			if (!force)	// shoulddamage bypasses all of that.
+			if (!force) // shoulddamage bypasses all of that.
 			{
 				K_DoInstashield(player);
 				return false;

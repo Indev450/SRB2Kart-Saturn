@@ -2372,6 +2372,10 @@ static void HWR_AddLine(seg_t *line)
 	v2x = line->v2->x;
 	v2y = line->v2->y;
 
+	// QUICK: use cross product to reject lines not facing viewer
+	if (R_PointOnViewBackSide(v1x, v1y, v2x, v2y))
+		return;
+
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngle64(v1x, v1y);
 	angle2 = R_PointToAngle64(v2x, v2y);
@@ -2490,6 +2494,10 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 		if (mindist > current_bsp_culling_distance)
 			return false;
 	}
+
+	// Sitting on a line?
+	if (R_PointOnViewBackSide(px1, py1, px2, py2))
+		return true;
 
 	angle1 = R_PointToAngle64(px1, py1);
 	angle2 = R_PointToAngle64(px2, py2);

@@ -551,6 +551,7 @@ static int call_hooks
 	{
 		/* call generic mobj hooks first */
 		calls += call_mobj_type_hooks(hook, MT_NULL);
+		//if (hook->mobj_type < NUMMOBJTYPES)
 		calls += call_mobj_type_hooks(hook, hook->mobj_type);
 		ps_lua_mobjhooks.value.i += calls;
 	}

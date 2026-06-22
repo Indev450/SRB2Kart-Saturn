@@ -1279,7 +1279,6 @@ static void P_PushableCheckBustables(mobj_t *mo)
 			if (rover->master->frontsector->crumblestate)
 				continue;
 
-			topheight    = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 			bottomheight = P_GetFOFBottomZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 
 			// Height checks
@@ -1291,29 +1290,34 @@ static void P_PushableCheckBustables(mobj_t *mo)
 				if (mo->z+mo->height > bottomheight)
 					continue;
 			}
-			else if (rover->flags & FF_SPINBUST)
-			{
-				if (mo->z+mo->momz > topheight)
-					continue;
-
-				if (mo->z+mo->height < bottomheight)
-					continue;
-			}
-			else if (rover->flags & FF_SHATTER)
-			{
-				if (mo->z+mo->momz > topheight)
-					continue;
-
-				if (mo->z+mo->momz + mo->height < bottomheight)
-					continue;
-			}
 			else
 			{
-				if (mo->z >= topheight)
-					continue;
+				topheight = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 
-				if (mo->z+mo->height < bottomheight)
-					continue;
+				if (rover->flags & FF_SPINBUST)
+				{
+					if (mo->z+mo->momz > topheight)
+						continue;
+
+					if (mo->z+mo->height < bottomheight)
+						continue;
+				}
+				else if (rover->flags & FF_SHATTER)
+				{
+					if (mo->z+mo->momz > topheight)
+						continue;
+
+					if (mo->z+mo->momz + mo->height < bottomheight)
+						continue;
+				}
+				else
+				{
+					if (mo->z >= topheight)
+						continue;
+
+					if (mo->z+mo->height < bottomheight)
+						continue;
+				}
 			}
 
 			EV_CrumbleChain(node->m_sector, rover);
@@ -5429,17 +5433,17 @@ static void P_Boss9Thinker(mobj_t *mobj)
 			|| mobj->target->player->powers[pw_invulnerability]
 			|| mobj->target->player->powers[pw_super]))
 				danger = false;
-			if (mobj->target->x+mobj->target->radius+abs(mobj->target->momx*2) < mobj->x-mobj->radius)
+			else if (mobj->target->x+mobj->target->radius+abs(mobj->target->momx*2) < mobj->x-mobj->radius)
 				danger = false;
-			if (mobj->target->x-mobj->target->radius-abs(mobj->target->momx*2) > mobj->x+mobj->radius)
+			else if (mobj->target->x-mobj->target->radius-abs(mobj->target->momx*2) > mobj->x+mobj->radius)
 				danger = false;
-			if (mobj->target->y+mobj->target->radius+abs(mobj->target->momy*2) < mobj->y-mobj->radius)
+			else if (mobj->target->y+mobj->target->radius+abs(mobj->target->momy*2) < mobj->y-mobj->radius)
 				danger = false;
-			if (mobj->target->y-mobj->target->radius-abs(mobj->target->momy*2) > mobj->y+mobj->radius)
+			else if (mobj->target->y-mobj->target->radius-abs(mobj->target->momy*2) > mobj->y+mobj->radius)
 				danger = false;
-			if (mobj->target->z+mobj->target->height+mobj->target->momz*2 < mobj->z)
+			else if (mobj->target->z+mobj->target->height+mobj->target->momz*2 < mobj->z)
 				danger = false;
-			if (mobj->target->z+mobj->target->momz*2 > mobj->z+mobj->height)
+			else if (mobj->target->z+mobj->target->momz*2 > mobj->z+mobj->height)
 				danger = false;
 
 			if (danger)

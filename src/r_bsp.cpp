@@ -331,6 +331,10 @@ static void R_AddLine(seg_t *line)
 	v2x = line->v2->x;
 	v2y = line->v2->y;
 
+	// QUICK: use cross product to reject lines not facing viewer
+	if (R_PointOnViewBackSide(v1x, v1y, v2x, v2y))
+		return;
+
 	// big room fix
 	angle1 = R_PointToAngle64(v1x, v1y);
 	angle2 = R_PointToAngle64(v2x, v2y);
@@ -544,6 +548,10 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	y1 = bspcoord[check[1]];
 	x2 = bspcoord[check[2]];
 	y2 = bspcoord[check[3]];
+
+	// Sitting on a line?
+	if (R_PointOnViewBackSide(x1, y1, x2, y2))
+		return true;
 
 	// big room fix
 	angle1 = R_PointToAngle64(x1, y1) - viewangle;

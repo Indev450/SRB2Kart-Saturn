@@ -123,6 +123,13 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
 	return v > 0;
 }
 
+FUNCINLINE static ATTRINLINE boolean R_PointOnViewBackSide(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
+{
+	// use cross product to determine side quickly
+	INT64 v = ((INT64)x1 - viewx) * ((INT64)y2 - viewy) - ((INT64)x2 - viewx) * ((INT64)y1 - viewy);
+	return v >= 0;
+}
+
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
 angle_t R_PointToAngle64(INT64 x, INT64 y);
 angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
