@@ -149,6 +149,7 @@ extern consvar_t cv_showminimapnames;
 extern consvar_t cv_showminimapfinished;
 extern consvar_t cv_minihead;
 extern consvar_t cv_showminimapangle;
+extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_showlapemblem;
 
