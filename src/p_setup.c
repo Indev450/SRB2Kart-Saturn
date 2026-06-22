@@ -188,6 +188,57 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 	I_Error("Invalid or corrupt map.\nLook in log file or text console for technical details.");
 }
 
+static char **mapwarnings = NULL;
+static size_t nummapwarnings = 0;
+
+// collect map errors we can fix clientside
+// we then can print em when the map finishes loading
+// so they actually appear and raise awareness shits fucked
+// see G_DoLoadLevel as to why :chaosleep:
+static void CorruptMapWarning(const char *msg)
+{
+#ifdef PARANOIA
+	// just error out
+	I_Error("%sThis WILL crash Vanilla clients!\n", msg);
+#endif
+	nummapwarnings++;
+	mapwarnings = Z_Realloc(mapwarnings, nummapwarnings * sizeof(*mapwarnings), PU_STATIC, NULL);
+	mapwarnings[nummapwarnings-1] = Z_StrDup(msg);
+}
+
+void P_PrintCorruptMapWarnings(void)
+{
+	size_t i;
+
+	if (!nummapwarnings)
+		return;
+
+	for (i = 0; i < nummapwarnings; i++)
+	{
+		CONS_Alert(CONS_ERROR, "%sAttempting to fix... This WILL crash Vanilla clients!\n", mapwarnings[i]);
+	}
+
+	P_FreeCorruptMapWarnings();
+}
+
+void P_FreeCorruptMapWarnings(void)
+{
+	size_t i;
+
+	if (!nummapwarnings)
+		return;
+
+	for (i = 0; i < nummapwarnings; i++)
+	{
+		Z_Free(mapwarnings[i]);
+		mapwarnings[i] = NULL;
+	}
+
+	Z_Free(mapwarnings);
+	mapwarnings = NULL;
+	nummapwarnings = 0;
+}
+
 #define NUMLAPS_DEFAULT 3
 
 static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
@@ -437,8 +488,39 @@ static void P_LoadSegs(UINT8 *data)
 
 	for (i = 0; i < numsegs; i++, li++, ml++)
 	{
-		li->v1 = &vertexes[SHORT(ml->v1)];
-		li->v2 = &vertexes[SHORT(ml->v2)];
+		INT16 v1, v2;
+
+		v1 = SHORT(ml->v1);
+		v2 = SHORT(ml->v2);
+
+		// e6y
+		// check and fix wrong references to non-existent vertexes
+		// see e1m9 @ NIVELES.WAD
+		// http://www.doomworld.com/idgames/index.php?id=12647
+		if ((unsigned)v1 >= numvertexes || (unsigned)v2 >= numvertexes)
+		{
+			if ((unsigned)v1 >= numvertexes)
+				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1));
+			if ((unsigned)v2 >= numvertexes)
+				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2));
+
+			if (li->sidedef == &sides[li->linedef->sidenum[0]])
+			{
+				li->v1 = lines[ml->linedef].v1;
+				li->v2 = lines[ml->linedef].v2;
+			}
+			else
+			{
+				li->v1 = lines[ml->linedef].v2;
+				li->v2 = lines[ml->linedef].v1;
+			}
+		}
+		else
+		{
+			li->v1 = &vertexes[v1];
+			li->v2 = &vertexes[v2];
+		}
+
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
 		{
@@ -455,14 +537,59 @@ static void P_LoadSegs(UINT8 *data)
 		li->angle = (SHORT(ml->angle))<<FRACBITS;
 		li->offset = (SHORT(ml->offset))<<FRACBITS;
 		rawlinedef = SHORT(ml->linedef);
+
+		//e6y: check for wrong indexes
+		if ((unsigned)rawlinedef >= numlines)
+		{
+			I_Error("P_LoadSegs: seg %s references a non-existent linedef %d", sizeu1(i), (unsigned)rawlinedef);
+		}
+
 		ldef = &lines[rawlinedef];
 		li->linedef = ldef;
-		li->side = rawside = SHORT(ml->side);
+		rawside = SHORT(ml->side);
+
+		//e6y: fix wrong side index
+		if (rawside != 0 && rawside != 1)
+		{
+			CorruptMapWarning(va("P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside));
+			rawside = 1;
+		}
+
+		//e6y: check for wrong indexes
+		if (ldef->sidenum[rawside] >= numsides)
+		{
+			I_Error("P_LoadSegs: linedef %d for seg %s references a non-existent sidedef %d", rawlinedef, sizeu1(i), ldef->sidenum[rawside]);
+		}
+
+		li->side = rawside;
+
 		li->sidedef = &sides[ldef->sidenum[rawside]];
-		li->frontsector = sides[ldef->sidenum[rawside]].sector;
+
+		/* cph 2006/09/30 - our frontsector can be the second side of the
+		 * linedef, so must check for NO_INDEX in case we are incorrectly
+		 * referencing the back of a 1S line */
+		if (ldef->sidenum[rawside] == NO_INDEX)
+		{
+			CorruptMapWarning(va("P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i)));
+			li->frontsector = NULL;
+		}
+		else
+		{
+			li->frontsector = sides[ldef->sidenum[rawside]].sector;
+		}
 
 		if (ldef->flags & ML_TWOSIDED)
-			li->backsector = sides[ldef->sidenum[rawside^1]].sector;
+		{
+			if (ldef->sidenum[rawside^1] == NO_INDEX)
+			{
+				CorruptMapWarning(va("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i)));
+				li->backsector = NULL;
+			}
+			else
+			{
+				li->backsector = sides[ldef->sidenum[rawside^1]].sector;
+			}
+		}
 
 		P_UpdateSegLightOffset(li);
 	}
@@ -738,7 +865,33 @@ static void P_LoadNodes(UINT8 *data)
 
 		for (j = 0; j < 2; j++)
 		{
-			no->children[j] = SHORT(mn->children[j]);
+			UINT16 child;
+
+			child = SHORT(mn->children[j]);
+
+			if (child & NF_SUBSECTOR)
+			{
+				// Convert to extended type
+				child &= ~NF_SUBSECTOR;
+
+				// haleyjd 11/06/10: check for invalid subsector reference
+				if (child >= numsubsectors)
+				{
+					CorruptMapWarning(va("P_LoadNodes: BSP tree %s references invalid subsector %d\n", sizeu1(i), child));
+					child = 0;
+				}
+
+				child |= NF_SUBSECTOR;
+			}
+			else if (child >= numnodes)
+			{
+				CorruptMapWarning(va("P_LoadNodes: BSP node %s references invalid node.\n", sizeu1(i)));
+				//I_Error("P_LoadNodes: BSP node %d references invalid node %d.\n", sizeu1(i), Index(((node_t *)no->children[j])));
+				child = 0;
+			}
+
+			no->children[j] = child;
+
 			for (k = 0; k < 4; k++)
 				no->bbox[j][k] = SHORT(mn->bbox[j][k])<<FRACBITS;
 		}
@@ -1001,9 +1154,9 @@ static void P_InitializeLinedef(line_t *ld)
 	// cph 2002/07/20 - these errors are fatal if not fixed, so apply them
 	for (j = 0; j < 2; j++)
 	{
-		if (ld->sidenum[j] != 0xffff && ld->sidenum[j] >= (UINT16)numsides)
+		if (ld->sidenum[j] != NO_INDEX && ld->sidenum[j] >= (UINT16)numsides)
 		{
-			ld->sidenum[j] = 0xffff;
+			ld->sidenum[j] = NO_INDEX;
 			CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has out-of-range sidedef number\n", sizeu1((size_t)(ld - lines)));
 		}
 	}
@@ -1011,14 +1164,14 @@ static void P_InitializeLinedef(line_t *ld)
 	ld->firsttag = ld->nexttag = -1;
 
 	// killough 11/98: fix common wad errors (missing sidedefs):
-	if (ld->sidenum[0] == 0xffff)
+	if (ld->sidenum[0] == NO_INDEX)
 	{
 		ld->sidenum[0] = 0;  // Substitute dummy sidedef for missing right side
 		// cph - print a warning about the bug
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s missing first sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
-	if ((ld->sidenum[1] == 0xffff) && (ld->flags & ML_TWOSIDED))
+	if ((ld->sidenum[1] == NO_INDEX) && (ld->flags & ML_TWOSIDED))
 	{
 		ld->flags &= ~ML_TWOSIDED;  // Clear 2s flag for missing left side
 		// cph - print a warning about the bug
@@ -1026,9 +1179,9 @@ static void P_InitializeLinedef(line_t *ld)
 	}
 
 	// killough 4/4/98: support special sidedef interpretation below
-	if (ld->sidenum[0] != 0xffff && ld->special)
+	if (ld->sidenum[0] != NO_INDEX && ld->special)
 		sides[ld->sidenum[0]].special = ld->special;
-	if (ld->sidenum[1] != 0xffff && ld->special)
+	if (ld->sidenum[1] != NO_INDEX && ld->special)
 		sides[ld->sidenum[1]].special = ld->special;
 }
 
@@ -1061,10 +1214,10 @@ static void P_LoadLineDefs2(void)
 	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
-		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : NULL;
+		ld->backsector  = ld->sidenum[1] != NO_INDEX ? sides[ld->sidenum[1]].sector : NULL;
 
 		// Repeat count for midtexture
-		if ((ld->flags & ML_EFFECT5) && (ld->sidenum[1] != 0xffff))
+		if ((ld->flags & ML_EFFECT5) && (ld->sidenum[1] != NO_INDEX))
 		{
 			sides[ld->sidenum[0]].repeatcnt = (INT16)(((unsigned)sides[ld->sidenum[0]].textureoffset >> FRACBITS) >> 12);
 			sides[ld->sidenum[0]].textureoffset = (((unsigned)sides[ld->sidenum[0]].textureoffset >> FRACBITS) & 2047) << FRACBITS;
@@ -1080,13 +1233,13 @@ static void P_LoadLineDefs2(void)
 				{
 					size_t len = strlen(sides[ld->sidenum[0]].text)+1;
 
-					if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+					if (ld->sidenum[1] != NO_INDEX && sides[ld->sidenum[1]].text)
 						len += strlen(sides[ld->sidenum[1]].text);
 
 					ld->text = Z_Malloc(len, PU_LEVEL, NULL);
 					memcpy(ld->text, sides[ld->sidenum[0]].text, strlen(sides[ld->sidenum[0]].text)+1);
 
-					if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+					if (ld->sidenum[1] != NO_INDEX && sides[ld->sidenum[1]].text)
 						memcpy(ld->text+strlen(ld->text)+1, sides[ld->sidenum[1]].text, strlen(sides[ld->sidenum[1]].text)+1);
 				}
 				break;
@@ -1748,16 +1901,11 @@ static boolean P_LoadRawBlockMap(UINT8 *data, size_t count)
 	// http://www.doomworld.com/idgames/index.php?id=12935
 	if (!P_VerifyBlockMap(count))
 	{
-#ifdef PARANOIA
-		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-#endif
-		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-
-		//Z_Free(blockmaplump);
-		//blockmaplump = NULL;
-		//return false; // ideally we would just let the game rebuild the blockmap
-						// but this has a chance of desynching vanilla clients
-						// not sure whats worse honestly and i do not want to decide that :chaosleep:
+		CorruptMapWarning(va("P_LoadBlockMap: corrupted or invalid BLOCKMAP lump! Check the log for more information.\n"));
+		// vanilla WILL crash here anyways so just rebuild it ourselves
+		Z_Free(blockmaplump);
+		blockmaplump = NULL;
+		return false;
 	}
 
 	// clear out mobj chains
@@ -1794,22 +1942,35 @@ static void P_GroupLines(void)
 	for (i = 0; i < numsubsectors; i++, ss++)
 	{
 		if (ss->firstline >= numsegs)
+		{
 			CorruptMapError(va("P_GroupLines: ss->firstline invalid "
 				"(subsector %s, firstline refers to %d of %s)", sizeu1(i), ss->firstline,
 				sizeu2(numsegs)));
+		}
+
 		seg = &segs[ss->firstline];
 		sidei = (size_t)(seg->sidedef - sides);
+
 		if (!seg->sidedef)
+		{
 			CorruptMapError(va("P_GroupLines: seg->sidedef is NULL "
 				"(subsector %s, firstline is %d)", sizeu1(i), ss->firstline));
+		}
+
 		if (seg->sidedef - sides < 0 || seg->sidedef - sides > (UINT16)numsides)
+		{
 			CorruptMapError(va("P_GroupLines: seg->sidedef refers to sidedef %s of %s "
 				"(subsector %s, firstline is %d)", sizeu1(sidei), sizeu2(numsides),
 				sizeu3(i), ss->firstline));
+		}
+
 		if (!seg->sidedef->sector)
+		{
 			CorruptMapError(va("P_GroupLines: seg->sidedef->sector is NULL "
 				"(subsector %s, firstline is %d, sidedef is %s)", sizeu1(i), ss->firstline,
 				sizeu1(sidei)));
+		}
+
 		ss->sector = seg->sidedef->sector;
 	}
 
@@ -1887,11 +2048,16 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 	{
 		if (rejectsize < neededsize)
 		{
-#ifdef PARANOIA
-			I_Error("REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
-#endif
-			CONS_Alert(CONS_ERROR, "REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			CorruptMapWarning(va("P_LoadReject: REJECT is %s byte%s too small. REJECT might be invalid!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s"));
+#ifdef COMPAT_VANILLA
+			// we can pad this and somewhat prevent desyncs
+			// probs not cool if the reject is from a completely different map
+			// but whatever
 			allocsize = neededsize;
+#else
+			rejectmatrix = NULL;
+			return;
+#endif
 		}
 
 		rejectmatrix = Z_Calloc(allocsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
