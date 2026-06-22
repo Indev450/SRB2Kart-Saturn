@@ -188,6 +188,57 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 	I_Error("Invalid or corrupt map.\nLook in log file or text console for technical details.");
 }
 
+static char **mapwarnings = NULL;
+static size_t nummapwarnings = 0;
+
+// collect map errors we can fix clientside
+// we then can print em when the map finishes loading
+// so they actually appear and raise awareness shits fucked
+// see G_DoLoadLevel as to why :chaosleep:
+static void CorruptMapWarning(const char *msg)
+{
+#ifdef PARANOIA
+	// just error out
+	I_Error("%sThis WILL crash Vanilla clients!\n", msg);
+#endif
+	nummapwarnings++;
+	mapwarnings = Z_Realloc(mapwarnings, nummapwarnings * sizeof(*mapwarnings), PU_STATIC, NULL);
+	mapwarnings[nummapwarnings-1] = Z_StrDup(msg);
+}
+
+void P_PrintCorruptMapWarnings(void)
+{
+	size_t i;
+
+	if (!nummapwarnings)
+		return;
+
+	for (i = 0; i < nummapwarnings; i++)
+	{
+		CONS_Alert(CONS_ERROR, "%sAttempting to fix... This WILL crash Vanilla clients!\n", mapwarnings[i]);
+	}
+
+	P_FreeCorruptMapWarnings();
+}
+
+void P_FreeCorruptMapWarnings(void)
+{
+	size_t i;
+
+	if (!nummapwarnings)
+		return;
+
+	for (i = 0; i < nummapwarnings; i++)
+	{
+		Z_Free(mapwarnings[i]);
+		mapwarnings[i] = NULL;
+	}
+
+	Z_Free(mapwarnings);
+	mapwarnings = NULL;
+	nummapwarnings = 0;
+}
+
 #define NUMLAPS_DEFAULT 3
 
 static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
@@ -448,16 +499,10 @@ static void P_LoadSegs(UINT8 *data)
 		// http://www.doomworld.com/idgames/index.php?id=12647
 		if ((unsigned)v1 >= numvertexes || (unsigned)v2 >= numvertexes)
 		{
-#ifdef COMPAT_VANILLA
 			if ((unsigned)v1 >= numvertexes)
-				I_Error("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1);
+				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1));
 			if ((unsigned)v2 >= numvertexes)
-				I_Error("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2);
-#else
-			if ((unsigned)v1 >= numvertexes)
-				CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1);
-			if ((unsigned)v2 >= numvertexes)
-				CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2);
+				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2));
 
 			if (li->sidedef == &sides[li->linedef->sidenum[0]])
 			{
@@ -469,7 +514,6 @@ static void P_LoadSegs(UINT8 *data)
 				li->v1 = lines[ml->linedef].v2;
 				li->v2 = lines[ml->linedef].v1;
 			}
-#endif
 		}
 		else
 		{
@@ -507,12 +551,8 @@ static void P_LoadSegs(UINT8 *data)
 		//e6y: fix wrong side index
 		if (rawside != 0 && rawside != 1)
 		{
-#ifdef COMPAT_VANILLA
-			I_Error("P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside);
-#else
+			CorruptMapWarning(va("P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside));
 			rawside = 1;
-			CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s contains wrong side index %d, replaced with 1.\n", sizeu1(i), rawside);
-#endif
 		}
 
 		//e6y: check for wrong indexes
@@ -530,12 +570,8 @@ static void P_LoadSegs(UINT8 *data)
 		 * referencing the back of a 1S line */
 		if (ldef->sidenum[rawside] == NO_INDEX)
 		{
-#ifdef COMPAT_VANILLA
-			I_Error("P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i));
-#else
+			CorruptMapWarning(va("P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i)));
 			li->frontsector = NULL;
-			CONS_Debug(DBG_SETUP, "P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i));
-#endif
 		}
 		else
 		{
@@ -546,12 +582,8 @@ static void P_LoadSegs(UINT8 *data)
 		{
 			if (ldef->sidenum[rawside^1] == NO_INDEX)
 			{
-#ifdef COMPAT_VANILLA
-				I_Error("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
-#else
+				CorruptMapWarning(va("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i)));
 				li->backsector = NULL;
-				CONS_Debug(DBG_SETUP, "P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
-#endif
 			}
 			else
 			{
@@ -848,25 +880,17 @@ static void P_LoadNodes(UINT8 *data)
 				// haleyjd 11/06/10: check for invalid subsector reference
 				if (child >= numsubsectors)
 				{
-#ifdef COMPAT_VANILLA
-					I_Error("P_LoadNodes: BSP tree %s references invalid subsector %d\n", sizeu1(i), child);
-#else
+					CorruptMapWarning(va("P_LoadNodes: BSP tree %s references invalid subsector %d\n", sizeu1(i), child));
 					child = 0;
-					CONS_Debug(DBG_SETUP, "P_LoadNodes: BSP tree %s references invalid subsector %d\n", sizeu1(i), child);
-#endif
 				}
 
 				child |= NF_SUBSECTOR;
 			}
 			else if (child >= numnodes)
 			{
-#ifdef COMPAT_VANILLA
-				I_Error("P_LoadNodes: BSP node %s references invalid node.\n", sizeu1(i));
+				CorruptMapWarning(va("P_LoadNodes: BSP node %s references invalid node.\n", sizeu1(i)));
 				//I_Error("P_LoadNodes: BSP node %d references invalid node %d.\n", sizeu1(i), Index(((node_t *)no->children[j])));
-#else
 				child = 0;
-				CONS_Debug(DBG_SETUP, "P_LoadNodes: BSP node %s references invalid node.\n", sizeu1(i));
-#endif
 			}
 
 			no->children[j] = child;
@@ -1880,19 +1904,11 @@ static boolean P_LoadRawBlockMap(UINT8 *data, size_t count)
 	// http://www.doomworld.com/idgames/index.php?id=12935
 	if (!P_VerifyBlockMap(count))
 	{
-#ifdef COMPAT_VANILLA
-#ifdef PARANOIA
-		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-#endif
-		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-#else
-		CONS_Debug(DBG_SETUP, "P_LoadBlockMap: corrupted or invalid BLOCKMAP lump!\nRebuilding...\n");
+		CorruptMapWarning(va("P_LoadBlockMap: corrupted or invalid BLOCKMAP lump! Check the log for more information.\n"));
+		// vanilla WILL crash here anyways so just rebuild it ourselves
 		Z_Free(blockmaplump);
 		blockmaplump = NULL;
-		return false; // ideally we would just let the game rebuild the blockmap
-						// but this has a chance of desynching vanilla clients
-						// not sure whats worse honestly and i do not want to decide that :chaosleep:
-#endif
+		return false;
 	}
 
 	// clear out mobj chains
@@ -2035,14 +2051,13 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 	{
 		if (rejectsize < neededsize)
 		{
+			CorruptMapWarning(va("P_LoadReject: REJECT is %s byte%s too small. REJECT might be invalid!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s"));
 #ifdef COMPAT_VANILLA
-#ifdef PARANOIA
-			I_Error("P_LoadReject: REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
-#endif
-			CONS_Alert(CONS_ERROR, "P_LoadReject: REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			// we can pad this and somewhat prevent desyncs
+			// probs not cool if the reject is from a completely different map
+			// but whatever
 			allocsize = neededsize;
 #else
-			CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT is %s byte%s too small and might be invalid, will not be loaded\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
 			rejectmatrix = NULL;
 			return;
 #endif
