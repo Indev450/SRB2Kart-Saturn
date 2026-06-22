@@ -534,8 +534,7 @@ static void P_LoadSegs(UINT8 *data)
 			if (ldef->sidenum[rawside^1] == NO_INDEX)
 			{
 				I_Error("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
-				// this is wrong
-				//li->backsector = GetSectorAtNullAddress();
+				li->backsector = NULL;
 			}
 			else
 			{
