@@ -3590,8 +3590,11 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 		if (!P_SetupLevel(true, reloading))
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+			P_FreeCorruptMapWarnings();
 			return false;
 		}
+
+		P_PrintCorruptMapWarnings();
 	}
 	else
 	{
