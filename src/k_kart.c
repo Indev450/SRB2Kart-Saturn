@@ -110,7 +110,6 @@ static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
@@ -4711,7 +4710,7 @@ void K_DropRocketSneaker(player_t *player)
 	while ((shoe = shoe->hnext) && !P_MobjWasRemoved(shoe))
 	{
 		if (shoe->type != MT_ROCKETSNEAKER)
-			return; //woah, not a rocketsneaker, bail! safeguard in case this gets used when you're holding non-rocketsneakers
+			return; // woah, not a rocketsneaker, bail! safeguard in case this gets used when you're holding non-rocketsneakers
 
 		shoe->flags2 &= ~MF2_DONTDRAW;
 		shoe->flags &= ~MF_NOGRAVITY;
