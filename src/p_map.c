@@ -719,11 +719,11 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		if (thing->type != MT_PLAYER)
 			return true;
 
-		if (thing->player && thing->player->powers[pw_flashing])
-			return true;
-
-		if (thing->type == MT_PLAYER && thing->player)
+		if (thing->player)
 		{
+			if (thing->player->powers[pw_flashing])
+				return true;
+
 			if (tmthing->state == &states[S_MINEEXPLOSION1])
 				K_ExplodePlayer(thing->player, tmthing->target, tmthing);
 			else
@@ -1077,6 +1077,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 				thing->momy -= FixedMul(PUSHACCEL, thing->scale);
 				tmthing->momy += FixedMul(PUSHACCEL, thing->scale);
 			}
+
 			if (tmthing->momx > 0 && tmthing->momx > FixedMul(4*FRACUNIT, thing->scale)
 				&& tmthing->momx > thing->momx)
 			{
@@ -1094,6 +1095,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 				thing->momx = FixedMul(thing->info->speed, thing->scale);
 			else if (thing->momx < -FixedMul(thing->info->speed, thing->scale))
 				thing->momx = -FixedMul(thing->info->speed, thing->scale);
+
 			if (thing->momy > FixedMul(thing->info->speed, thing->scale))
 				thing->momy = FixedMul(thing->info->speed, thing->scale);
 			else if (thing->momy < -FixedMul(thing->info->speed, thing->scale))
@@ -1105,6 +1107,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 				tmthing->momx = FixedMul(4*FRACUNIT, thing->scale);
 			else if (tmthing->momx < FixedMul(-4*FRACUNIT, thing->scale))
 				tmthing->momx = FixedMul(-4*FRACUNIT, thing->scale);
+
 			if (tmthing->momy > FixedMul(4*FRACUNIT, thing->scale))
 				tmthing->momy = FixedMul(4*FRACUNIT, thing->scale);
 			else if (tmthing->momy < FixedMul(-4*FRACUNIT, thing->scale))
@@ -1126,6 +1129,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		P_TouchSpecialThing(thing, tmthing, true); // can remove thing
 		return true;
 	}
+
 	// check again for special pickup
 	if (tmthing->flags & MF_SPECIAL && thing->player)
 	{

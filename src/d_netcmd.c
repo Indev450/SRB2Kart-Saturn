@@ -1550,8 +1550,8 @@ static void SendNameAndColor(UINT8 splitplayer)
 	// TODO: make those cvars arrays
 	consvar_t *playercolor, *playername, *playerskin;
 	consvar_t *colorvars[] = {&cv_playercolor, &cv_playercolor2, &cv_playercolor3, &cv_playercolor4};
-	consvar_t *namevars[] = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
-	consvar_t *skinvars[] = {&cv_skin, &cv_skin2, &cv_skin3, &cv_skin4};
+	consvar_t *namevars[]  = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
+	consvar_t *skinvars[]  = {&cv_skin, &cv_skin2, &cv_skin3, &cv_skin4};
 
 	playercolor = colorvars[splitplayer];
 	playername  = namevars[splitplayer];
@@ -5490,7 +5490,6 @@ static void Name_OnChange(void)
 	}
 
 	SendNameAndColor(0);
-
 }
 
 static void Name2_OnChange(void)

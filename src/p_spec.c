@@ -5486,6 +5486,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 				if ((lines[i].flags & (ML_NOSONIC|ML_NOTAILS)) != (ML_NOSONIC|ML_NOTAILS)) // If you can do something...
 				{
 					angle_t flatangle = InvAngle(lines[i].angle);
+
 					fixed_t xoffs;
 					fixed_t yoffs;
 

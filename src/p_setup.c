@@ -2739,14 +2739,14 @@ static void P_SetupPlayer(void)
 			// Start players with pity shields if possible
 			players[i].pity = -1;
 
+			players[i].mo = NULL;
+
 			if (!G_RaceGametype())
 			{
-				players[i].mo = NULL;
 				G_DoReborn(i);
 			}
 			else // gametype is GT_COOP or GT_RACE
 			{
-				players[i].mo = NULL;
 				G_SpawnPlayer(i, (players[i].starposttime));
 			}
 		}
