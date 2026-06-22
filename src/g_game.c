@@ -1309,6 +1309,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 	{
 		// fail so reset game stuff
 		Command_ExitGame_f();
+		P_FreeCorruptMapWarnings();
 		return;
 	}
 
@@ -1342,6 +1343,8 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
+	// print any map errors now due to clearhud above :chaosleep:
+	P_PrintCorruptMapWarnings();
 
 	server_lagless = !cv_gentlemens.value;
 
