@@ -1276,7 +1276,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
 	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
+	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || thing->temprollangle || sliprollrotate);
 #endif
 
 	sprskin = K_GetMobjSkin(thing);
@@ -1376,16 +1376,18 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	if (shouldrotate)
 	{
+		const fixed_t thingrollangle = (thing->rollangle - thing->temprollangle);
+
 		if (papersprite)
 		{
 			if (ang >= ANGLE_180)
 			{
 				// Makes Software act much more sane like OpenGL
-				rollangle = InvAngle(thing->rollangle);
+				rollangle = InvAngle(thingrollangle);
 			}
 			else
 			{
-				rollangle = thing->rollangle;
+				rollangle = thingrollangle;
 			}
 		}
 		else
@@ -1393,7 +1395,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			// this is very messy, but it on-the-fly calculates rotations for all the
 			// pitch and roll variables
 			pitchnroll = R_RotationAngle(ang, camang, &interp);
-			rollangle = thing->rollangle;
+			rollangle = thingrollangle;
 		}
 
 		if (rollangle || pitchnroll || sliprollrotate)
