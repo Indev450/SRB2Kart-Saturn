@@ -2375,8 +2375,10 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	fixed_t tryx = thing->x;
 	fixed_t tryy = thing->y;
 	fixed_t radius = thing->radius;
-	fixed_t thingtop ;//= thing->z + thing->height;
+	fixed_t thingtop;//= thing->z + thing->height;
 	fixed_t startingonground = P_IsObjectOnGround(thing);
+	fixed_t stairjank = 0;
+	pslope_t *oldslope = thing->standingslope;
 	INT32 special = -1;
 	floatok = false;
 
@@ -2450,11 +2452,19 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 
 			thingtop = thing->z + thing->height;
 
+			const boolean flipped =
+				(thing->eflags & MFE_VERTICALFLIP) != 0;
+
 			// Step up
 			if (thing->z < tmfloorz)
 			{
 				if (tmfloorz - thing->z <= maxstep)
 				{
+					if (maxstep > 0 && !flipped)
+					{
+						stairjank = (tmfloorz - thing->z);
+					}
+
 					thing->z = thing->floorz = tmfloorz;
 					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
 				}
@@ -2467,6 +2477,11 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			{
 				if (thingtop - tmceilingz <= maxstep)
 				{
+					if (maxstep > 0 && flipped)
+					{
+						stairjank = (thingtop - tmceilingz);
+					}
+
 					thing->z = ( thing->ceilingz = tmceilingz ) - thing->height;
 					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
 				}
@@ -2483,11 +2498,21 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 
 				if (thingtop == thing->ceilingz && tmceilingz > thingtop && tmceilingz - thingtop <= maxstep)
 				{
+					if (flipped)
+					{
+						stairjank = (tmceilingz - thingtop);
+					}
+
 					thing->z = (thing->ceilingz = tmceilingz) - thing->height;
 					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
 				}
 				else if (thing->z == thing->floorz && tmfloorz < thing->z && thing->z - tmfloorz <= maxstep)
 				{
+					if (!flipped)
+					{
+						stairjank = (thing->z - tmfloorz);
+					}
+
 					thing->z = thing->floorz = tmfloorz;
 					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
 				}
@@ -2562,6 +2587,25 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	}
 	else // don't set standingslope if you're not going to clip against it
 		thing->standingslope = NULL;
+
+	/* FIXME: slope step down (even up) has some false
+		positives, so just ignore them entirely. */
+	if (stairjank && !oldslope && !thing->standingslope && thing->player && !thing->player->spectator)
+	{
+		// TODO: maybe spawn smol dust effect similar to RR?
+		/*if (!thing->player->stairjank)
+		{
+			mobj_t * spark = P_SpawnMobjFromMobj(thing, 0, 0, 0, MT_JANKSPARK);
+			spark->fuse = 9;
+			spark->cusval = K_StairJankFlip(ANGLE_90);
+			P_SetTarget(&spark->target, thing);
+			P_SetTarget(&spark->owner, thing);
+			spark->renderflags |= RF_REDUCEVFX;
+		}*/
+
+		thing->player->stairjank = 9;
+		//thing->player->stairjank = 17;
+	}
 
 	thing->x = x;
 	thing->y = y;

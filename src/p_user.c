@@ -5090,6 +5090,11 @@ void P_PlayerThink(player_t *player)
 		player->squishdance.time = 0;
 	}
 
+	if (player->stairjank > 0)
+	{
+		player->stairjank--;
+	}
+
 	// Flash player after being hit.
 	if (!(player->kartstuff[k_hyudorotimer] // SRB2kart - fixes Hyudoro not flashing when it should.
 		|| player->kartstuff[k_growshrinktimer] > 0 // Grow doesn't flash either.

@@ -1139,6 +1139,12 @@ void G_DeviceRumbleTick(void)
 			if (leveltime & 1) // this is actually funny lel
 				high = RUMBLE_MODERATE;
 		}
+		/*else if ((player->stairjank > 8) // this is kinda cool but prob gets annoying after a while
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
+		{
+			low = high = RUMBLE_WEAK;
+		}*/
 
 		if (player->kartstuff[k_brakedrift])
 		{
