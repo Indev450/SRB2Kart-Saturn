@@ -566,6 +566,8 @@ typedef struct player_s
 	fixed_t fovadd; // adjust FOV for hw rendering
 
 	SINT8 driftlevel; // just for controller rumble for now
+
+	UINT8 stairjank;
 } player_t;
 
 #endif

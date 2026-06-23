@@ -67,6 +67,7 @@ static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_stairjank = {"stairjank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
@@ -3508,6 +3509,16 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 		return false;
 
 	return K_CheckSlopeRollDist(mobj);
+}
+
+static INT32 K_AltFlip(INT32 n, tic_t tics)
+{
+	return leveltime % (2 * tics) < tics ? n : -(n);
+}
+
+static INT32 K_StairJankFlip(INT32 value)
+{
+	return K_AltFlip(value, 2);
 }
 
 // reset banan and eggbox rollangle when they´re on the ground
@@ -7052,6 +7063,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		K_SaltySquish(player);
 
 	K_RollMobjBySlopes(player->mo, player->mo->standingslope);
+
+	// "Stair jank" visuals akin to RR
+	if (cv_stairjank.value && player->stairjank > 0)
+	{
+		player->mo->temprollangle += K_StairJankFlip(ANGLE_11hh / 2 / (17 / player->stairjank)); // TODO: make strength adjustable?
+	}
 
 	////
 
