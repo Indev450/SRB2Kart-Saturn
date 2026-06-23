@@ -3556,6 +3556,26 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 	return K_CheckSlopeRollDist(mobj);
 }
 
+// reset banan and eggbox rollangle when they´re on the ground
+// if not cv_bananthrowroll option "+Onground"
+static void K_ResetBananaRollangle(mobj_t* mo)
+{
+	if (cv_bananthrowroll.value != 1)
+		return;
+
+	if (!mo->rollangle)
+		return;
+
+	if (mo->type != MT_BANANA && mo->type != MT_EGGMANITEM)
+		return;
+
+	// only reset if on ground
+	if (!P_IsObjectOnGround(mo))
+		return;
+
+	mo->rollangle = 0;
+}
+
 #define SLOPEROLL_DIV 3
 void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 {
@@ -3568,6 +3588,9 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 
 	I_Assert(mo->subsector != NULL);
 	I_Assert(mo->subsector->sector != NULL);
+
+	// kinda stupid but idk where else to put this
+	K_ResetBananaRollangle(mo);
 
 	if (!K_ShouldSlopeRoll(mo))
 	{
@@ -4026,11 +4049,9 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 
 				if (cv_bananthrowroll.value && (mapthing == MT_BANANA))
 				{
-					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
-					if (cv_bananthrowroll.value == 1 && K_CheckSlopeRollDist(mo))
-						mo->sloperoll = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
-					else if (cv_bananthrowroll.value == 2)
-						mo->rollangle = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					const angle_t speen = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					//mo->angle = speen;
+					mo->rollangle = speen;
 				}
 			}
 

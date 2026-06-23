@@ -7007,11 +7007,9 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 		case MT_BANANA:
 			if (cv_bananthrowroll.value)
 			{
-				//mobj->angle -= spin;
-				if (cv_bananthrowroll.value == 1 && K_CheckSlopeRollDist(mobj))
-					mobj->sloperoll += (angle_t)FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h); // im lazy but this makes sure the banan goes back to upright when it lands lmao
-				else if (cv_bananthrowroll.value == 2)
-					mobj->rollangle += (angle_t)FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
+				const angle_t speen = (angle_t)FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
+				//mobj->angle -= speen;
+				mobj->rollangle += speen;
 			}
 			/* FALLTHRU */
 		case MT_ORBINAUT:
@@ -7324,22 +7322,24 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 		case MT_BANANA:
 		case MT_EGGMANITEM:
+		{
+			boolean grounded = P_IsObjectOnGround(mobj);
+
 			//P_MobjCheckWaterVisual(mobj);
-			if (cv_bananthrowroll.value && !P_IsObjectOnGround(mobj))
+			if (cv_bananthrowroll.value && !grounded)
 			{
 				// tilt n tumble
-				//mobj->angle += spin;
-
-				if (cv_bananthrowroll.value == 1 && K_CheckSlopeRollDist(mobj))
-					mobj->sloperoll -= (angle_t)FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h); // im lazy but this makes sure the banan goes back to upright when it lands lmao
-				else if (cv_bananthrowroll.value == 2)
-					mobj->rollangle -= (angle_t)FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h);
+				const angle_t speen = (angle_t)FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
+				//mobj->angle += speen;
+				mobj->rollangle -= speen;
 			}
 
 			mobj->friction = ORIG_FRICTION/4;
+
 			if (mobj->momx || mobj->momy)
 				P_SpawnGhostMobj(mobj);
-			if (P_IsObjectOnGround(mobj) && mobj->health > 1)
+
+			if (grounded && mobj->health > 1)
 			{
 				S_StartSound(mobj, mobj->info->activesound);
 				mobj->momx = mobj->momy = 0;
@@ -7352,7 +7352,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			if (mobj->threshold > 0)
 				mobj->threshold--;
+
 			break;
+		}
 		case MT_SPB:
 			indirectitemcooldown = 20*TICRATE;
 			/* FALLTHRU */
