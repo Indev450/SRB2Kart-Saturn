@@ -4630,7 +4630,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
 	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate   = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
+	const boolean shouldrotate   = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || thing->temprollangle || sliprollrotate);
 #endif
 
 	if (sprframe->rotate != SRF_SINGLE || papersprite
@@ -4688,7 +4688,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		// this is very messy, but it on-the-fly calculates rotations for all the
 		// pitch and roll variables
 		pitchnroll = R_RotationAngle(ang, camang, &interp);
-		rollangle = thing->rollangle;
+		rollangle = (thing->rollangle - thing->temprollangle);
 
 		if (rollangle || pitchnroll || sliprollrotate)
 		{

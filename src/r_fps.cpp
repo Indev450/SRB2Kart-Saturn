@@ -807,6 +807,7 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->spriteyscale  = mobj->realyscale;
 	mobj->spritexoffset = mobj->realxoffset;
 	mobj->spriteyoffset = mobj->realyoffset;
+	mobj->temprollangle = 0;
 
 	mobj->resetinterp = false;
 }

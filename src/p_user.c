@@ -1206,6 +1206,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->pitch = mobj->pitch;
 	ghost->roll = mobj->roll;
 	ghost->rollangle = mobj->rollangle;
+	ghost->temprollangle = mobj->temprollangle;
 	ghost->sloperoll = mobj->sloperoll;
 	ghost->slopepitch = mobj->slopepitch;
 
