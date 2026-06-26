@@ -5315,17 +5315,8 @@ static void HWR_DrawSkyTexture(void)
 
 	// since sky is drawn as a "flat quad" this way, we have to unset any view transformations for it to work
 	GL_SetTransform(NULL);
-	if (HWR_UseShader())
-	{
-		GL_SetShader(HWR_GetShaderFromTarget(SHADER_SKY)); // not sure if this is needed?
-		GL_DrawPolygon(NULL, v, 4, 0);
-		GL_UnSetShader();
-	}
-	else
-	{
-		GL_UnSetShader();
-		GL_DrawPolygon(NULL, v, 4, 0);
-	}
+	GL_UnSetShader();
+	GL_DrawPolygon(NULL, v, 4, 0);
 }
 
 static void HWR_DrawSkyBackground(void)
