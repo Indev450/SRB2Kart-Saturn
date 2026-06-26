@@ -791,6 +791,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*),
 	drawcolumndata_t dc = {};
 	angle_t viewang = pl->viewangle;
 
+	const boolean skydome = cv_skydome.value != 0;
+
 	// Reset column drawer function (note: couldn't we just call colfuncs[BASEDRAWFUNC] directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
 	R_SetColumnFunc(BASEDRAWFUNC);
@@ -888,8 +890,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*),
 
 				INT32 angle = (viewang + xtoviewangle[x + i])>>ANGLETOSKYSHIFT;
 				angle -= (skytextureoffset >> FRACBITS);
-
-				dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
+				if (skydome)
+					dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
 				dc.source = R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
@@ -924,7 +926,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*),
 		INT32 angle = (viewang + xtoviewangle[x])>>ANGLETOSKYSHIFT;
 		angle -= (skytextureoffset >> FRACBITS);
 
-		dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
+		if (skydome)
+			dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
 		dc.x = x;
 		dc.source =
 		R_GetColumn(texturetranslation[skytexture], -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18

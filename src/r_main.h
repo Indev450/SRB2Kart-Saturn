@@ -220,6 +220,7 @@ extern consvar_t cv_translucency;
 extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip;
 extern consvar_t cv_fov, cv_fovchange;
 extern consvar_t cv_skybox;
+extern consvar_t cv_skydome;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
 extern consvar_t cv_playerfade;
