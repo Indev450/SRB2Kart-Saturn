@@ -7608,7 +7608,11 @@ Update the maxplayers label...
 
 	// draw name string
 	if (itemOn != 9)
-		V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
+	{
+		char buf[28];
+		strlcpy(buf, setupm_ip, sizeof(buf));
+		V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, buf);
+	}
 	else
 		M_DrawTextInputScroll(x+8, y+12, &setupm_input_ip, 0, SETUPM_IP_MAXSIZE);
 
