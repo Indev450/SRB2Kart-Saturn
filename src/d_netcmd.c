@@ -942,6 +942,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatspamprotection);
 	CV_RegisterVar(&cv_consolechat);
 	CV_RegisterVar(&cv_chatnotifications);
+	CV_RegisterVar(&cv_chat_xoffset);
+	CV_RegisterVar(&cv_chat_yoffset);
+	CV_RegisterVar(&cv_chat_showlimit);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_chatcentertext);
 	CV_RegisterVar(&cv_songcredits);
