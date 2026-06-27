@@ -1001,8 +1001,9 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	const fixed_t v2y = FloatToFixed(wallVerts[1].z);
 
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
-	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, gl_curline, NULL);
+	FUINT lightnum = sector->lightlevel;
 	extracolormap_t *colormap = NULL;
+	lightnum = HWR_CalcWallLight(lightnum, gl_curline, NULL);
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
@@ -1071,11 +1072,11 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		else
 			solid = false;
 
-		height    = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
-		endheight = FixedToFloat(P_GetLightZAt(&list[i], v2x, v2y));
-
 		if (solid)
 		{
+			height    = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
+			endheight = FixedToFloat(P_GetLightZAt(&list[i], v2x, v2y));
+
 			bheight    = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v1x, v1y));
 			endbheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v2x, v2y));
 
@@ -1105,8 +1106,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = std::max(bheight, realbot);
-		endbot = std::max(endbheight, endrealbot);
+		bot    = std::clamp(bheight, realbot, top);
+		endbot = std::clamp(endbheight, endrealbot, endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -2050,10 +2051,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					lightnum = rover->master->frontsector->lightlevel;
 					colormap = rover->master->frontsector->extra_colormap;
+					lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(lightnum, colormap);
-
-					lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
 					if (other_sector->numlights)
 						HWR_SplitWall(other_sector, wallVerts, 0, false, &Surf, roverflags, rover, blendmode);
@@ -3671,8 +3671,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = std::max(bheight, realbot);
-		endbot = std::max(endbheight, endrealbot);
+		bot    = std::clamp(bheight, realbot, top);
+		endbot = std::clamp(endbheight, endrealbot, endtop);
 
 		wallVerts[3].t = towtop + ((realtop - top) * towmult);
 		wallVerts[2].t = towtop + ((endrealtop - endtop) * towmult);
@@ -4630,7 +4630,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
 	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate   = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
+	const boolean shouldrotate   = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || thing->temprollangle || sliprollrotate);
 #endif
 
 	if (sprframe->rotate != SRF_SINGLE || papersprite
@@ -4688,7 +4688,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		// this is very messy, but it on-the-fly calculates rotations for all the
 		// pitch and roll variables
 		pitchnroll = R_RotationAngle(ang, camang, &interp);
-		rollangle = thing->rollangle;
+		rollangle = (thing->rollangle - thing->temprollangle);
 
 		if (rollangle || pitchnroll || sliprollrotate)
 		{
@@ -5186,14 +5186,9 @@ void HWR_BuildSkyDome(void)
 // precompute to save a bit of division
 static constexpr float FINEDEGREE = (360.0f/static_cast<float>(FINEANGLES));
 
-static void HWR_DrawSkyBackground(void)
+static void HWR_DrawSkyDome(void)
 {
 	FTransform dometransform;
-
-	if (HWR_IsWireframeMode())
-		return;
-
-	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	memcpy(&dometransform, &atransform, sizeof(FTransform));
 
@@ -5217,6 +5212,124 @@ static void HWR_DrawSkyBackground(void)
 
 	GL_SetTransform(&dometransform);
 	GL_RenderSkyDome(&gl_sky);
+}
+
+// the following is karts old sky code from before the skydome stuff
+// this appears to differ a bit from srb2´s old sky code
+static void HWR_DrawSkyTexture(void)
+{
+	FOutVector v[4];
+	angle_t angle;
+	float dimensionmultiply;
+	float aspectratio;
+	float angleturn;
+
+	HWR_GetTexture(texturetranslation[skytexture], false);
+
+	aspectratio = (float)vid.width/(float)vid.height;
+
+	//Hurdler: the sky is the only texture who need 4.0f instead of 1.0
+	//         because it's called just after clearing the screen
+	//         and thus, the near clipping plane is set to 3.99
+	// Sryder: Just use the near clipping plane value then
+
+	//  3--2
+	//  | /|
+	//  |/ |
+	//  0--1
+	v[0].x = v[3].x = -ZCLIP_PLANE-1;
+	v[1].x = v[2].x =  ZCLIP_PLANE+1;
+	v[0].y = v[1].y = -ZCLIP_PLANE-1;
+	v[2].y = v[3].y =  ZCLIP_PLANE+1;
+
+	v[0].z = v[1].z = v[2].z = v[3].z = ZCLIP_PLANE+1;
+
+	// X
+
+	// NOTE: This doesn't work right with texture widths greater than 1024
+	// software doesn't draw any further than 1024 for skies anyway, but this doesn't overlap properly
+	// The only time this will probably be an issue is when a sky wider than 1024 is used as a sky AND a regular wall texture
+
+	//angle = (viewangle + ANGLE_45);
+	angle = (viewangle + xtoviewangle[0]);
+	dimensionmultiply = ((float)textures[texturetranslation[skytexture]]->width/256.0f);
+
+	if (atransform.fliptype == TRANSFORM_MIRROR ||
+		atransform.fliptype == TRANSFORM_MIRRORFLIP)
+	{
+		angle = InvAngle(angle);
+		dimensionmultiply *= -1;
+	}
+
+	v[0].s = v[3].s = ((float)angle / ((float)(ANGLE_90-1)*dimensionmultiply));
+	v[2].s = v[1].s = (-1.0f/dimensionmultiply)+((float) angle / ((float)(ANGLE_90-1)*dimensionmultiply));
+
+	// Y
+	angle = aimingangle;
+	dimensionmultiply = ((float)textures[texturetranslation[skytexture]]->height/(128.0f*aspectratio));
+
+	if (splitscreen == 1)
+	{
+		dimensionmultiply *= 2;
+		angle *= 2;
+	}
+
+	// Middle of the sky should always be at angle 0
+	// need to keep correct aspect ratio with X
+	if (atransform.fliptype == TRANSFORM_FLIP ||
+		atransform.fliptype == TRANSFORM_MIRRORFLIP)
+	{
+		// During vertical flip the sky should be flipped and it's y movement should also be flipped obviously
+		v[3].t = v[2].t = -(0.5f-(0.5f/dimensionmultiply));
+		v[0].t = v[1].t = (-1.0f/dimensionmultiply)-(0.5f-(0.5f/dimensionmultiply));
+	}
+	else
+	{
+		v[3].t = v[2].t = (-1.0f/dimensionmultiply)-(0.5f-(0.5f/dimensionmultiply));
+		v[0].t = v[1].t = -(0.5f-(0.5f/dimensionmultiply));
+	}
+
+	angleturn = (((float)ANGLE_45-1.0f)*aspectratio)*dimensionmultiply;
+
+	if (cv_glshearing.value)
+	{
+		// Doesn't really make sense, but what can I do?
+		angle_t dy = FixedAngle(FixedMul(360*FRACUNIT, FixedDiv(AIMINGTODY(aimingangle), 900*FRACUNIT)));
+		v[3].t = v[2].t -= ((float) dy / angleturn);
+		v[0].t = v[1].t -= ((float) dy / angleturn);
+	}
+	else
+	{
+		if (angle > ANGLE_180) // Do this because we don't want the sky to suddenly teleport when crossing over 0 to 360 and vice versa
+		{
+			angle = InvAngle(angle);
+			v[3].t = v[2].t += ((float) angle / angleturn);
+			v[0].t = v[1].t += ((float) angle / angleturn);
+		}
+		else
+		{
+			v[3].t = v[2].t -= ((float) angle / angleturn);
+			v[0].t = v[1].t -= ((float) angle / angleturn);
+		}
+	}
+
+	// since sky is drawn as a "flat quad" this way, we have to unset any view transformations for it to work
+	GL_SetTransform(NULL);
+	GL_UnSetShader();
+	GL_DrawPolygon(NULL, v, 4, 0);
+}
+
+static void HWR_DrawSkyBackground(void)
+{
+	if (HWR_IsWireframeMode())
+		return;
+
+	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
+
+	if (cv_skydome.value)
+		HWR_DrawSkyDome();
+	else
+		HWR_DrawSkyTexture();
 }
 
 // -----------------+

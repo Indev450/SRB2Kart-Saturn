@@ -298,6 +298,7 @@ typedef struct mobj_s
 	angle_t angle, pitch, roll; // orientation
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
 	angle_t rollangle;
+	angle_t temprollangle; // same as rollangle but resets each tic, idk either man. // cba exposing this to lua either
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states

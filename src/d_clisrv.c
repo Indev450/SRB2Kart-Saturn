@@ -1449,6 +1449,7 @@ static void CL_DrawConnectionStatus(void)
 					if (playerinfo[i].node < 255)
 					{
 						strncpy(player_name, playerinfo[i].name, MAXPLAYERNAME);
+						player_name[MAXPLAYERNAME] = '\0';
 
 						// if we get a skin color
 						// try to colourize the player name

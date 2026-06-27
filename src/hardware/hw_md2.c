@@ -1400,12 +1400,11 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		const angle_t sliptideroll = ((cv_sliptideroll.value && spr->mobj->player) ? spr->mobj->player->sliproll : 0);
 		const SINT8 flipfactor = flip ? -1 : 1;
+		const angle_t thingrollangle = (spr->mobj->rollangle - spr->mobj->temprollangle);
 
-		if (spr->mobj->rollangle || sliptideroll)
+		if (thingrollangle || sliptideroll)
 		{
-			angle_t rollang = sliptideroll
-			? (spr->mobj->rollangle) + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])
-			: (spr->mobj->rollangle);
+			angle_t rollang = sliptideroll ? (thingrollangle + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])) : thingrollangle;
 
 			rollang *= flipfactor;
 

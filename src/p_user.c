@@ -1206,6 +1206,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->pitch = mobj->pitch;
 	ghost->roll = mobj->roll;
 	ghost->rollangle = mobj->rollangle;
+	ghost->temprollangle = mobj->temprollangle;
 	ghost->sloperoll = mobj->sloperoll;
 	ghost->slopepitch = mobj->slopepitch;
 
@@ -5087,6 +5088,11 @@ void P_PlayerThink(player_t *player)
 	{
 		player->squishdance.countdown = 0;
 		player->squishdance.time = 0;
+	}
+
+	if (player->stairjank > 0)
+	{
+		player->stairjank--;
 	}
 
 	// Flash player after being hit.

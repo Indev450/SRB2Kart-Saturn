@@ -67,7 +67,7 @@ static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_stairjank = {"stairjank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
@@ -3511,6 +3511,36 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 	return K_CheckSlopeRollDist(mobj);
 }
 
+static INT32 K_AltFlip(INT32 n, tic_t tics)
+{
+	return leveltime % (2 * tics) < tics ? n : -(n);
+}
+
+static INT32 K_StairJankFlip(INT32 value)
+{
+	return K_AltFlip(value, 2);
+}
+
+// reset banan and eggbox rollangle when they´re on the ground
+// if not cv_bananthrowroll option "+Onground"
+static void K_ResetBananaRollangle(mobj_t* mo)
+{
+	if (cv_bananthrowroll.value != 1)
+		return;
+
+	if (!mo->rollangle)
+		return;
+
+	if (mo->type != MT_BANANA && mo->type != MT_EGGMANITEM)
+		return;
+
+	// only reset if on ground
+	if (!P_IsObjectOnGround(mo))
+		return;
+
+	mo->rollangle = 0;
+}
+
 #define SLOPEROLL_DIV 3
 void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 {
@@ -3523,6 +3553,9 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 
 	I_Assert(mo->subsector != NULL);
 	I_Assert(mo->subsector->sector != NULL);
+
+	// kinda stupid but idk where else to put this
+	K_ResetBananaRollangle(mo);
 
 	if (!K_ShouldSlopeRoll(mo))
 	{
@@ -3945,11 +3978,9 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 
 				if (cv_bananthrowroll.value && (mapthing == MT_BANANA))
 				{
-					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
-					if (cv_bananthrowroll.value == 1 && K_CheckSlopeRollDist(mo))
-						mo->sloperoll = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
-					else if (cv_bananthrowroll.value == 2)
-						mo->rollangle = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					const angle_t speen = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					//mo->angle = speen;
+					mo->rollangle = speen;
 				}
 			}
 
@@ -7032,6 +7063,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		K_SaltySquish(player);
 
 	K_RollMobjBySlopes(player->mo, player->mo->standingslope);
+
+	// "Stair jank" visuals akin to RR
+	if (cv_stairjank.value && player->stairjank > 0)
+	{
+		player->mo->temprollangle += K_StairJankFlip(ANGLE_11hh / 2 / (17 / player->stairjank)); // TODO: make strength adjustable?
+	}
 
 	////
 

@@ -188,6 +188,7 @@ consvar_t cv_flipcammode = {"flipcammode",  "Displayplayer", CV_SAVE, flipcammod
 consvar_t cv_shadow          = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shadowoffs      = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skybox          = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_skydome         = {"skydome", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ffloorclip      = {"r_ffloorclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_spriteclip      = {"r_spriteclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_softcyancut     = {"softwarecyancut", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1564,6 +1565,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
+	CV_RegisterVar(&cv_skydome);
 	CV_RegisterVar(&cv_ffloorclip);
 	CV_RegisterVar(&cv_spriteclip);
 	CV_RegisterVar(&cv_secbright);
@@ -1598,7 +1600,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
 	CV_RegisterVar(&cv_sparkroll);
-	CV_RegisterVar(&cv_spinoutroll);
+	CV_RegisterVar(&cv_stairjank);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

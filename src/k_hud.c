@@ -98,6 +98,8 @@ consvar_t cv_showminimapfinished = {"showminimapfinished", "On", CV_SAVE, CV_OnO
 CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
 consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, minimapdot_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t posanim_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Smooth"}, {0, NULL}};
 consvar_t cv_posanim        = {"postitionanimation", "On", CV_SAVE, posanim_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_smallposnum    = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -231,6 +233,7 @@ void K_RegisterKartHudStuff(void)
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showminimapfinished);
 	CV_RegisterVar(&cv_showminimapangle);
+	CV_RegisterVar(&cv_spinoutroll);
 
 	CV_RegisterVar(&cv_showlapemblem);
 
