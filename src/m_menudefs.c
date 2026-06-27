@@ -1175,7 +1175,7 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"Should the Grow music be on or off?",
 	"Should the Invulnerability music be on or off?",
 	"Should music be kept when restarting the map?",
-	"Should the Intro fanfare be skipped\nand map music be played on map start?",
+	"Should the Intro fanfare be skipped\nand map music be played on map start?\nNote that this WILL skip sounds played by the map before round start aswell!",
 	"Controls Sound effects caching.\nKeep will retain previously played sound effects in cache." // man idk how to describe this in a non awful way lmao
 	"\nOn will preload all sound effects.\nEliminates sound-related lag and stutters but increases memory usage.",
 	"Size of the Audio Buffer\nreducing it will result in less sound latency\nbut may cause issues such as crackling or distorted Sound.",
