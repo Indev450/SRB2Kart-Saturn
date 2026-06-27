@@ -980,7 +980,7 @@ static const char* OP_ExpTooltips[] =
 	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
-	"Disabling Screen Textures may result in a performance boost\nbut will break certain effects.\nScreen textures are required at resolutions lower than your desktop resolution!"
+	"Disabling Screen Textures may result in a performance boost\nbut will break certain effects.\nScreen textures are required at resolutions lower than your desktop resolution!",
 #ifdef USE_FBO_OGL
 	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nRequires a GPU with atleast OpenGL 2.1 support.",
 #endif
