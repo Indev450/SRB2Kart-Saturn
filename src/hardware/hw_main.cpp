@@ -1024,8 +1024,9 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	const fixed_t v2y = FloatToFixed(wallVerts[1].z);
 
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
-	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, gl_curline, NULL);
+	FUINT lightnum = sector->lightlevel;
 	extracolormap_t *colormap = NULL;
+	lightnum = HWR_CalcWallLight(lightnum, gl_curline, NULL);
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
@@ -2073,10 +2074,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					lightnum = rover->master->frontsector->lightlevel;
 					colormap = rover->master->frontsector->extra_colormap;
+					lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(lightnum, colormap);
-
-					lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
 					if (other_sector->numlights)
 						HWR_SplitWall(other_sector, wallVerts, 0, false, &Surf, roverflags, rover, blendmode);
