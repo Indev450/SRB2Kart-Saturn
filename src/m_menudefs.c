@@ -1631,7 +1631,7 @@ static menuitem_t OP_AccessibilityMenu[] =
 	{IT_SUBMENU|IT_STRING,             NULL,   "Video Color Settings...",        &OP_ColorOptionsDef,    30},
 
 	{IT_STRING|IT_CVAR,                NULL,   "Reduce Effects",                 &cv_reducevfx,          35},
-	{IT_STRING|IT_CVAR,                NULL,   "Midnight Channel Flicker",       &cv_lessflicker,        40}, // obsolete now? or still better be a seperate toggle?
+	{IT_STRING|IT_CVAR,                NULL,   "Less Midnight Channel Flicker",  &cv_lessflicker,        40}, // obsolete now? or still better be a seperate toggle?
 
 	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          45},
 
