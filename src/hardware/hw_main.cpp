@@ -5363,6 +5363,8 @@ static void HWR_DrawSkyBackground(void)
 	if (HWR_IsWireframeMode())
 		return;
 
+	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
+
 	if (cv_skydome.value)
 		HWR_DrawSkyDome();
 	else
