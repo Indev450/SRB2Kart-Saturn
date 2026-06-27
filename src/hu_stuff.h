@@ -88,6 +88,10 @@ extern patch_t *tallminus;
 // set true whenever the tab rankings are being shown for any reason
 extern boolean hu_showscores;
 
+extern consvar_t cv_chat_xoffset;
+extern consvar_t cv_chat_yoffset;
+extern consvar_t cv_chat_showlimit;
+
 // init heads up data at game startup.
 void HU_Init(void);
 
