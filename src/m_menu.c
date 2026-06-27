@@ -3843,7 +3843,7 @@ static void M_HandleAddons(INT32 choice)
 							}
 							break;
 						case EXT_TXT:
-							M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),M_AddonExec,MM_YESNO);
+							M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), M_AddonExec, MM_YESNO);
 							break;
 						case EXT_CFG:
 							M_AddonExec(KEY_ENTER);
@@ -3856,20 +3856,26 @@ static void M_HandleAddons(INT32 choice)
 						case EXT_KART:
 #endif
 						case EXT_PK3:
+						{
+							const char *addonname = dirmenu[dir_on[menudepthleft]]+DIR_STRING;
+
 							if (addons_localmode)
 							{
-								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING))
+								if (DumbStartsWith("KC_", addonname) || DumbStartsWith("kc_", addonname) ||
+									DumbStartsWith("KCL_", addonname) || DumbStartsWith("kcl_", addonname)) // skins with lua
 								{
-									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), addonname), NULL, MM_NOTHING);
 								}
 
-								COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+								COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, addonname));
 							}
 							else
 							{
-								COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+								COM_BufAddText(va("addfile \"%s%s\"", menupath, addonname));
 							}
+
 							break;
+						}
 						default:
 							S_StartSound(NULL, sfx_s26d);
 					}
