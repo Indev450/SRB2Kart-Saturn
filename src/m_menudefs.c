@@ -555,10 +555,10 @@ static menuitem_t MP_PlayerSetupMenu[] =
 
 static menuitem_t MP_ConnectMenu[] =
 {
-	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,      0},
-	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage,  8},
-	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          16},
-	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch,25},
+	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,        0},
+	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage,    8},
+	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,            16},
+	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch, 25},
 
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          48},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          60},
@@ -725,29 +725,29 @@ static const char* OP_AllControlsTooltips[sizeof(OP_AllControlsMenu)/sizeof(OP_A
 	// The rest is null, for now
 };
 
-#define OP_JOYMENU(pnum) \
-	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},                                        \
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"           , &cv_aimaxis[pnum]       ,  15}, \
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_turnaxis[pnum]      ,  20}, \
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"                 , &cv_moveaxis[pnum]      ,  25}, \
-	{IT_STRING | IT_CVAR,  NULL, "Brake"                      , &cv_brakeaxis[pnum]     ,  30}, \
-	{IT_STRING | IT_CVAR,  NULL, "Drift"                      , &cv_driftaxis[pnum]     ,  35}, \
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"                   , &cv_fireaxis[pnum]      ,  40}, \
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"              , &cv_lookbackaxis[pnum]  ,  45}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"            , &cv_custom1axis[pnum]   ,  50}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"            , &cv_custom2axis[pnum]   ,  55}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"            , &cv_custom3axis[pnum]   ,  60}, \
-	{IT_HEADER, NULL, "Camera Controls", NULL, 67}, \
-	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"               , &cv_lookaxis[pnum]      ,  75}, \
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_camturnaxis[pnum]   ,  80}, \
-	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"          , &cv_camstrafeaxis[pnum] ,  85}, \
-	{IT_HEADER, NULL, "Deadzones", NULL, 92}, \
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"                 , &cv_xdeadzone[pnum]     , 100}, \
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"                 , &cv_ydeadzone[pnum]     , 105}, \
-	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},                                          \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]        , 120}, \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumblestrength[pnum]        , 125}, \
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]    , 130},
+#define OP_JOYMENU(pnum)                                                                         \
+	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},                                             \
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"           , &cv_aimaxis[pnum]        ,  15}, \
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_turnaxis[pnum]       ,  20}, \
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"                 , &cv_moveaxis[pnum]       ,  25}, \
+	{IT_STRING | IT_CVAR,  NULL, "Brake"                      , &cv_brakeaxis[pnum]      ,  30}, \
+	{IT_STRING | IT_CVAR,  NULL, "Drift"                      , &cv_driftaxis[pnum]      ,  35}, \
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"                   , &cv_fireaxis[pnum]       ,  40}, \
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"              , &cv_lookbackaxis[pnum]   ,  45}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"            , &cv_custom1axis[pnum]    ,  50}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"            , &cv_custom2axis[pnum]    ,  55}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"            , &cv_custom3axis[pnum]    ,  60}, \
+	{IT_HEADER, NULL, "Camera Controls", NULL, 67},                                              \
+	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"               , &cv_lookaxis[pnum]       ,  75}, \
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_camturnaxis[pnum]    ,  80}, \
+	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"          , &cv_camstrafeaxis[pnum]  ,  85}, \
+	{IT_HEADER, NULL, "Deadzones", NULL, 92},                                                    \
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"                 , &cv_xdeadzone[pnum]      , 100}, \
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"                 , &cv_ydeadzone[pnum]      , 105}, \
+	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},                                               \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]         , 120}, \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumblestrength[pnum] , 125}, \
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]     , 130},
 
 static menuitem_t OP_Joystick1Menu[] =
 {
@@ -789,10 +789,9 @@ static menuitem_t OP_JoystickSetMenu[] =
 static menuitem_t OP_MouseOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR,                NULL, "Use Mouse",      &cv_usemouse,     10},
-
 	{IT_STRING | IT_CVAR,                NULL, "Mouse Turning",  &cv_mouseturn,    20},
 	{IT_STRING | IT_CVAR,                NULL, "Invert Mouse",   &cv_invertmouse,  30},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousexsens,    40},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousexsens,   40},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse Y Speed",  &cv_mouseysens,   50},
 };
 
@@ -860,7 +859,6 @@ static const char* OP_VideoTooltips[] =
 #endif
 	"Advanced graphical options.",
 };
-
 
 enum
 {
@@ -945,24 +943,25 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	//{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 45}, // should this ever come back
 
 	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 40},
+	{IT_STRING | IT_CVAR,	NULL, "Skydome",						&cv_skydome,				 45},
 
-	{IT_STRING | IT_CVAR,	NULL, "Precache Level Textures",		&cv_precachetextures,		 50},
+	{IT_STRING | IT_CVAR,	NULL, "Precache Level Textures",		&cv_precachetextures,		 55},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 60},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 65},
 
-	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 70},
+	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 75},
 
-	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 80},
+	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 85},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 90},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 95},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 95},
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		105},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		115}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			100},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		110},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		120}, // dummy text
 #else
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		100},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		110}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		110},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		120}, // dummy text
 #endif
 #endif
 };
@@ -975,6 +974,7 @@ static const char* OP_ExpTooltips[] =
 	"Sets minimum sector brightness, useful for dark areas.",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
+	"Toggle skydome.", // idk man someone give a better description of this
 	"Preload all level textures on level load.\nMassively reduces texture related stuttering during gameplay\nat the cost of longer level loading times.\nDisable this if you experience timeouts during level switches.",
 	"Change the FPS counter sampling method\nInaccurate updates slower\nand might miss sudden framerate changes and drops,\nproviding a more averaged result.\nAccurate updates faster, but might be less readable.", // how to ingles??
 	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
@@ -996,6 +996,7 @@ enum
 	op_exp_secbright,
 	//op_exp_dirlight,
 	op_exp_skybox,
+	op_exp_skydome,
 	op_exp_texcache,
 	op_exp_accuratefps,
 	op_exp_frameskip,
@@ -1767,20 +1768,21 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR, 				 NULL, "Slope Rotation Distance",		 &cv_sloperolldist,  	15},
 
 	{IT_STRING | IT_CVAR,				 NULL, "Rotate Players when Sliptiding", &cv_sliptideroll,	 	25},
-	{IT_STRING | IT_CVAR,				 NULL, "Rotate Sparks and Boost Trails", &cv_sparkroll,		 	30},
-	{IT_STRING | IT_CVAR,				 NULL, "Rotate Bananas on Throw",		 &cv_bananthrowroll, 	35},
+	{IT_STRING | IT_CVAR,				 NULL, "Stair Janking Effect",           &cv_stairjank,	 	    30},
+	{IT_STRING | IT_CVAR,				 NULL, "Rotate Sparks and Boost Trails", &cv_sparkroll,		 	35},
+	{IT_STRING | IT_CVAR,				 NULL, "Rotate Bananas on Throw",		 &cv_bananthrowroll, 	40},
 
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Player Stretch Factor",			 &cv_gravstretch,	 	45},
-	{IT_STRING | IT_CVAR,				 NULL, "Squish Sound Effect",			 &cv_slamsound,		 	50},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Player Stretch Factor",			 &cv_gravstretch,	 	50},
+	{IT_STRING | IT_CVAR,				 NULL, "Squish Sound Effect",			 &cv_slamsound,		 	55},
 
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop",						 &cv_saltyhop,		 	60},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saltyhop Height",				 &cv_saltyheight,	 	65},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Sound Effect",			 &cv_saltyhopsfx,		70},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Squish",				 &cv_saltysquish,	 	75},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Roll",				 	 &cv_saltyroll,	 	 	80},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop",						 &cv_saltyhop,		 	65},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saltyhop Height",				 &cv_saltyheight,	 	70},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Sound Effect",			 &cv_saltyhopsfx,		75},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Squish",				 &cv_saltysquish,	 	80},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Roll",				 	 &cv_saltyroll,	 	 	85},
 
-	{IT_STRING | IT_CVAR,				 NULL, "Squishdance",				 	 &cv_squishdance,	 	90},
-	{IT_STRING | IT_CVAR,				 NULL, "Squishdance Speed",				 &cv_squishdancespeed,	96},
+	{IT_STRING | IT_CVAR,				 NULL, "Squishdance",				 	 &cv_squishdance,	 	95},
+	{IT_STRING | IT_CVAR,				 NULL, "Squishdance Speed",				 &cv_squishdancespeed,	101}, // why is this offset by 6? idk cant remember lulul
 };
 
 static const char* OP_PlayerDistortTooltips[] =
@@ -1789,6 +1791,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Sprite rotation on slopes. Can either be just players or all objects.",
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
+	"Slightly tilt the player when driving over stairs or small bumps.",
 	"Rotation of a player's boost trails and drift sparks.",
 	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?",
 	"Player squash and stretch.",
@@ -1799,7 +1802,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Player hop squash and stretch.",
 	"Should the player rotation be kept during player hop.",
 	"Do a funny squishy dance when holding CUSTOM 3.",
-	"Speed of the Squishy dance in BPM.",
+	"Speed of the Squishy dance in SPM (Squishes Per Minute).",
 };
 
 enum
@@ -1808,6 +1811,7 @@ enum
 	sloperotate,
 	slrotatedist,
 	sliptide,
+	stairjank,
 	sparkrotate,
 	bananrotat,
 	stretchyplayer,
