@@ -1071,11 +1071,11 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		else
 			solid = false;
 
-		height    = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
-		endheight = FixedToFloat(P_GetLightZAt(&list[i], v2x, v2y));
-
 		if (solid)
 		{
+			height    = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
+			endheight = FixedToFloat(P_GetLightZAt(&list[i], v2x, v2y));
+
 			bheight    = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v1x, v1y));
 			endbheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v2x, v2y));
 
@@ -1105,8 +1105,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = std::max(bheight, realbot);
-		endbot = std::max(endbheight, endrealbot);
+		bot    = std::clamp(bheight, realbot, top);
+		endbot = std::clamp(endbheight, endrealbot, endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -3671,8 +3671,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = std::max(bheight, realbot);
-		endbot = std::max(endbheight, endrealbot);
+		bot    = std::clamp(bheight, realbot, top);
+		endbot = std::clamp(endbheight, endrealbot, endtop);
 
 		wallVerts[3].t = towtop + ((realtop - top) * towmult);
 		wallVerts[2].t = towtop + ((endrealtop - endtop) * towmult);
