@@ -3059,7 +3059,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 				break;
 
 			default:
-				I_Error("P_UnarchiveSpecials: Unknown tclass %d in savegame", tclass);
+				I_Error("P_NetUnArchiveThinkers: Unknown tclass %d in savegame", tclass);
 		}
 	}
 
