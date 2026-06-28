@@ -4397,6 +4397,9 @@ static void K_drawChallengerScreen(void)
 
 static void K_drawLapStartAnim(void)
 {
+	if (!cv_showlapemblem.value)
+		return;
+
 	// This is an EVEN MORE insanely complicated animation.
 	const UINT8 progress = 80-stplyr->kartstuff[k_lapanimation];
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
@@ -4440,9 +4443,10 @@ static void K_drawLapStartAnim(void)
 		V_DrawFixedPatch(leftx, y, FRACUNIT, vflags, kp_lapanim_lap[min(progress/2, 6)], NULL);
 
 		char *lapnum = va("%02d", stplyr->laps + 1);
-		const size_t laplength = strlen(lapnum);
 
-		for (size_t i = 0; i < laplength; i++)
+		const int laplength = (int)strlen(lapnum);
+
+		for (int i = 0; i < laplength; i++)
 		{
 			int digit = lapnum[i] - '0';
 			int frame = min(2, progress/2 - 8 - (i*2));
@@ -4824,7 +4828,7 @@ void K_drawKartHUD(void)
 	{
 		if (stplyr->exiting)
 			K_drawKartFinish();
-		else if (stplyr->kartstuff[k_lapanimation] && !splitscreen && cv_showlapemblem.value)
+		else if (stplyr->kartstuff[k_lapanimation] && !splitscreen)
 			K_drawLapStartAnim();
 	}
 
