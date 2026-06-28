@@ -1604,9 +1604,11 @@ static boolean ShouldDrawMenuBG(void)
 
 	// camera options stuff, only do when in level
 	if (gamestate == GS_LEVEL &&
-	   (currentMenu == &OP_CamOptionsDef || currentMenu == &OP_Player1CamOptionsDef
-	 || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef
-	 || currentMenu == &OP_Player4CamOptionsDef))
+	   (currentMenu == &OP_CamOptionsDef ||
+		currentMenu == &OP_Player1CamOptionsDef ||
+		currentMenu == &OP_Player2CamOptionsDef ||
+		currentMenu == &OP_Player3CamOptionsDef ||
+		currentMenu == &OP_Player4CamOptionsDef))
 		return false;
 
 	return true;
@@ -1624,7 +1626,7 @@ void M_Drawer(void)
 
 	// pain and suffering
 	forceshowhud = (gamestate == GS_LEVEL && menuactive && (currentMenu == &OP_SaturnHudDef || currentMenu == &OP_HudOffsetDef || currentMenu == &OP_NametagDef || currentMenu == &OP_DriftGaugeDef)); // holy fuick
-	forceshowchat = (gamestate == GS_LEVEL && menuactive && currentMenu == &OP_ChatOptionsDef && (!OLDCHAT) && (itemOn == op_chat_boxwidth || itemOn == op_chat_boxheight || itemOn == op_chat_xoffs || itemOn == op_chat_yoffs)); // man i dont gaf anymore lmao
+	forceshowchat = (gamestate == GS_LEVEL && menuactive && currentMenu == &OP_ChatOptionsDef && (!OLDCHAT) && (itemOn == op_chat_boxwidth || itemOn == op_chat_boxheight || itemOn == op_chat_xoffs || itemOn == op_chat_yoffs || itemOn == op_chat_charlmt)); // man i dont gaf anymore lmao
 
 	if (menuactive)
 	{
