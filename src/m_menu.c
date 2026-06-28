@@ -411,6 +411,7 @@ static INT32 M_GetFirstLevelInList(void);
 
 // crap to force hud to show when in saturns hud options
 boolean forceshowhud = false;
+boolean forceshowchat = false;
 
 // smol text indicating if game is modified
 // so ppl dont wonder where their ra times went and stuff
@@ -1599,11 +1600,16 @@ static boolean ShouldDrawMenuBG(void)
 	if (forceshowhud)
 		return false;
 
+	if (forceshowchat)
+		return false;
+
 	// camera options stuff, only do when in level
 	if (gamestate == GS_LEVEL &&
-	   (currentMenu == &OP_CamOptionsDef || currentMenu == &OP_Player1CamOptionsDef
-	 || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef
-	 || currentMenu == &OP_Player4CamOptionsDef))
+	   (currentMenu == &OP_CamOptionsDef ||
+		currentMenu == &OP_Player1CamOptionsDef ||
+		currentMenu == &OP_Player2CamOptionsDef ||
+		currentMenu == &OP_Player3CamOptionsDef ||
+		currentMenu == &OP_Player4CamOptionsDef))
 		return false;
 
 	return true;
@@ -1619,7 +1625,9 @@ void M_Drawer(void)
 	if (currentMenu == &MessageDef)
 		menuactive = true;
 
+	// pain and suffering
 	forceshowhud = (gamestate == GS_LEVEL && menuactive && (currentMenu == &OP_SaturnHudDef || currentMenu == &OP_HudOffsetDef || currentMenu == &OP_NametagDef || currentMenu == &OP_DriftGaugeDef)); // holy fuick
+	forceshowchat = (gamestate == GS_LEVEL && menuactive && currentMenu == &OP_ChatOptionsDef && (!OLDCHAT) && (itemOn == op_chat_boxwidth || itemOn == op_chat_boxheight || itemOn == op_chat_xoffs || itemOn == op_chat_yoffs || itemOn == op_chat_charlmt)); // man i dont gaf anymore lmao
 
 	if (menuactive)
 	{

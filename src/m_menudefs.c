@@ -446,25 +446,25 @@ enum
 
 static menuitem_t SP_ReplayMenu[] =
 {
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Time",  M_ReplayTimeAttack,  90},
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Lap",   M_ReplayTimeAttack,  98},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Time",  M_ReplayTimeAttack,   90},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Lap",   M_ReplayTimeAttack,   98},
 
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Last",       M_ReplayTimeAttack, 106},
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Guest",      M_ReplayTimeAttack, 114},
-	{IT_WHITESTRING|IT_KEYHANDLER, NULL, "Replay Staff",M_HandleStaffReplay,122},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Last",       M_ReplayTimeAttack,  106},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Guest",      M_ReplayTimeAttack,  114},
+	{IT_WHITESTRING|IT_KEYHANDLER, NULL, "Replay Staff",M_HandleStaffReplay, 122},
 
-	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",           &SP_TimeAttackDef,  130}
+	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",           &SP_TimeAttackDef,   130}
 };
 
 static menuitem_t SP_GuestReplayMenu[] =
 {
-	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Time as Guest",  M_SetGuestReplay, 94},
-	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Lap as Guest",   M_SetGuestReplay,102},
-	{IT_WHITESTRING|IT_CALL, NULL, "Save Last as Guest",       M_SetGuestReplay,110},
+	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Time as Guest",  M_SetGuestReplay,  94},
+	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Lap as Guest",   M_SetGuestReplay, 102},
+	{IT_WHITESTRING|IT_CALL, NULL, "Save Last as Guest",       M_SetGuestReplay, 110},
 
-	{IT_WHITESTRING|IT_CALL, NULL, "Delete Guest Replay",      M_SetGuestReplay,120},
+	{IT_WHITESTRING|IT_CALL, NULL, "Delete Guest Replay",      M_SetGuestReplay, 120},
 
-	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",                &SP_TimeAttackDef, 130}
+	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",                &SP_TimeAttackDef,  130}
 };
 
 static menuitem_t SP_GhostMenu[] =
@@ -1010,7 +1010,6 @@ enum
 #endif
 };
 
-
 #ifdef HWRENDER
 static menuitem_t OP_OpenGLOptionsMenu[] =
 {
@@ -1067,7 +1066,6 @@ enum
 	op_gl_shearing,
 	op_gl_renderdist,
 };
-
 #endif
 
 static menuitem_t OP_SoundOptionsMenu[] =
@@ -1078,8 +1076,7 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR|IT_CV_NOPRINT,			NULL, "Music",							&cv_gamedigimusic,		 	30},
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,			NULL, "Music Volume",					&cv_digmusicvolume,		 	38},
 
-//#ifndef NO_MIDI
-#if 0
+#if 0 //#ifndef NO_MIDI
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER, 			NULL, "MIDI Volume",					&cv_midimusicvolume,	 	46},
 
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
@@ -1114,8 +1111,7 @@ static const char* OP_SoundTooltips[] =
 	"Volume of Sound effects.",
 	"Turn Music on or off.",
 	"Volume of Music.",
-//#ifndef NO_MIDI
-#if 0
+#if 0 //#ifndef NO_MIDI
 	"Volume of Midi Music.",
 #endif
 	"Reverse left and right channels of audio.",
@@ -1175,7 +1171,7 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"Should the Grow music be on or off?",
 	"Should the Invulnerability music be on or off?",
 	"Should music be kept when restarting the map?",
-	"Should the Intro fanfare be skipped\nand map music be played on map start?\nNote that this WILL skip sounds played by the map before round start aswell!",
+	"Should the Intro fanfare be skipped\nand map music be played on map start?\nNote that this WILL skip sounds played by the map before round start as well!",
 	"Controls Sound effects caching.\nKeep will retain previously played sound effects in cache." // man idk how to describe this in a non awful way lmao
 	"\nOn will preload all sound effects.\nEliminates sound-related lag and stutters but increases memory usage.",
 	"Size of the Audio Buffer\nreducing it will result in less sound latency\nbut may cause issues such as crackling or distorted Sound.",
@@ -1409,42 +1405,68 @@ static const char* OP_PlayerCamOptionsTooltips[] =
 static menuitem_t OP_ChatOptionsMenu[] =
 {
 	// will ANYONE who doesn't know how to use the console want to touch this one?
-	{IT_STRING | IT_CVAR, NULL, "Chat Mode",				&cv_consolechat,		5}, // nonetheless...
+	{IT_STRING | IT_CVAR, NULL, "Chat Mode",                     &cv_consolechat,          5}, // nonetheless...
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Width",			&cv_chatwidth,			20},
+	                      NULL, "Chat Box Width",                &cv_chatwidth,           20},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Height",			&cv_chatheight,			30},
-	{IT_STRING | IT_CVAR, NULL, "Center Text in Chat",		&cv_chatcentertext,		40},
+	                      NULL, "Chat Box Height",               &cv_chatheight,          30},
+	{IT_STRING | IT_CVAR, NULL, "Chat Horizontal Offset",        &cv_chat_xoffset,        40},
+	{IT_STRING | IT_CVAR, NULL, "Chat Vertical Offset",          &cv_chat_yoffset,        50},
 
-	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",		&cv_chatbacktint,		55},
-	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",		&cv_chattime,			65},
-	{IT_STRING | IT_CVAR, NULL, "Spam Protection",			&cv_chatspamprotection,	75},
-	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		85},
+	{IT_STRING | IT_CVAR, NULL, "Center Text in Chat",           &cv_chatcentertext,      70},
+	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",          &cv_chatbacktint,        80},
+	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",          &cv_chattime,            90},
+	{IT_STRING | IT_CVAR, NULL, "Spam Protection",               &cv_chatspamprotection, 100},
+	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",             &cv_chatlogsize,        110},
+	{IT_STRING | IT_CVAR, NULL, "Display Character Limit",       &cv_chat_showlimit,     120},
 
-	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			105},	// shows ping above the framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Ping display style",		&cv_pingstyle,			115},
-	{IT_STRING | IT_CVAR, NULL, "Ping measurement",			&cv_pingmeasurement,	125},
-	{IT_STRING | IT_CVAR, NULL, "Ping icon",				&cv_pingicon,			135},
+	{IT_STRING | IT_CVAR, NULL, "Local ping display",            &cv_showping,           140}, // shows ping above the framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping display style",            &cv_pingstyle,          150},
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",              &cv_pingmeasurement,    160},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",                     &cv_pingicon,           170},
 
-	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist",		&cv_shownodeip,	145},
+	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist", &cv_shownodeip,         180},
 };
 
 static const char* OP_ChatOptionsTooltips[] =
 {
 	"Chat mode used for in-game chat.",
-	"Width of chat box.",
-	"Height of chat box.",
+	"Width of the chat box.",
+	"Height of the chat box.",
+	"Horizontal Offset of the chat box.",
+	"Vertical Offset of the chat box.",
 	"Center text in the chat message pop ups.",
-	"Chatbox background.",
+	"Background for the chat message pop ups.",
 	"Fadeout time for new chat message.",
 	"Spam protection for in-game chat.",
 	"Maxiumum amount of chat messages to look back at.",
+	"Show how many characters you have left to type in the chat.",
 	"Show player ping.",
-	"Choose the looks of the ping display.", // this is ass idk english lmao
+	"Choose the style of the ping display.",
 	"Measurement used for ping.",
 	"Visibility of ping icon.",
 	"Should Player IP addresses be printed when using\nthe nodes or listplayers command?",
+};
+
+enum
+{
+	op_chat_mode,
+	op_chat_boxwidth,
+	op_chat_boxheight,
+	op_chat_yoffs,
+	op_chat_xoffs,
+	op_chat_centertxt,
+	op_chat_bgtint,
+	op_chat_fadetime,
+	op_chat_spamprotect,
+	op_chat_maxmsg,
+	op_chat_charlmt,
+	op_chat_showping,
+	op_chat_pingstyle,
+	op_chat_pingmeasr,
+	op_chat_pingico,
+	op_chat_nodeip,
 };
 
 static menuitem_t OP_GameOptionsMenu[] =
