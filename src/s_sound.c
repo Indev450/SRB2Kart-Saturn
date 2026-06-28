@@ -114,8 +114,16 @@ consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, N
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+enum
+{
+	SKPMUS_OFF,
+	SKPMUS_SKIP,
+	SKPMUS_PLAYMUS,
+	SKPMUS_PLAYSKIP,
+};
+
 boolean keepmapmusic = false; // keep the current music on map restart
-boolean skipintromus = false; // skip the intro fanfare
+UINT8 skipintromus = SKPMUS_OFF; // skip the intro fanfare
 static music_t keepmusic;
 
 #ifdef HAVE_OPENMPT
@@ -1944,7 +1952,8 @@ static boolean S_CheckMusicException(void)
 
 void S_ResetKeepAndSpecialMus(void)
 {
-	keepmapmusic = skipintromus = false;
+	keepmapmusic = false;
+	skipintromus = SKPMUS_OFF;
 }
 
 boolean S_MapMusPlaying(void)
@@ -2004,23 +2013,130 @@ void S_HandleReloadResetMusic(void)
 	mapmusic.resume = 0;
 }
 
-static boolean S_SkipIntroMusic(void)
+// TODO: make this a seperate lump
+// would rather NOT hardcode stuff like this
+
+typedef struct
+{
+	const char *name; // sfx to check
+	UINT8 action;     // what those sfx do
+} sfxintro_t;
+
+static sfxintro_t introsfxlist[] = {
+	{"KMAPPF", SKPMUS_PLAYSKIP}, {"DPFINT", SKPMUS_PLAYSKIP},                              // RA Extended
+	{"D00DMM", SKPMUS_PLAYMUS},  {"D00DCE", SKPMUS_PLAYMUS},  {"D00DSD", SKPMUS_PLAYMUS},  // RA Extended
+	{"D00DLD", SKPMUS_PLAYSKIP}, {"D00DGE", SKPMUS_PLAYSKIP},                              // RA Extended
+	{"SSVO",   SKPMUS_PLAYMUS},  {"SSVOH",  SKPMUS_PLAYMUS},                               // subsonic
+	{"NFMMM",  SKPMUS_PLAYSKIP}, {"NFMMME", SKPMUS_PLAYSKIP}, {"SRALLY", SKPMUS_PLAYSKIP}, // sparkcup
+	{"AMLUY0", SKPMUS_PLAYSKIP},                                                           // ceroba
+	{"HOURIN", SKPMUS_PLAYSKIP}, {"HOURIM", SKPMUS_PLAYSKIP},                              // hourglass
+	{"KAIJIS", SKPMUS_PLAYMUS},                                                            // mauromania
+	{"SKINTO", SKPMUS_PLAYMUS},                                                            // shovelknight
+	{"WALU01", SKPMUS_PLAYMUS},  {"WADE00", SKPMUS_PLAYMUS},  {"INTRO",  SKPMUS_PLAYSKIP}, // pata
+	{"WARINT", SKPMUS_PLAYSKIP}, {"PTIMED", SKPMUS_PLAYSKIP}, {"PTISEW", SKPMUS_PLAYSKIP}, // pizza tower pata
+	{"PTIFIN", SKPMUS_PLAYSKIP}, {"PTIFAC", SKPMUS_PLAYSKIP}, {"PTISPA", SKPMUS_PLAYSKIP}, // pizza tower pata
+	{"K4TM10", SKPMUS_PLAYSKIP}, {"K4TM20", SKPMUS_PLAYSKIP}, {"K4TM30", SKPMUS_PLAYSKIP}, // boon county pata
+	{"MBMWIN", SKPMUS_PLAYSKIP},                                                           // ivo motobug
+	{"START",  SKPMUS_PLAYMUS},  {"STARR",  SKPMUS_PLAYMUS},  {"3STA",   SKPMUS_PLAYMUS},  // assaultpack
+	{"SLFARE", SKPMUS_PLAYSKIP}, {"LTSAGO", SKPMUS_PLAYSKIP},                              // secret slide
+	{"SPKINT", SKPMUS_PLAYSKIP},                                                           // cotopack spelunky
+	{"LOZOPN", SKPMUS_PLAYSKIP}, {"LOZOPM", SKPMUS_PLAYSKIP},                              // nostalgia pack zelda
+	{"MLINTR", SKPMUS_PLAYSKIP}, {"RALLYY", SKPMUS_PLAYSKIP},                              // coffee cup
+};
+
+// :chaosleep:
+static UINT8 S_CheckIntroSfx(void)
+{
+	size_t i, h;
+	sfxinfo_t *sfx = NULL;
+	INT32 sfxnum = sfx_None;
+	UINT8 ret = SKPMUS_PLAYMUS; // for now default to just playing sounds while the music is playing
+								// useful for finding intros that were missed
+
+	// go through the whole map
+	// and scan for any lines with the play sfx special
+	// we cannot really detect here if they are supposed to play on map start
+	// but the list contains things that are "known" to be intros
+	// this sucks immense ass but what can you do
+	for (i = 0; i < numlines; i++)
+	{
+		const line_t *line = &lines[i];
+
+		// "play sfx" special
+		if (line->special != 414)
+			continue;
+
+		// if theres a sound name in the toptexture
+		// this will give us a valid sound id
+		sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;
+
+		// no valid sound id?
+		if (sfxnum <= sfx_None || sfxnum >= NUMSFX)
+		{
+			continue;
+		}
+
+		sfx = &S_sfx[sfxnum];
+
+		// somehow sound does not exist
+		if (!sfx)
+		{
+			continue;
+		}
+
+		// now check if the corresponding sound matches anything from our list
+		for (h = 0; h < sizeof(introsfxlist)/sizeof(introsfxlist[0]); h++)
+		{
+			// case insensitive, for some reason some sounds freeslot lowercase?
+			if (fasticmp(sfx->name, introsfxlist[h].name))
+			{
+				const UINT8 skipaction = introsfxlist[h].action;
+
+				// intros that plays music or otherwise wont fit with the music playing
+				// have precendence over EVERYTHING
+				if (skipaction == SKPMUS_PLAYSKIP)
+					return SKPMUS_PLAYSKIP;
+
+				// otherwise keep going
+
+				// always prefer higher priority
+				// not really needed currently
+				// but idk if i edit this again some other time
+				if (skipaction > ret)
+					ret = skipaction;
+			}
+		}
+	}
+
+	return ret;
+}
+
+static UINT8 S_SkipIntroMusic(void)
 {
 	if (!cv_skipintromusic.value)
-		return false;
+		return SKPMUS_OFF;
+
+	// dont skip if we disabled music, weird? but this would skip sounds that play on map start as well otherwise
+	if (music_disabled)
+		return SKPMUS_OFF;
 
 	// check if menu music is playing, otherwise it may continue playing
 	if (fasticmp(music.name, "titles"))
-		return false;
+		return SKPMUS_OFF;
 
-	CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
-
-	if (maptitle && fasticmp(maptitle, "Wandering Falls")) // wandering balls changes its song when the race starts Zzz...
+	// wandering balls changes its song when the race starts Zzz...
+	CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(gamemap);
+	if (maptitle && fasticmp(maptitle, "Wandering Falls"))
 	{
-		return false;
+		return SKPMUS_OFF;
 	}
 
-	return true;
+	// without sound there wont be any intro playing
+	if (sound_disabled)
+		return SKPMUS_SKIP;
+	// yes i sometimes play with only music but no sound
+
+	return S_CheckIntroSfx();
 }
 
 //
@@ -2040,7 +2156,10 @@ void S_InitMapMusic(void)
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
+}
 
+void S_HandleMusicStart(void)
+{
 	skipintromus = S_SkipIntroMusic();
 
 	if (skipintromus)
@@ -2061,12 +2180,23 @@ void S_StartMapMusic(void)
 		return;
 	}
 
-	if (skipintromus)
+	if (skipintromus == SKPMUS_SKIP || skipintromus == SKPMUS_PLAYMUS)
 	{
 		if (leveltime < starttime)
 			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
 		else if (leveltime == MUSICSTARTTIME)
 			S_ShowMusicCredit();
+
+		return;
+	}
+
+	if (skipintromus)
+	{
+		if (leveltime == MUSICSTARTTIME)
+		{
+			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
+			S_ShowMusicCredit();
+		}
 
 		return;
 	}

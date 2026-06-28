@@ -3055,6 +3055,12 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// set up world state
 	P_SpawnSpecials(fromnetsave, reloadinggamestate);
 
+	// stupid hack but handle skipintromus and fanfare here
+	// lines and other map data have not been init yet
+	// in the original place for this
+	if (!reloadinggamestate)
+		S_HandleMusicStart();
+
 	if (!fromnetsave) //  ugly hack for P_NetUnArchiveMisc (and P_LoadNetGame)
 		P_SpawnPrecipitation();
 

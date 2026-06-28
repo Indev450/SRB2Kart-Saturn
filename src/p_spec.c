@@ -2065,7 +2065,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				INT32 sfxnum;
 
 				//dont play any funky sound intros that may interfere with the music
-				if ((skipintromus || keepmapmusic) && (leveltime < MUSICSTARTTIME))
+				if ((skipintromus == 1 || keepmapmusic) && (leveltime < MUSICSTARTTIME))
 					return;
 
 				sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;
@@ -2078,6 +2078,8 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					CONS_Debug(DBG_GAMELOGIC, "Line type 414 Executor: sfx number %d is invalid!\n", sfxnum);
 					return;
 				}
+
+				//CONS_Printf("%s\n", S_sfx[sfxnum].name);
 
 				if (line->tag != 0) // Do special stuff only if a non-zero linedef tag is set
 				{

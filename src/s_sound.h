@@ -75,7 +75,7 @@ extern consvar_t cv_keepmusic;
 extern consvar_t cv_skipintromusic;
 extern consvar_t cv_ignoremusicchanges;
 extern boolean keepmapmusic;
-extern boolean skipintromus;
+extern UINT8 skipintromus;
 
 #define MUSICSTARTTIME (starttime + (TICRATE/2))
 
@@ -116,6 +116,7 @@ void S_ClearSfx(void);
 void S_ResetKeepAndSpecialMus(void);
 
 void S_InitMapMusic(void);
+void S_HandleMusicStart(void);
 void S_StartMapMusic(void);
 void S_HandleReloadResetMusic(void);
 
