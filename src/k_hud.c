@@ -1146,7 +1146,7 @@ enum
 	SPEEDO_PMETERSMOL,
 };
 
-static SINT8 K_GetSpeedometerStyle(void)
+static UINT8 K_GetSpeedometerStyle(void)
 {
 	if (cv_newspeedometer.value == 2 && xtra_speedo)
 		return SPEEDO_EXTRA;
