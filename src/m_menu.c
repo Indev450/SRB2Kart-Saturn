@@ -3855,30 +3855,34 @@ static void M_HandleAddons(INT32 choice)
 						case EXT_KART:
 #endif
 						case EXT_PK3:
-						{
-							const char *addonname = dirmenu[dir_on[menudepthleft]]+DIR_STRING;
-
-							if (addons_localmode)
 							{
-								if (DumbStartsWith("KC_", addonname) || DumbStartsWith("kc_", addonname) ||
-									DumbStartsWith("KCL_", addonname) || DumbStartsWith("kcl_", addonname)) // skins with lua
+								const char *addonname = dirmenu[dir_on[menudepthleft]]+DIR_STRING;
+
+								if (addons_localmode)
 								{
-									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), addonname), NULL, MM_NOTHING);
+									if (DumbStartsWith("KC_", addonname) || DumbStartsWith("kc_", addonname))
+									{
+										M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), addonname), NULL, MM_NOTHING);
+									}
+									else if (DumbStartsWith("KCL_", addonname) || DumbStartsWith("kcl_", addonname)) // skins with lua
+									{
+										M_StartMessage(va("%c%s\x80\nYou are loading a local skin with lua.\nBeware that this may cause issues like crashes or desyncs in some cases!\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), addonname), NULL, MM_NOTHING);
+									}
+									// no need to account for KRC cases
+
+									COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, addonname));
 								}
-
-								COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, addonname));
+								else
+								{
+									COM_BufAddText(va("addfile \"%s%s\"", menupath, addonname));
+								}
 							}
-							else
-							{
-								COM_BufAddText(va("addfile \"%s%s\"", menupath, addonname));
-							}
-
 							break;
-						}
 						default:
 							S_StartSound(NULL, sfx_s26d);
 					}
 				}
+
 				if (refresh)
 					refreshdirmenu |= REFRESHDIR_NORMAL;
 			}
@@ -7775,7 +7779,7 @@ static void M_SetupMultiHandler(INT32 choice)
 	if (exitmenu)
 	{
 		if (currentMenu->prevMenu)
-			M_SetupNextMenu (currentMenu->prevMenu);
+			M_SetupNextMenu(currentMenu->prevMenu);
 		else
 			M_ClearMenus(true);
 	}
