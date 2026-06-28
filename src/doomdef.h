@@ -678,7 +678,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #ifndef COMPAT_VANILLA
 	#define SATURNJOIN
 	#define SATURNPAK
-	#undef SEENAMES
 #endif
 
 #ifdef __cplusplus
