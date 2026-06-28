@@ -1436,7 +1436,7 @@ static const char* OP_ChatOptionsTooltips[] =
 	"Width of chat box.",
 	"Height of chat box.",
 	"Center text in the chat message pop ups.",
-	"Chatbox background.",
+	"Background for the chat message pop ups.",
 	"Fadeout time for new chat message.",
 	"Spam protection for in-game chat.",
 	"Maxiumum amount of chat messages to look back at.",
