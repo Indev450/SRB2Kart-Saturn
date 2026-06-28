@@ -3334,6 +3334,17 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	sreplaces = mreplaces = digmreplaces = 0;
 
+	if (local)
+	{
+		// check if someone tries to load maps locally lol
+		// do this here so we can skip loading the file anyways
+		if (W_CheckAutoLoadContainsMap(wadfilename))
+		{
+			CONS_Alert(CONS_WARNING, "addilelocal: locally added file %s contains map data, this WILL cause crashes and desynchs! not added.\n", wadfilename);
+			return UINT16_MAX;
+		}
+	}
+
 	if ((numlumps = W_InitFile(wadfilename, local, false)) == INT16_MAX)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
@@ -3364,12 +3375,15 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 			allvotereplaced = true;
 	}
 
-	if (!devparm && sreplaces)
-		CONS_Printf(M_GetText("%s sounds replaced\n"), sizeu1(sreplaces));
-	if (!devparm && mreplaces)
-		CONS_Printf(M_GetText("%s midi musics ignored\n"), sizeu1(mreplaces));
-	if (!devparm && digmreplaces)
-		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
+	if (!devparm)
+	{
+		if (sreplaces)
+			CONS_Printf(M_GetText("%s sounds replaced\n"), sizeu1(sreplaces));
+		if (mreplaces)
+			CONS_Printf(M_GetText("%s midi musics ignored\n"), sizeu1(mreplaces));
+		if (digmreplaces)
+			CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
+	}
 
 	if (!mapsadded)
 		CONS_Printf(M_GetText("No maps added\n"));
