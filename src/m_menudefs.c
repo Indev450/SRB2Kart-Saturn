@@ -1441,7 +1441,7 @@ static const char* OP_ChatOptionsTooltips[] =
 	"Spam protection for in-game chat.",
 	"Maxiumum amount of chat messages to look back at.",
 	"Show player ping.",
-	"Choose the looks of the ping display.", // this is ass idk english lmao
+	"Choose the style of the ping display.",
 	"Measurement used for ping.",
 	"Visibility of ping icon.",
 	"Should Player IP addresses be printed when using\nthe nodes or listplayers command?",
