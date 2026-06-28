@@ -2292,13 +2292,30 @@ void HU_DrawSongCredits(void)
 	}
 }
 
+static void HU_ForceShowChat(void)
+{
+	// only matters for non console chat
+	// see m_menu for how forceshowchat is set
+	if (!chat_on && forceshowchat)
+	{
+		// only print this if theres nothing in chat already
+		if (chat_nummsg_log == 0)
+		{
+			HU_AddChatText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", false);
+		}
 
+		HU_DrawChat();
+	}
+}
+	
 // Heads up displays drawer, call each frame
 //
 void HU_Drawer(void)
 {
 	if (cv_vhseffect.value && ((paused && !camera[R_GetViewNumber()].freecam) || (demo.playback && cv_playbackspeed.value > 1)))
 		V_DrawVhsEffect(demo.rewinding);
+
+	HU_ForceShowChat();
 
 	// draw chat string plus cursor
 	if (chat_on)
@@ -2379,8 +2396,7 @@ void HU_Drawer(void)
 //                   IN-LEVEL MULTIPLAYER RANKINGS
 //======================================================================
 
-static int
-Ping_gfx_num (int lag)
+static int Ping_gfx_num(int lag)
 {
 	if (lag < 2)
 		return 0;
@@ -2394,8 +2410,7 @@ Ping_gfx_num (int lag)
 		return 4;
 }
 
-static int
-Ping_gfx_color (UINT32 lag)
+static int Ping_gfx_color(UINT32 lag)
 {
 	if (lag < 2)
 		return SKINCOLOR_JAWZ;
@@ -2418,8 +2433,7 @@ Ping_gfx_color (UINT32 lag)
 		return SKINCOLOR_WHITE; // to make the flashing work
 }
 
-static const UINT8 *
-Ping_gfx_colormap (UINT32 lag, boolean gentleman)
+static const UINT8 *Ping_gfx_colormap(UINT32 lag, boolean gentleman)
 {
 	const UINT8 *colormap = NULL;
 
@@ -2439,8 +2453,7 @@ Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 	return colormap;
 }
 
-static UINT32
-Ping_conversion (UINT32 lag)
+static UINT32 Ping_conversion(UINT32 lag)
 {
 	if (cv_pingmeasurement.value)
 	{

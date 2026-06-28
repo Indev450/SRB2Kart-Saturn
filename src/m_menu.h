@@ -26,7 +26,7 @@ extern "C" {
 #include "mserv.h"
 #include "r_things.h" // for SKINNAMESIZE
 
-extern boolean forceshowhud;
+extern boolean forceshowhud, forceshowchat;
 
 //
 // MENUS
