@@ -2039,6 +2039,10 @@ static boolean S_SkipIntroMusic(void)
 	if (!cv_skipintromusic.value)
 		return false;
 
+	// dont skip if we disabled music, weird? but this would skip sounds that play on map start as well otherwise
+	if (music_disabled)
+		return false;
+
 	// check if menu music is playing, otherwise it may continue playing
 	if (fasticmp(music.name, "titles"))
 		return false;
@@ -2049,6 +2053,11 @@ static boolean S_SkipIntroMusic(void)
 	{
 		return false;
 	}
+
+	// without sound there wont be any intro playing
+	if (sound_disabled)
+		return true;
+	// yes i sometimes play with only music but no sound
 
 	return true;
 }
