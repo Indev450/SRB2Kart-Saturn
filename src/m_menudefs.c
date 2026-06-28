@@ -1419,13 +1419,14 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",          &cv_chattime,            90},
 	{IT_STRING | IT_CVAR, NULL, "Spam Protection",               &cv_chatspamprotection, 100},
 	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",             &cv_chatlogsize,        110},
+	{IT_STRING | IT_CVAR, NULL, "Display Character Limit",       &cv_chat_showlimit,     120},
 
-	{IT_STRING | IT_CVAR, NULL, "Local ping display",            &cv_showping,           130}, // shows ping above the framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Ping display style",            &cv_pingstyle,          140},
-	{IT_STRING | IT_CVAR, NULL, "Ping measurement",              &cv_pingmeasurement,    150},
-	{IT_STRING | IT_CVAR, NULL, "Ping icon",                     &cv_pingicon,           160},
+	{IT_STRING | IT_CVAR, NULL, "Local ping display",            &cv_showping,           140}, // shows ping above the framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping display style",            &cv_pingstyle,          150},
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",              &cv_pingmeasurement,    160},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",                     &cv_pingicon,           170},
 
-	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist", &cv_shownodeip,         170},
+	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist", &cv_shownodeip,         180},
 };
 
 static const char* OP_ChatOptionsTooltips[] =
@@ -1440,6 +1441,7 @@ static const char* OP_ChatOptionsTooltips[] =
 	"Fadeout time for new chat message.",
 	"Spam protection for in-game chat.",
 	"Maxiumum amount of chat messages to look back at.",
+	"Show how many characters you have left to type in the chat.",
 	"Show player ping.",
 	"Choose the style of the ping display.",
 	"Measurement used for ping.",
@@ -1459,6 +1461,7 @@ enum
 	op_chat_fadetime,
 	op_chat_spamprotect,
 	op_chat_maxmsg,
+	op_chat_charlmt,
 	op_chat_showping,
 	op_chat_pingstyle,
 	op_chat_pingmeasr,
