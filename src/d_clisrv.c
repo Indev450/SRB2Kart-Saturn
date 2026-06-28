@@ -2181,7 +2181,8 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	if (unlink(tmpsave) == -1)
 		CONS_Alert(CONS_ERROR, M_GetText("Can't delete %s\n"), tmpsave);
 	consistancy[gametic%BACKUPTICS] = Consistancy();
-	CON_ToggleOff();
+	if (!reloading)
+		CON_ToggleOff();
 
 #ifdef SATURNPAK
 	// Tell the server we have received and reloaded the gamestate

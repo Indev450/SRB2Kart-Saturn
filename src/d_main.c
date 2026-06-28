@@ -1159,7 +1159,7 @@ static void D_FindAddonsToAutoload(void)
 		// you can probably imagine how that goes in a netgame....
 		if (W_CheckAutoLoadContainsMap(wadsToAutoload))
 		{
-			CONS_Printf("Autoload: file %s contains map data! skipping...", wadsToAutoload);
+			CONS_Alert(CONS_WARNING, "Autoload: file %s contains map data, this WILL cause crashes and desynchs! skipping...\n", wadsToAutoload);
 			continue;
 		}
 

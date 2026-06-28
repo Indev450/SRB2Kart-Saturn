@@ -3059,7 +3059,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 				break;
 
 			default:
-				I_Error("P_UnarchiveSpecials: Unknown tclass %d in savegame", tclass);
+				I_Error("P_NetUnArchiveThinkers: Unknown tclass %d in savegame", tclass);
 		}
 	}
 
@@ -3170,7 +3170,7 @@ FUNCINLINE static ATTRINLINE void P_UnArchivePolyObjects(savebuffer_t *save)
 	numSavedPolys = READINT32(save->p);
 
 	if (numSavedPolys != numPolyObjects)
-		I_Error("P_UnArchivePolyObjects: polyobj count inconsistency\n");
+		I_Error("P_UnArchivePolyObjects: polyobj count inconsistency (expected %d, got %d)\n", numPolyObjects, numSavedPolys);
 
 	for (i = 0; i < numSavedPolys; ++i)
 		P_UnArchivePolyObj(save, &PolyObjects[i]);
