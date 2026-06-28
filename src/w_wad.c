@@ -123,6 +123,9 @@ static const char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
 UINT16 numwadfiles = 0; // number of active wadfiles
 wadfile_t *wadfiles[MAX_WADFILES] = {}; // 0 to numwadfiles-1 are valid
 
+// use strnlen as some lump names may not be null terminated
+#define CHECKMAPMARKER(name) (memcmp(name, "MAP", 3) == 0 && strnlen(name, 8) == 5)
+
 // W_Shutdown
 // Closes all of the WAD files before quitting
 // If not done on a Mac then open wad files
@@ -2678,8 +2681,9 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			vlumps[i].size = vsizecache[realentry];
 
 			const char *name = (fileinfo + realentry)->name;
+			I_Assert(name != NULL);
 
-			if (strnlen(name, 8) == 5 && memcmp(name, "MAP", 3) == 0)
+			if (CHECKMAPMARKER(name))
 			{
 				numlumps--; // We skip map marker, so 1 of entries becomes empty
 				continue; // This will skip i++ so we will write to same entry
@@ -2688,9 +2692,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			// Play it safe with the name in this case.
 			memcpy(vlumps[i].name, name, 8);
 			vlumps[i].name[8] = '\0';
-			vlumps[i].data = (UINT8 *)(
-				Z_Malloc(vlumps[i].size, PU_LEVEL, NULL) // This is memory inefficient, sorry about that.
-			);
+			vlumps[i].data = (UINT8 *)(Z_Malloc(vlumps[i].size, PU_LEVEL, NULL)); // This is memory inefficient, sorry about that.
 			memcpy(vlumps[i].data, wadData + LONG((fileinfo + realentry)->filepos), vlumps[i].size);
 			i++;
 		}
@@ -2700,15 +2702,19 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 	}
 	else
 	{
-		// Count number of lumps until the end of resource OR up until next "MAPXX" lump.
+		// Count number of lumps until the end of resource OR up until next 0-length lump OR up until next "MAPXX" lump.
 		lumpnum_t lumppos = lumpnum + 1;
 		for (i = LUMPNUM(lumppos); i < wadfiles[WADFILENUM(lumpnum)]->numlumps; i++, lumppos++, numlumps++)
 		{
-			const char *name = W_CheckNameForNum(lumppos);
-			if (name == NULL)
-				continue;
+			if (W_LumpLength(lumppos) == 0)
+			{
+				break;
+			}
 
-			if (memcmp(name, "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
+			const char *name = W_CheckNameForNum(lumppos);
+			I_Assert(name != NULL);
+
+			if (CHECKMAPMARKER(name))
 			{
 				break;
 			}
@@ -2723,10 +2729,9 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		{
 			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
 			const char *name = W_CheckNameForNum(lumpnum);
-			if (name == NULL)
-				continue;
+			I_Assert(name != NULL);
 
-			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
+			if (CHECKMAPMARKER(name))
 			{
 				--i; // Decrement so on next iteration we write on same i, so we don't leave corrupted vlumps entry
 				numlumps--; // Just so we don't try to access the leftover vlumps entry
