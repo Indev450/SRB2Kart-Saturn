@@ -212,17 +212,19 @@ static INT32       setupm_fakeskin;
 static INT32       setupm_fakecolor;
 static UINT8 	   setupm_pselect = 1;
 
-//variables used for other skin select menus
+// variables used for other skin select menus
 static UINT8 setupm_skinypos;
 static INT32 setupm_skinselect;
 static boolean setupm_skinlockedselect;
 
-static UINT8 setupm_playernum; //brap
+static UINT8 setupm_playernum; // brap
 
 // Addons Menu: Local mode
 static void M_LocalAddons(INT32 choice);
-#define LOCALMODE_KEY (KEY_RALT)
 static boolean addons_localmode = false;
+
+#define LOCALMODE_KEY (KEY_RALT)
+#define AUTOLOAD_KEY (KEY_END)
 
 //
 // PROTOTYPES
@@ -450,13 +452,13 @@ consvar_t cv_showallmaps = {"showallmaps", "No", CV_SAVE, CV_YesNo, NULL, 0, NUL
 consvar_t cv_showmusicfilename = {"showmusicfilename", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t serversort_cons_t[] = {
-	{0,"Ping"},
-	{1,"Modified State"},
-	{2,"Most Players"},
-	{3,"Least Players"},
-	{4,"Max Player Slots"},
-	{5,"Gametype"},
-	{0,NULL}
+	{0, "Ping"},
+	{1, "Modified State"},
+	{2, "Most Players"},
+	{3, "Least Players"},
+	{4, "Max Player Slots"},
+	{5, "Gametype"},
+	{0, NULL}
 };
 consvar_t cv_serversort = {"serversort", "Ping", CV_CALL, serversort_cons_t, M_SortServerList, 0, NULL, NULL, 0, 0, NULL};
 
@@ -705,7 +707,7 @@ static void Dummystaff_OnChange(void)
 
 	dummystaffname[0] = '\0';
 
-	if ((l = W_CheckNumForName(va("%sS01",G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
+	if ((l = W_CheckNumForName(va("%sS01", G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
 	{
 		CV_StealthSetValue(&cv_dummystaff, 0);
 		return;
@@ -714,7 +716,7 @@ static void Dummystaff_OnChange(void)
 	{
 		char *temp = dummystaffname;
 		UINT8 numstaff = 1;
-		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),numstaff+1))) != LUMPERROR)
+		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u", G_BuildMapName(cv_nextmap.value), numstaff+1))) != LUMPERROR)
 			numstaff++;
 
 		if (cv_dummystaff.value < 1)
@@ -722,7 +724,7 @@ static void Dummystaff_OnChange(void)
 		else if (cv_dummystaff.value > numstaff)
 			CV_StealthSetValue(&cv_dummystaff, 1);
 
-		if ((l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
+		if ((l = W_CheckNumForName(va("%sS%02u", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
 			return; // shouldn't happen but might as well check...
 
 		G_UpdateStaffGhostName(l);
@@ -807,7 +809,8 @@ static void M_ChangeCvar(INT32 choice)
 				CV_SetValue(cv,skins[skinno].prefcolor);
 			return;
 		}
-		CV_Set(cv,cv->defaultvalue);
+
+		CV_Set(cv, cv->defaultvalue);
 		return;
 	}
 
@@ -956,6 +959,7 @@ static void Command_Manual_f(void)
 {
 	if (modeattacking)
 		return;
+
 	M_StartControlPanel();
 	M_Manual(INT32_MAX);
 	itemOn = 0;
@@ -3671,10 +3675,10 @@ static void M_DrawAddons(void)
 	//m = numwadfiles-(mainwads+2+1);
 	//V_DrawCenteredString(BASEVIDWIDTH/2, y+24, (majormods ? highlightflags : V_TRANSLUCENT), va("%d ADD-ON%s LOADED", (int)m, (m == 1) ? "" : "S")); //+2 for music, sounds, +1 for main.kart
 
-	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("END Key - Add addon to autoload"));
+	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s Key - Add addon to autoload", G_KeynumToString(AUTOLOAD_KEY)));
 
 	if (Playing() && (server || IsPlayerAdmin(consoleplayer)))
-		V_DrawThinString(0, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Right ALT Key - Switch to local addon mode"));
+		V_DrawThinString(0, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s Key - Switch to local addon mode", G_KeynumToString(LOCALMODE_KEY)));
 }
 
 static void M_AddonExec(INT32 ch)
@@ -3696,7 +3700,7 @@ static void M_AddonAutoLoad(INT32 ch)
 	FILE *autoloadconfigfile;
 
 	// check our controls //
-	if (ch != 'y' && ch != KEY_ENTER && ch != KEY_END)
+	if (ch != 'y' && ch != KEY_ENTER && ch != AUTOLOAD_KEY)
 	{
 		S_StartSound(NULL, sfx_s26d);
 		return;
@@ -3710,7 +3714,7 @@ static void M_AddonAutoLoad(INT32 ch)
 	switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
 	{
 	    case EXT_FOLDER:
-	        M_StartMessage(va("%c%s\x80\nAutoloading folders is not supported as of yet. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+	        M_StartMessage(va("%c%s\x80\nAutoloading folders is not supported as of yet. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), NULL, MM_NOTHING);
             break;
 		case EXT_TXT:
 		case EXT_CFG:
@@ -3897,7 +3901,7 @@ static void M_HandleAddons(INT32 choice)
 			}
 			break;
 
-		case KEY_END:
+		case AUTOLOAD_KEY:
 			{
 				boolean refresh = true;
 				if (!dirmenu[dir_on[menudepthleft]])

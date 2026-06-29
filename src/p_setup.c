@@ -2559,6 +2559,31 @@ static void P_LoadRecordGhosts(void)
 	free(gpath);
 }
 
+static void P_ResetSpawnpoints(void)
+{
+	UINT8 i;
+
+	numdmstarts = numredctfstarts = numbluectfstarts = 0;
+
+	// reset the player starts
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		playerstarts[i]  = NULL;
+		redctfstarts[i]  = NULL;
+		bluectfstarts[i] = NULL;
+	}
+
+	for (i = 0; i < MAX_DM_STARTS; i++)
+	{
+		deathmatchstarts[i] = NULL;
+	}
+
+	for (i = 0; i < 2; i++)
+	{
+		skyboxmo[i] = NULL;
+	}
+}
+
 static void P_InitCamera(void)
 {
 	INT32 i;
@@ -2568,6 +2593,7 @@ static void P_InitCamera(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
+		camera[i].postimg = 0;
 		P_SetupCamera(&camera[i]);
 	}
 
@@ -2667,10 +2693,14 @@ static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 {
 	// Cancel all d_main.c fadeouts (keep fade in though).
 	if (reloadinggamestate)
+	{
 		wipegamestate = gamestate; // Don't fade if reloading the gamestate
+		return false;
+	}
+
 	// Encore mode fade to pink to white
 	// This is handled BEFORE sounds are stopped.
-	else if (encoremode && !prevencoremode && !demo.rewinding)
+	if (encoremode && !prevencoremode && !demo.rewinding)
 	{
 		tic_t locstarttime, endtime, nowtime;
 
@@ -2704,6 +2734,8 @@ static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 		// Hold on white for extra effect.
 		while (nowtime < endtime)
 		{
+			I_HandleInterrupt();
+
 			// wait loop
 			while (!((nowtime = I_GetTime()) - lastwipetic))
 			{
@@ -2724,6 +2756,69 @@ static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 	}
 
 	return false;
+}
+
+static void P_InitTagGametype(void)
+{
+	UINT8 i;
+	INT32 realnumplayers = 0;
+	INT32 playersactive[MAXPLAYERS];
+
+	//I just realized how problematic this code can be.
+	//D_NumPlayers() will not always cover the scope of the netgame.
+	//What if one player is node 0 and the other node 31?
+	//The solution? Make a temp array of all players that are currently playing and pick from them.
+	//Future todo? When a player leaves, shift all nodes down so D_NumPlayers() can be used as intended?
+	//Also, you'd never have to loop through all 32 players slots to find anything ever again.
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i] && !players[i].spectator)
+		{
+			playersactive[realnumplayers] = i; //stores the player's node in the array.
+			realnumplayers++;
+		}
+	}
+
+	if (!realnumplayers) // this should also fix the dedicated crash bug. You only pick a player if one exists to be picked.
+	{
+		CONS_Printf(M_GetText("No player currently available to become IT. Awaiting available players.\n"));
+		return;
+	}
+
+	i = P_RandomKey(realnumplayers);
+	players[playersactive[i]].pflags |= PF_TAGIT; //choose our initial tagger before map starts.
+
+	// Taken and modified from G_DoReborn()
+	// Remove the player so he can respawn elsewhere.
+	// first dissasociate the corpse
+	if (players[playersactive[i]].mo)
+		P_RemoveMobj(players[playersactive[i]].mo);
+
+	G_SpawnPlayer(playersactive[i], false); //respawn the lucky player in his dedicated spawn location.
+}
+
+static void P_InitGametype(void)
+{
+	if (modeattacking == ATTACKING_RECORD && !demo.playback)
+		P_LoadRecordGhosts();
+
+	if (G_RaceGametype() && server)
+	{
+		INT32 numLaps;
+		const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
+
+		if ((netgame || multiplayer) && cv_basenumlaps.value &&
+			(!(mapheader->levelflags & LF_SECTIONRACE) || (mapheader->numlaps > cv_basenumlaps.value)))
+			numLaps = cv_basenumlaps.value;
+		else
+			numLaps = mapheader->numlaps;
+
+		CV_StealthSetValue(&cv_numlaps, numLaps);
+	}
+	else if (G_TagGametype())
+	{
+		P_InitTagGametype();
+	}
 }
 
 static void P_SetupPlayer(void)
@@ -2752,63 +2847,14 @@ static void P_SetupPlayer(void)
 		}
 	}
 
-	if (modeattacking == ATTACKING_RECORD && !demo.playback)
-		P_LoadRecordGhosts();
-
-	if (G_TagGametype())
-	{
-		INT32 realnumplayers = 0;
-		INT32 playersactive[MAXPLAYERS];
-
-		//I just realized how problematic this code can be.
-		//D_NumPlayers() will not always cover the scope of the netgame.
-		//What if one player is node 0 and the other node 31?
-		//The solution? Make a temp array of all players that are currently playing and pick from them.
-		//Future todo? When a player leaves, shift all nodes down so D_NumPlayers() can be used as intended?
-		//Also, you'd never have to loop through all 32 players slots to find anything ever again.
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i] && !players[i].spectator)
-			{
-				playersactive[realnumplayers] = i; //stores the player's node in the array.
-				realnumplayers++;
-			}
-		}
-
-		if (realnumplayers) // this should also fix the dedicated crash bug. You only pick a player if one exists to be picked.
-		{
-			i = P_RandomKey(realnumplayers);
-			players[playersactive[i]].pflags |= PF_TAGIT; //choose our initial tagger before map starts.
-
-			// Taken and modified from G_DoReborn()
-			// Remove the player so he can respawn elsewhere.
-			// first dissasociate the corpse
-			if (players[playersactive[i]].mo)
-				P_RemoveMobj(players[playersactive[i]].mo);
-
-			G_SpawnPlayer(playersactive[i], false); //respawn the lucky player in his dedicated spawn location.
-		}
-		else
-			CONS_Printf(M_GetText("No player currently available to become IT. Awaiting available players.\n"));
-
-	}
-	else if (G_RaceGametype() && server)
-	{
-		INT32 numLaps = ((netgame || multiplayer) && cv_basenumlaps.value
-		&& (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
-		|| (mapheaderinfo[gamemap - 1]->numlaps > cv_basenumlaps.value)))
-		? cv_basenumlaps.value
-		: mapheaderinfo[gamemap - 1]->numlaps;
-
-		CV_StealthSetValue(&cv_numlaps, numLaps);
-	}
+	P_InitGametype();
 
 	// Start recording replay in multiplayer with a temp filename
 	// Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
 	if (!demo.playback && multiplayer && D_NumPlayers())
 	{
 		static char buf[256];
-		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), G_BuildMapName(gamemap));
+		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int)(time(NULL)), G_BuildMapName(gamemap));
 
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
@@ -2910,9 +2956,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// 99% of the things already did, so.
 	// Map header should always be in place at this point
 	INT32 i;
+	UINT8 levelfadecol;
 	boolean ranspecialwipe = false;
 	lumpnum_t encoreLump = LUMPERROR;
-	UINT8 levelfadecol;
+	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
 
 
 	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker to avoid synch issues and other stuff
@@ -2920,7 +2967,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	levelloading = true;
 
 	// This is needed. Don't touch.
-	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
+	maptol = mapheader->typeoflevel;
 
 	CON_Drawer(); // let the user know what we are going to do
 	I_FinishUpdate(); // page flip or blit buffer
@@ -2931,17 +2978,17 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Clear CECHO messages
 	HU_ClearCEcho();
 
-	if (mapheaderinfo[gamemap-1]->runsoc[0] != '#')
-		P_RunSOC(mapheaderinfo[gamemap-1]->runsoc);
+	if (mapheader->runsoc[0] != '#')
+		P_RunSOC(mapheader->runsoc);
 
-	if (cv_runscripts.value && mapheaderinfo[gamemap-1]->scriptname[0] != '#')
-		P_RunLevelScript(mapheaderinfo[gamemap-1]->scriptname);
+	if (cv_runscripts.value && mapheader->scriptname[0] != '#')
+		P_RunLevelScript(mapheader->scriptname);
 
 	P_LevelInitStuff(reloadinggamestate);
 
-	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
-	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)
-		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
+	if (mapheader->forcecharacter[0] != '\0'
+	&& atoi(mapheader->forcecharacter) != 255)
+		P_ForceCharacter(mapheader->forcecharacter);
 
 	// Initial height of PointOfView
 	// will be set by player think.
@@ -2991,10 +3038,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		char tx[64];
 		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
 		snprintf(tx, 63, "%s%s%s",
-			mapheaderinfo[gamemap-1]->lvlttl,
-			(strlen(mapheaderinfo[gamemap-1]->zonttl) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->zonttl) : // SRB2kart
-			((mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) ? "" : " Zone"),
-			(strlen(mapheaderinfo[gamemap-1]->actnum) > 0) ? va(", Act %s",mapheaderinfo[gamemap-1]->actnum) : "");
+			mapheader->lvlttl,
+			(strlen(mapheader->zonttl) > 0) ? va(" %s",mapheader->zonttl) : // SRB2kart
+			((mapheader->levelflags & LF_NOZONE) ? "" : " Zone"),
+			(strlen(mapheader->actnum) > 0) ? va(", Act %s",mapheader->actnum) : "");
 		V_DrawSmallString(1, 195, V_ALLOWLOWERCASE, tx);
 		I_UpdateNoVsync();
 	}*/
@@ -3013,20 +3060,16 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
 
 	encoreLump = W_CheckNumForName(va("%s%c", maplumpname, (encoremode ? 'E' : 'T')));
-	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette, encoreLump);
+	R_ReInitColormaps(mapheader->palette, encoreLump);
 
 	CON_SetupBackColormap();
 
 	// SRB2 determines the sky texture to be used depending on the map header.
-	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skynum, true);
+	P_SetupLevelSky(mapheader->skynum, true);
 
-	numdmstarts = numredctfstarts = numbluectfstarts = 0;
+	P_ResetSpawnpoints();
 
-	// reset the player starts
-	memset(playerstarts, 0, sizeof(playerstarts));
-	memset(skyboxmo, 0, sizeof(skyboxmo));
-
-	P_MapStart();
+	P_MapStart(); // tmthing can be used starting from this point
 
 	P_LoadMapFromFile();
 
@@ -3046,7 +3089,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		if (!playerstarts[numcoopstarts])
 			break;
 
-	globalweather = mapheaderinfo[gamemap-1]->weather;
+	globalweather = mapheader->weather;
 
 	// set up world state
 	P_SpawnSpecials(fromnetsave, reloadinggamestate);
@@ -3093,7 +3136,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// clear special respawning que
 	iquehead = iquetail = 0;
 
-	P_MapEnd();
+	P_MapEnd(); // tmthing is no longer needed from this point onwards
 
 	// Remove the loading shit from the screen
 	if (rendermode != render_none && !reloadinggamestate)
@@ -3124,9 +3167,15 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		savedata.lives = 0;
 	}
 
-	// assume the skybox is visible on level load.
-	skyVisible = true;
-	memset(skyVisiblePerPlayer, true, sizeof(skyVisiblePerPlayer));
+	if (!reloadinggamestate)
+	{
+		// assume the skybox is visible on level load.
+		skyVisible = true;
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			skyVisiblePerPlayer[i] = true;
+		}
+	}
 
 	if (!fromnetsave) // uglier hack
 	{ // to make a newly loaded level start on the second frame.
@@ -3146,13 +3195,17 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 			LUA_HookInt(gamemap, HOOK(MapLoad));
 	}
 
-	if (rendermode != render_none && !reloadinggamestate)
+	// reloading gamestate, stop here.
+	if (reloadinggamestate)
+		return true;
+
+	G_AddMapToBuffer(gamemap-1);
+
+	if (rendermode != render_none)
 	{
 		R_ResetViewInterpolation(0);
 		R_UpdateMobjInterpolators();
 	}
-
-	G_AddMapToBuffer(gamemap-1);
 
 	G_ResetDeviceLED();
 
