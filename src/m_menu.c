@@ -212,12 +212,12 @@ static INT32       setupm_fakeskin;
 static INT32       setupm_fakecolor;
 static UINT8 	   setupm_pselect = 1;
 
-//variables used for other skin select menus
+// variables used for other skin select menus
 static UINT8 setupm_skinypos;
 static INT32 setupm_skinselect;
 static boolean setupm_skinlockedselect;
 
-static UINT8 setupm_playernum; //brap
+static UINT8 setupm_playernum; // brap
 
 // Addons Menu: Local mode
 static void M_LocalAddons(INT32 choice);
@@ -450,13 +450,13 @@ consvar_t cv_showallmaps = {"showallmaps", "No", CV_SAVE, CV_YesNo, NULL, 0, NUL
 consvar_t cv_showmusicfilename = {"showmusicfilename", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t serversort_cons_t[] = {
-	{0,"Ping"},
-	{1,"Modified State"},
-	{2,"Most Players"},
-	{3,"Least Players"},
-	{4,"Max Player Slots"},
-	{5,"Gametype"},
-	{0,NULL}
+	{0, "Ping"},
+	{1, "Modified State"},
+	{2, "Most Players"},
+	{3, "Least Players"},
+	{4, "Max Player Slots"},
+	{5, "Gametype"},
+	{0, NULL}
 };
 consvar_t cv_serversort = {"serversort", "Ping", CV_CALL, serversort_cons_t, M_SortServerList, 0, NULL, NULL, 0, 0, NULL};
 
@@ -705,7 +705,7 @@ static void Dummystaff_OnChange(void)
 
 	dummystaffname[0] = '\0';
 
-	if ((l = W_CheckNumForName(va("%sS01",G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
+	if ((l = W_CheckNumForName(va("%sS01", G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
 	{
 		CV_StealthSetValue(&cv_dummystaff, 0);
 		return;
@@ -714,7 +714,7 @@ static void Dummystaff_OnChange(void)
 	{
 		char *temp = dummystaffname;
 		UINT8 numstaff = 1;
-		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),numstaff+1))) != LUMPERROR)
+		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u", G_BuildMapName(cv_nextmap.value), numstaff+1))) != LUMPERROR)
 			numstaff++;
 
 		if (cv_dummystaff.value < 1)
@@ -722,7 +722,7 @@ static void Dummystaff_OnChange(void)
 		else if (cv_dummystaff.value > numstaff)
 			CV_StealthSetValue(&cv_dummystaff, 1);
 
-		if ((l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
+		if ((l = W_CheckNumForName(va("%sS%02u", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
 			return; // shouldn't happen but might as well check...
 
 		G_UpdateStaffGhostName(l);
@@ -807,7 +807,8 @@ static void M_ChangeCvar(INT32 choice)
 				CV_SetValue(cv,skins[skinno].prefcolor);
 			return;
 		}
-		CV_Set(cv,cv->defaultvalue);
+
+		CV_Set(cv, cv->defaultvalue);
 		return;
 	}
 
@@ -956,6 +957,7 @@ static void Command_Manual_f(void)
 {
 	if (modeattacking)
 		return;
+
 	M_StartControlPanel();
 	M_Manual(INT32_MAX);
 	itemOn = 0;
