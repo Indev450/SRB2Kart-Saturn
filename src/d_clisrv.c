@@ -841,11 +841,13 @@ static void resynch_write_ctf(resynchend_pak *rst)
 				rst->flagplayer[i] = (SINT8)j;
 				break;
 			}
+
 			if (j == MAXPLAYERS) // fine, no I_Error
 			{
 				CONS_Alert(CONS_ERROR, "One of the flags has gone completely missing...\n");
 				rst->flagplayer[i] = -2;
 			}
+
 			continue;
 		}
 
@@ -1135,6 +1137,7 @@ static void CV_SavePlayerNames(UINT8 **p)
 			WRITEUINT8(*p, 0);
 			continue;
 		}
+
 		WRITESTRING(*p, player_names[i]);
 	}
 }
@@ -1148,10 +1151,13 @@ static void CV_LoadPlayerNames(UINT8 **p)
 	for (; i < MAXPLAYERS; ++i)
 	{
 		READSTRING(*p, tmp_name);
+
 		if (tmp_name[0] == 0)
 			continue;
+
 		if (tmp_name[MAXPLAYERNAME]) // overflow detected
 			I_Error("Received bad server config packet when trying to join");
+
 		memcpy(player_names[i], tmp_name, MAXPLAYERNAME+1);
 	}
 }
@@ -2029,6 +2035,7 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	P_SaveNetGame(&save, resending);
 
 	length = save.p - save.buffer;
+
 	if (length > SAVEGAMESIZE)
 	{
 		Z_Free(save.buffer);
@@ -5401,7 +5408,7 @@ static void PT_ServerCFG(SINT8 node)
 	{
 		maketic = gametic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
 		if ((gametype = netbuffer->u.servercfg.gametype) >= NUMGAMETYPES)
-			I_Error("Bad gametype in cliserv!");
+			I_Error("Bad gametype %d in cliserv!", gametype);
 		modifiedgame = netbuffer->u.servercfg.modifiedgame;
 		for (j = 0; j < MAXPLAYERS; j++)
 			adminplayers[j] = netbuffer->u.servercfg.adminplayers[j];
