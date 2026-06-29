@@ -2428,7 +2428,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 
 			if (thing->player)
 			{
-				if (special == -1)
+				if (special == -1) // this should use the target coords not the ones were started with, but cant fix that for compat reasons!
 					special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
 
 				// If using type Section1:13, double the maxstep.

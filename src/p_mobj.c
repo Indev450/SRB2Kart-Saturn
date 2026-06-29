@@ -7068,7 +7068,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				}
 
 				P_InstaThrust(mobj, mobj->angle, finalspeed);
-
+				
 				if (grounded)
 				{
 					sector_t *sec2 = P_ThingOnSpecial3DFloor(mobj);
