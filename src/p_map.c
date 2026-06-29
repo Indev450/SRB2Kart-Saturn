@@ -2603,15 +2603,33 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			S_StartSoundAtVolume(thing, (thing->player->stairjank >= 8 ? sfx_s23b : sfx_s268), 192); // dont blast this at full volume lul
 
 		// TODO: maybe spawn smol dust effect similar to RR?
-		/*if (!thing->player->stairjank)
+		//if (!thing->player->stairjank)
 		{
-			mobj_t * spark = P_SpawnMobjFromMobj(thing, 0, 0, 0, MT_JANKSPARK);
-			spark->fuse = 9;
-			spark->cusval = K_StairJankFlip(ANGLE_90);
+			// 90 degrees to direction you're facing
+			fixed_t dirx = -FINESINE(thing->angle>>ANGLETOFINESHIFT);
+			fixed_t diry = FINECOSINE(thing->angle>>ANGLETOFINESHIFT);
+			fixed_t offset = thing->radius;
+
+			if (leveltime % 8 < 4)
+			{
+				dirx = -dirx;
+				diry = -diry;
+			}
+
+			mobj_t * spark = P_SpawnMobj(thing->x + FixedMul(dirx, offset), thing->y + FixedMul(diry, offset), thing->z, MT_DRIFTDUST);
+			spark->momx = FixedMul(dirx, FRACUNIT) + (6 + ((int)leveltime % 5))*(thing->momx)/10;
+			spark->momy = FixedMul(diry, FRACUNIT) + (6 + ((int)leveltime % 5))*(thing->momy)/10;
+			spark->momz = 5*FRACUNIT;
+			spark->scale = mapobjectscale/5;
+			spark->destscale = mapobjectscale/2;
+			spark->islocal = true;
+			//spark->fuse = 9;
+			spark->color = SKINCOLOR_WHITE;
+			//spark->cusval = K_StairJankFlip(ANGLE_90);
 			P_SetTarget(&spark->target, thing);
-			P_SetTarget(&spark->owner, thing);
-			spark->renderflags |= RF_REDUCEVFX;
-		}*/
+			//P_SetTarget(&spark->owner, thing);
+			//spark->renderflags |= RF_REDUCEVFX;
+		}
 
 		thing->player->stairjank = 9;
 		//thing->player->stairjank = 17;
