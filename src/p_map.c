@@ -2602,7 +2602,6 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		if (cv_stairjanksfx.value)
 			S_StartSoundAtVolume(thing, (thing->player->stairjank >= 8 ? sfx_s23b : sfx_s268), 192); // dont blast this at full volume lul
 
-		// TODO: maybe spawn smol dust effect similar to RR?
 		//if (!thing->player->stairjank)
 		{
 			// 90 degrees to direction you're facing
