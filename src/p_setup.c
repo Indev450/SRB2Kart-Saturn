@@ -2572,6 +2572,13 @@ static void P_ResetSpawnpoints(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		playerstarts[i]  = NULL;
+		redctfstarts[i]  = NULL;
+		bluectfstarts[i] = NULL;
+	}
+
+	for (i = 0; i < MAX_DM_STARTS; i++)
+	{
+		deathmatchstarts[i] = NULL;
 	}
 
 	for (i = 0; i < 2; i++)
