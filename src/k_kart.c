@@ -5101,9 +5101,7 @@ static void K_MoveHeldObjects(player_t *player)
 				mobj_t *cur = player->mo->hnext;
 				mobj_t *targ = player->mo;
 
-				const boolean ponground = P_IsObjectOnGround(player->mo);
-
-				if (ponground && player->speed > 0)
+				if (player->speed > 0 && P_IsObjectOnGround(player->mo))
 					player->kartstuff[k_bananadrag]++;
 
 				while (!P_MobjWasRemoved(cur))
@@ -5152,7 +5150,8 @@ static void K_MoveHeldObjects(player_t *player)
 
 					cur->angle = R_PointToAngle2(cur->x, cur->y, targx, targy);
 
-					/*if (P_IsObjectOnGround(player->mo) && player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE
+					/*if (player->speed > 0 && P_IsObjectOnGround(player->mo)
+					    && player->kartstuff[k_bananadrag] > TICRATE
 						&& P_RandomChance(min(FRACUNIT/2, FixedDiv(player->speed, K_GetKartSpeed(player, false))/2)))
 					{
 						if (leveltime & 1)
@@ -5161,8 +5160,9 @@ static void K_MoveHeldObjects(player_t *player)
 							targz -= 8*(2*FRACUNIT)/7;
 					}*/
 
-					if (cv_bananajitter.value && ponground
-						&& player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE)
+					// "jitter" dragged bananas around
+					if (cv_bananajitter.value &&
+						player->speed > 0 && P_IsObjectOnGround(player->mo) && player->kartstuff[k_bananadrag] > TICRATE)
 					{
 						const fixed_t halfpspeed = FixedDiv(player->speed, K_GetKartSpeed(player, false))/2;
 
@@ -5663,8 +5663,6 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 */
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 {
-	const boolean onground = P_IsObjectOnGround(player->mo);
-
 	K_UpdateOffroad(player);
 	K_UpdateEngineSounds(player, cmd); // Thanks, VAda!
 
@@ -5781,7 +5779,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->kartstuff[k_spinouttimer])
 	{
-		if ((onground || ((player->kartstuff[k_spinouttype]+1)/2 == 1)) // spinouttype 1 and 2 - explosion and spb
+		if ((P_IsObjectOnGround(player->mo) || ((player->kartstuff[k_spinouttype]+1)/2 == 1)) // spinouttype 1 and 2 - explosion and spb
 			&& (player->kartstuff[k_sneakertimer] == 0))
 		{
 			player->kartstuff[k_spinouttimer]--;
@@ -5880,7 +5878,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (G_BattleGametype() && player->kartstuff[k_bumper] > 0)
 		player->kartstuff[k_wanted]++;
 
-	if (onground)
+	if (P_IsObjectOnGround(player->mo))
 		player->kartstuff[k_waterskip] = 0;
 
 	if (player->kartstuff[k_instashield])
@@ -5924,7 +5922,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->kartstuff[k_comebacktimer])
 		player->kartstuff[k_comebackmode] = 0;
 
-	if (onground && player->kartstuff[k_pogospring])
+	if (player->kartstuff[k_pogospring] && P_IsObjectOnGround(player->mo))
 	{
 		if (P_MobjFlip(player->mo)*player->mo->momz <= 0)
 			player->kartstuff[k_pogospring] = 0;
