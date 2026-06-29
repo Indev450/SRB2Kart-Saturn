@@ -221,8 +221,10 @@ static UINT8 setupm_playernum; // brap
 
 // Addons Menu: Local mode
 static void M_LocalAddons(INT32 choice);
-#define LOCALMODE_KEY (KEY_RALT)
 static boolean addons_localmode = false;
+
+#define LOCALMODE_KEY (KEY_RALT)
+#define AUTOLOAD_KEY (KEY_END)
 
 //
 // PROTOTYPES
@@ -3673,10 +3675,10 @@ static void M_DrawAddons(void)
 	//m = numwadfiles-(mainwads+2+1);
 	//V_DrawCenteredString(BASEVIDWIDTH/2, y+24, (majormods ? highlightflags : V_TRANSLUCENT), va("%d ADD-ON%s LOADED", (int)m, (m == 1) ? "" : "S")); //+2 for music, sounds, +1 for main.kart
 
-	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("END Key - Add addon to autoload"));
+	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s Key - Add addon to autoload", G_KeynumToString(AUTOLOAD_KEY)));
 
 	if (Playing() && (server || IsPlayerAdmin(consoleplayer)))
-		V_DrawThinString(0, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Right ALT Key - Switch to local addon mode"));
+		V_DrawThinString(0, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s Key - Switch to local addon mode", G_KeynumToString(LOCALMODE_KEY)));
 }
 
 static void M_AddonExec(INT32 ch)
@@ -3698,7 +3700,7 @@ static void M_AddonAutoLoad(INT32 ch)
 	FILE *autoloadconfigfile;
 
 	// check our controls //
-	if (ch != 'y' && ch != KEY_ENTER && ch != KEY_END)
+	if (ch != 'y' && ch != KEY_ENTER && ch != AUTOLOAD_KEY)
 	{
 		S_StartSound(NULL, sfx_s26d);
 		return;
@@ -3712,7 +3714,7 @@ static void M_AddonAutoLoad(INT32 ch)
 	switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
 	{
 	    case EXT_FOLDER:
-	        M_StartMessage(va("%c%s\x80\nAutoloading folders is not supported as of yet. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+	        M_StartMessage(va("%c%s\x80\nAutoloading folders is not supported as of yet. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), NULL, MM_NOTHING);
             break;
 		case EXT_TXT:
 		case EXT_CFG:
@@ -3899,7 +3901,7 @@ static void M_HandleAddons(INT32 choice)
 			}
 			break;
 
-		case KEY_END:
+		case AUTOLOAD_KEY:
 			{
 				boolean refresh = true;
 				if (!dirmenu[dir_on[menudepthleft]])
