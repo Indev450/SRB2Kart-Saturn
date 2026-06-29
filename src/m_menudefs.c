@@ -1408,25 +1408,25 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Chat Mode",                     &cv_consolechat,          5}, // nonetheless...
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Width",                &cv_chatwidth,           20},
+	                      NULL, "Chat Box Width",                &cv_chatwidth,           10},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Height",               &cv_chatheight,          30},
-	{IT_STRING | IT_CVAR, NULL, "Chat Horizontal Offset",        &cv_chat_xoffset,        40},
-	{IT_STRING | IT_CVAR, NULL, "Chat Vertical Offset",          &cv_chat_yoffset,        50},
+	                      NULL, "Chat Box Height",               &cv_chatheight,          15},
+	{IT_STRING | IT_CVAR, NULL, "Chat Horizontal Offset",        &cv_chat_xoffset,        20},
+	{IT_STRING | IT_CVAR, NULL, "Chat Vertical Offset",          &cv_chat_yoffset,        25},
 
-	{IT_STRING | IT_CVAR, NULL, "Center Text in Chat",           &cv_chatcentertext,      70},
-	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",          &cv_chatbacktint,        80},
-	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",          &cv_chattime,            90},
-	{IT_STRING | IT_CVAR, NULL, "Spam Protection",               &cv_chatspamprotection, 100},
-	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",             &cv_chatlogsize,        110},
-	{IT_STRING | IT_CVAR, NULL, "Display Character Limit",       &cv_chat_showlimit,     120},
+	{IT_STRING | IT_CVAR, NULL, "Center Text in Chat",           &cv_chatcentertext,      35},
+	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",          &cv_chatbacktint,        40},
+	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",          &cv_chattime,            45},
+	{IT_STRING | IT_CVAR, NULL, "Spam Protection",               &cv_chatspamprotection,  50},
+	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",             &cv_chatlogsize,         55},
+	{IT_STRING | IT_CVAR, NULL, "Display Character Limit",       &cv_chat_showlimit,      60},
 
-	{IT_STRING | IT_CVAR, NULL, "Local ping display",            &cv_showping,           140}, // shows ping above the framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Ping display style",            &cv_pingstyle,          150},
-	{IT_STRING | IT_CVAR, NULL, "Ping measurement",              &cv_pingmeasurement,    160},
-	{IT_STRING | IT_CVAR, NULL, "Ping icon",                     &cv_pingicon,           170},
+	{IT_STRING | IT_CVAR, NULL, "Local ping display",            &cv_showping,            70}, // shows ping above the framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping display style",            &cv_pingstyle,           75},
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",              &cv_pingmeasurement,     80},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",                     &cv_pingicon,            85},
 
-	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist", &cv_shownodeip,         180},
+	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist", &cv_shownodeip,          90},
 };
 
 static const char* OP_ChatOptionsTooltips[] =
@@ -2621,7 +2621,7 @@ menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player2CamOptionsMenu
 menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
 menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
 
-menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30, OP_ChatOptionsTooltips);
+menu_t OP_ChatOptionsDef = DEFAULTSCROLLSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 25, OP_ChatOptionsTooltips);
 
 menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30, OP_SoundAdvancedTooltips);
 
