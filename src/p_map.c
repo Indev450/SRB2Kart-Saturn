@@ -2592,6 +2592,12 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		positives, so just ignore them entirely. */
 	if (stairjank && !oldslope && !thing->standingslope && thing->player && !thing->player->spectator)
 	{
+		/* use a shorter sound if not two tics have passed
+		 * since the last step */
+		//S_ReducedVFXSound(thing, (thing->player->stairjank >= 16 ?  sfx_s23b : sfx_s268), NULL);
+		//S_StartSound(thing, (thing->player->stairjank >= 16 ?  sfx_s23b : sfx_s268));
+		// sound does not work out all that well for kart maps
+
 		// TODO: maybe spawn smol dust effect similar to RR?
 		/*if (!thing->player->stairjank)
 		{
