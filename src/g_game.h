@@ -119,6 +119,7 @@ extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptideroll;
 extern consvar_t cv_stairjank;
+extern consvar_t cv_stairjanksfx;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
 extern consvar_t cv_sparkroll;

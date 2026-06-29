@@ -2594,9 +2594,13 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	{
 		/* use a shorter sound if not two tics have passed
 		 * since the last step */
-		//S_ReducedVFXSound(thing, (thing->player->stairjank >= 16 ?  sfx_s23b : sfx_s268), NULL);
-		//S_StartSound(thing, (thing->player->stairjank >= 16 ?  sfx_s23b : sfx_s268));
+		//S_ReducedVFXSound(thing, (thing->player->stairjank >= 16 ? sfx_s23b : sfx_s268), NULL);
+		//S_StartSound(thing, (thing->player->stairjank >= 16 ? sfx_s23b : sfx_s268));
 		// sound does not work out all that well for kart maps
+
+		// best i can do...
+		if (cv_stairjanksfx.value)
+			S_StartSoundAtVolume(thing, (thing->player->stairjank >= 8 ? sfx_s23b : sfx_s268), 192); // dont blast this at full volume lul
 
 		// TODO: maybe spawn smol dust effect similar to RR?
 		/*if (!thing->player->stairjank)

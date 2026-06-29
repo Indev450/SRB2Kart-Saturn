@@ -1791,20 +1791,22 @@ static menuitem_t OP_PlayerDistortMenu[] =
 
 	{IT_STRING | IT_CVAR,				 NULL, "Rotate Players when Sliptiding", &cv_sliptideroll,	 	25},
 	{IT_STRING | IT_CVAR,				 NULL, "Stair Janking Effect",           &cv_stairjank,	 	    30},
-	{IT_STRING | IT_CVAR,				 NULL, "Rotate Sparks and Boost Trails", &cv_sparkroll,		 	35},
-	{IT_STRING | IT_CVAR,				 NULL, "Rotate Bananas on Throw",		 &cv_bananthrowroll, 	40},
+	{IT_STRING | IT_CVAR,				 NULL, "Stair Janking Sound Effect",     &cv_stairjanksfx,	 	35}, // idk if that should be here but i dont care atm
 
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Player Stretch Factor",			 &cv_gravstretch,	 	50},
-	{IT_STRING | IT_CVAR,				 NULL, "Squish Sound Effect",			 &cv_slamsound,		 	55},
+	{IT_STRING | IT_CVAR,				 NULL, "Rotate Sparks and Boost Trails", &cv_sparkroll,		 	40},
+	{IT_STRING | IT_CVAR,				 NULL, "Rotate Bananas on Throw",		 &cv_bananthrowroll, 	45},
 
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop",						 &cv_saltyhop,		 	65},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saltyhop Height",				 &cv_saltyheight,	 	70},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Sound Effect",			 &cv_saltyhopsfx,		75},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Squish",				 &cv_saltysquish,	 	80},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Roll",				 	 &cv_saltyroll,	 	 	85},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Player Stretch Factor",			 &cv_gravstretch,	 	55},
+	{IT_STRING | IT_CVAR,				 NULL, "Squish Sound Effect",			 &cv_slamsound,		 	60},
 
-	{IT_STRING | IT_CVAR,				 NULL, "Squishdance",				 	 &cv_squishdance,	 	95},
-	{IT_STRING | IT_CVAR,				 NULL, "Squishdance Speed",				 &cv_squishdancespeed,	101}, // why is this offset by 6? idk cant remember lulul
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop",						 &cv_saltyhop,		 	70},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saltyhop Height",				 &cv_saltyheight,	 	75},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Sound Effect",			 &cv_saltyhopsfx,		80},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Squish",				 &cv_saltysquish,	 	85},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Roll",				 	 &cv_saltyroll,	 	 	90},
+
+	{IT_STRING | IT_CVAR,				 NULL, "Squishdance",				 	 &cv_squishdance,	   100},
+	{IT_STRING | IT_CVAR,				 NULL, "Squishdance Speed",				 &cv_squishdancespeed, 106}, // why is this offset by 6? idk cant remember lulul
 };
 
 static const char* OP_PlayerDistortTooltips[] =
@@ -1814,6 +1816,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
 	"Slightly tilt the player when driving over stairs or small bumps.",
+	"Sound effect when driving over stairs or small bumps.",
 	"Rotation of a player's boost trails and drift sparks.",
 	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?",
 	"Player squash and stretch.",
@@ -1834,6 +1837,7 @@ enum
 	slrotatedist,
 	sliptide,
 	stairjank,
+	stairjanksfx,
 	sparkrotate,
 	bananrotat,
 	stretchyplayer,
@@ -2741,6 +2745,15 @@ void PDistort_menu_Onchange(void)
 	{
 		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
 		OP_PlayerDistortMenu[saltroll].status = IT_GRAYEDOUT;
+	}
+
+	if (cv_stairjank.value)
+	{
+		OP_PlayerDistortMenu[stairjanksfx].status = IT_STRING | IT_CVAR;
+	}
+	else
+	{
+		OP_PlayerDistortMenu[stairjanksfx].status = IT_GRAYEDOUT;
 	}
 }
 
