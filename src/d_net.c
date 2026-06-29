@@ -598,6 +598,8 @@ void Net_WaitAllAckReceived(UINT32 timeout)
 
 	while (timeout > I_GetTime() && !Net_AllAcksReceived())
 	{
+		I_HandleInterrupt();
+
 		while (tictac == I_GetTime())
 		{
 			I_Sleep(cv_sleep.value);

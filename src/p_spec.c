@@ -538,6 +538,7 @@ static sector_t *getNextSector(line_t *line, sector_t *sec)
 		else
 			return NULL;
 	}
+
 	return line->frontsector;
 }
 
@@ -568,6 +569,7 @@ fixed_t P_FindLowestFloorSurrounding(sector_t *sec)
 		if (other->floorheight < floorh)
 			floorh = other->floorheight;
 	}
+
 	return floorh;
 }
 
@@ -1180,7 +1182,7 @@ INT32 P_FindMinSurroundingLight(sector_t *sector, INT32 max)
 	for (i = 0; i < sector->linecount; i++)
 	{
 		line = sector->lines[i];
-		check = getNextSector(line,sector);
+		check = getNextSector(line, sector);
 
 		if (!check)
 			continue;
@@ -2100,7 +2102,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						ffloor_t *rover;
 						boolean foundit = false;
 
-						for(rover = mo->subsector->sector->ffloors; rover; rover = rover->next)
+						for (rover = mo->subsector->sector->ffloors; rover; rover = rover->next)
 						{
 							if (rover->master->frontsector->tag != line->tag)
 								continue;
@@ -2990,10 +2992,10 @@ sector_t *P_PlayerTouchingSectorSpecial(player_t *player, INT32 section, INT32 n
 	{
 		fixed_t topheight, bottomheight;
 
-		if (GETSECSPECIAL(rover->master->frontsector->special, section) != number)
+		if (!(rover->flags & FF_EXISTS))
 			continue;
 
-		if (!(rover->flags & FF_EXISTS))
+		if (GETSECSPECIAL(rover->master->frontsector->special, section) != number)
 			continue;
 
 		topheight = P_GetSpecialTopZ(player->mo, sectors + rover->secnum, player->mo->subsector->sector);
