@@ -1463,20 +1463,24 @@ static void IdentifyVersion(void)
 //
 // search for maps
 //
-static void D_CheckMapReplacements(boolean checkreplaced)
+static void D_CheckMapReplacements(boolean pwad)
 {
 	INT32 i;
 	char *name;
 	UINT16 wadnum;
 	lumpinfo_t *lumpinfo;
+	size_t numfiles;
 
-	for (wadnum = 0; wadnum < mainwads; wadnum++)
+	wadnum = pwad ? (mainwads+1) : 0;
+	numfiles = pwad ? numwadfiles : mainwads;
+
+	for (; wadnum < numfiles; wadnum++)
 	{
 		lumpinfo = wadfiles[wadnum]->lumpinfo;
 		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
 		{
 			name = lumpinfo->name;
-			P_CheckMapReplacements(name, checkreplaced);
+			P_CheckMapReplacements(name, pwad);
 		}
 	}
 }
