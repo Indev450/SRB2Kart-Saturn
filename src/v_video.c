@@ -2718,6 +2718,7 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
 	INT32 spacewidth = 2, charwidth = 0;
+
 	INT32 lowercase = (option & V_ALLOWLOWERCASE);
 	option &= ~V_FLIP; // which is also shared with V_ALLOWLOWERCASE...
 
@@ -2738,6 +2739,7 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 		scrwidth *= vid.dup;
 
 	charflags = (option & V_CHARCOLORMASK);
+	colormap = V_GetStringColormap(charflags);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2762,7 +2764,11 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 		{
 			// manually set flags override color codes
 			if (!(option & V_CHARCOLORMASK))
+			{
 				charflags = ((*ch & 0x7f) << V_CHARCOLORSHIFT) & V_CHARCOLORMASK;
+				colormap = V_GetStringColormap(charflags);
+			}
+
 			continue;
 		}
 
@@ -2806,7 +2812,6 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 			continue;
 		}
 
-		colormap = V_GetStringColormap(charflags);
 		V_DrawFixedPatch(cx + (center<<FRACBITS), cy, FRACUNIT/2, option, hu_font[c], colormap);
 		cx += w<<FRACBITS;
 	}
@@ -2818,6 +2823,13 @@ void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const 
 	V_DrawSmallStringAtFixed(x, y, option, string);
 }
 
+void V_DrawRightAlignedSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
+{
+	x -= V_SmallStringWidth(string, option)<<FRACBITS;
+	V_DrawSmallStringAtFixed(x, y, option, string);
+}
+
+// Draws a thin string at a fixed_t location.
 void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
 	fixed_t cx = x, cy = y;
