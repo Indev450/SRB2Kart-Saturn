@@ -6325,11 +6325,12 @@ void K_KartUpdatePosition(player_t *player)
 
 		if (G_RaceGametype())
 		{
-			if ((((players[i].starpostnum) + (numstarposts + 1) * players[i].laps) >
-				((player->starpostnum) + (numstarposts + 1) * player->laps)))
+			const INT32 iplayerlaps = (players[i].starpostnum + (numstarposts + 1) * players[i].laps);
+			const INT32 pplayerlaps = (player->starpostnum + (numstarposts + 1) * player->laps);
+
+			if (iplayerlaps > pplayerlaps)
 				position++;
-			else if (((players[i].starpostnum) + (numstarposts+1)*players[i].laps) ==
-				((player->starpostnum) + (numstarposts+1)*player->laps))
+			else if (iplayerlaps == pplayerlaps)
 			{
 				ppcd = pncd = ipcd = incd = 0;
 
