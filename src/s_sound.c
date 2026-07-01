@@ -2045,6 +2045,7 @@ static sfxintro_t introsfxlist[] = {
 	{"LOZOPN", SKPMUS_PLAYSKIP}, {"LOZOPM", SKPMUS_PLAYSKIP},                              // nostalgia pack zelda
 	{"MLINTR", SKPMUS_PLAYSKIP}, {"RALLYY", SKPMUS_PLAYSKIP},                              // coffee cup
 	{"CCLSTR", SKPMUS_PLAYMUS},  {"CCSTRT", SKPMUS_PLAYSKIP}, {"CCENCR", SKPMUS_PLAYSKIP}, // keks land
+	{"PNTPBL", SKPMUS_PLAYMUS},                                                            // plompack
 };
 
 // :chaosleep:
