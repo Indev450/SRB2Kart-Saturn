@@ -79,6 +79,8 @@
 #include "core/memory.h"
 
 #include "lua_script.h"
+#include "lua_profile.h"
+
 #include "m_random.h"
 
 /* Manually defined asset hashes for non-CMake builds
@@ -667,6 +669,11 @@ static boolean D_Display(void)
 		// be sure to limit our fps *before* drawing
 		// so we can properly "pace" our frames
 		D_LimitFps();
+
+		if (cv_lua_profile.value > 0)
+		{
+			LUA_RenderTimers();
+		}
 
 		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
