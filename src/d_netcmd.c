@@ -930,8 +930,6 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
-	CV_RegisterVar(&cv_audbuffersize);
-
 	CV_RegisterVar(&cv_palette);
 	CV_RegisterVar(&cv_palettenum);
 
@@ -1032,6 +1030,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_midimusicvolume);
 #endif
 	CV_RegisterVar(&cv_numChannels);
+	CV_RegisterVar(&cv_audbuffersize);
 
 #ifdef HAVE_OPENMPT
 	CV_RegisterVar(&cv_modfilter);
