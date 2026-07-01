@@ -65,6 +65,8 @@ static stringhook_t stringHooks[STRING_HOOK(MAX)];
 
 bool hook_important = true;
 
+#define NONMOHOOK ((mobjtype_t)-1)
+
 // This will be indexed by hook id, the value of which fetches the registry.
 static int * hookRefs;
 static int   nextid;
@@ -296,7 +298,7 @@ struct Hook_State {
 	INT32         status;          /* return status to calling function */
 	void        * userdata;
 	int           hook_type;
-	mobjtype_t    mobj_type;       /* < NUMMOBJTYPES if mobj hook */
+	mobjtype_t    mobj_type;       /* != NONMOHOOK if mobj hook */
 	const char  * string;          /* used to fetch table, ran first if set */
 	int           top;             /* index of last argument passed to hook */
 	int           id;              /* id to fetch ref */
@@ -364,7 +366,7 @@ FUNCINLINE static ATTRINLINE boolean prepare_hook
 		int hook_type
 ){
 	return init_hook_type(hook, default_status,
-			hook_type, NUMMOBJTYPES, NULL,
+			hook_type, NONMOHOOK, NULL,
 			hookIds[hook_type].numHooks);
 }
 
@@ -391,7 +393,7 @@ FUNCINLINE static ATTRINLINE boolean prepare_string_hook
 		const char * string
 ){
 	if (init_hook_type(hook, default_status,
-				hook_type, NUMMOBJTYPES, string,
+				hook_type, NONMOHOOK, string,
 				stringHooks[hook_type].ref))
 	{
 		lua_pushstring(gL, string);
@@ -407,7 +409,7 @@ FUNCINLINE static ATTRINLINE boolean prepare_hud_hook
 		int hook_type
 ){
 	return init_hook_type(hook, 0,
-			hook_type, NUMMOBJTYPES, NULL,
+			hook_type, NONMOHOOK, NULL,
 			hudHookIds[hook_type].numHooks);
 }
 
@@ -547,11 +549,13 @@ static int call_hooks
 	{
 		calls += call_string_hooks(hook);
 	}
-	else if (hook->mobj_type < NUMMOBJTYPES)
+	//else if (hook->mobj_type > 0)
+	else if (hook->mobj_type != NONMOHOOK)
 	{
 		/* call generic mobj hooks first */
 		calls += call_mobj_type_hooks(hook, MT_NULL);
-		calls += call_mobj_type_hooks(hook, hook->mobj_type);
+		if (hook->mobj_type < NUMMOBJTYPES)
+			calls += call_mobj_type_hooks(hook, hook->mobj_type);
 		ps_lua_mobjhooks.value.i += calls;
 	}
 	else
