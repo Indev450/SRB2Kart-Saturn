@@ -2733,7 +2733,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			const char *name = (fileinfo + realentry)->name;
 			I_Assert(name != NULL);
 
-			if (CHECKMAPMARKER(name))
+			if (!name || CHECKMAPMARKER(name))
 			{
 				numlumps--; // We skip map marker, so 1 of entries becomes empty
 				continue; // This will skip i++ so we will write to same entry
@@ -2764,7 +2764,8 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			const char *name = W_CheckNameForNum(lumppos);
 			I_Assert(name != NULL);
 
-			if (CHECKMAPMARKER(name))
+			// if no name then theres no lump
+			if (!name || CHECKMAPMARKER(name))
 			{
 				break;
 			}
@@ -2781,7 +2782,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			const char *name = W_CheckNameForNum(lumpnum);
 			I_Assert(name != NULL);
 
-			if (CHECKMAPMARKER(name))
+			if (!name || CHECKMAPMARKER(name))
 			{
 				--i; // Decrement so on next iteration we write on same i, so we don't leave corrupted vlumps entry
 				numlumps--; // Just so we don't try to access the leftover vlumps entry
