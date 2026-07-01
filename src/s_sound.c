@@ -2015,6 +2015,8 @@ void S_HandleReloadResetMusic(void)
 
 // TODO: make this a seperate lump
 // would rather NOT hardcode stuff like this
+// FIXME: i did this while sleep deprived and when it was 39c
+// idk why i just didnt check for full map names instead
 
 typedef struct
 {
@@ -2042,6 +2044,7 @@ static sfxintro_t introsfxlist[] = {
 	{"SPKINT", SKPMUS_PLAYSKIP},                                                           // cotopack spelunky
 	{"LOZOPN", SKPMUS_PLAYSKIP}, {"LOZOPM", SKPMUS_PLAYSKIP},                              // nostalgia pack zelda
 	{"MLINTR", SKPMUS_PLAYSKIP}, {"RALLYY", SKPMUS_PLAYSKIP},                              // coffee cup
+	{"CCLSTR", SKPMUS_PLAYMUS},  {"CCSTRT", SKPMUS_PLAYSKIP}, {"CCENCR", SKPMUS_PLAYSKIP}, // keks land
 };
 
 // :chaosleep:
