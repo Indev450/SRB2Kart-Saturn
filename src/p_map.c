@@ -2684,7 +2684,7 @@ boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y)
 			if (tmfloorz - thing->z > maxstep)
 				return false; // too big a step up
 		}
-	} while(tryx != x || tryy != y);
+	} while (tryx != x || tryy != y);
 
 	// the move is ok,
 	// so link the thing into its new position
