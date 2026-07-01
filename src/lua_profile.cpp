@@ -145,17 +145,33 @@ void LUA_ResetTicTimers(void)
 
 void LUA_RenderTimers(void)
 {
-	using srb2::Draw;
+	///using srb2::Draw;
 
 	constexpr int kRowHeight = 4;
-	constexpr float kScale = 0.5f;
+	//constexpr float kScale = 0.5f;
 
-	Draw row = Draw(0, kRowHeight).font(Draw::Font::kConsole).align(Draw::Align::kLeft).scale(0.5).flags(V_MONOSPACE);
-	row.y(-kRowHeight).text("-- AVERAGES PER TIC (over {} tics) --", cv_lua_profile.value);
+	// pretty much what the whole srb2::Draw does lol
+	auto draw_row = [](float x, float y, INT32 flags, const std::string& str)
+	{
+		V_DrawSmallStringAtFixed(
+			FloatToFixed(x),
+			FloatToFixed(y),
+			V_MONOSPACE|V_ALLOWLOWERCASE|flags,
+			str.c_str()
+		);
+	};
+
+	float row_y = kRowHeight - 60;
+	draw_row(0.f, row_y - kRowHeight, 0, fmt::format("-- AVERAGES PER TIC (over {} tics) --", cv_lua_profile.value));
+
+	//Draw row = Draw(0, kRowHeight).font(Draw::Font::kConsole).align(Draw::Align::kLeft).scale(0.5).flags(V_MONOSPACE);
+	//row.y(-kRowHeight).text("-- AVERAGES PER TIC (over {} tics) --", cv_lua_profile.value);
 
 	if (g_invalid)
 	{
-		row.flags(V_GRAYMAP).text("  <Data pending>");
+		row_y += kRowHeight;
+		//row.flags(V_GRAYMAP).text("  <Data pending>");
+		draw_row(0.f, row_y - kRowHeight, V_GRAYMAP, "  <Data pending>");
 		return;
 	}
 
@@ -193,6 +209,7 @@ void LUA_RenderTimers(void)
 			}
 		}
 
+		/*
 		Draw tally = row.flags(color_flag(cum * 1'000'000.0));
 
 		tally.text("{:8.2f} us - TOTAL", cum * 1'000'000.0);
@@ -205,6 +222,23 @@ void LUA_RenderTimers(void)
 		);
 
 		row = row.y(kRowHeight * 4);
+		*/
+
+		{
+			const INT32 tally_flags = color_flag(cum * 1'000'000.0);
+
+			draw_row(0.f, row_y, tally_flags, fmt::format("{:8.2f} us - TOTAL", cum * 1'000'000.0));
+			draw_row(0.f, row_y + kRowHeight, tally_flags, fmt::format("{:8.2f} ms", cum * 1000.0));
+			draw_row(0.f, row_y + kRowHeight * 2, tally_flags, fmt::format(
+				"{:8.2f}% overhead ({:.2f} / {:.2f}) <-- not counting rendering time",
+																		(cum / g_avg_tic_time) * 100.0,
+																		(cum * (double)TICRATE),
+																		(g_avg_tic_time * (double)TICRATE)
+			));
+		}
+
+		row_y += kRowHeight * 4; // row = row.y(kRowHeight * 4)
+
 	}
 
 	std::sort(
@@ -224,6 +258,7 @@ void LUA_RenderTimers(void)
 
 		double t = timer.avg.time * 1'000'000.0;
 
+		/*
 		row.flags(color_flag(t)).text(
 			"{:>8.2f} us {:>8.2f} calls - {}",
 			t,
@@ -232,6 +267,20 @@ void LUA_RenderTimers(void)
 		);
 
 		row = row.y(kRowHeight);
+		*/
+
+		draw_row(0.f, row_y, color_flag(t), fmt::format(
+			"{:>8.2f} us {:>8.2f} calls - {}",
+			t,
+			timer.avg.calls,
+			key
+		));
+
+		row_y += kRowHeight; // row = row.y(kRowHeight)
+
+		// FIXME this is all ugly and sucks
+		if (row_y >= BASEVIDHEIGHT)
+			break;
 	}
 }
 
