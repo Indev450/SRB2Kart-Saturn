@@ -576,8 +576,46 @@ static int call_string_hooks(Hook_State *hook)
 
 FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
 {
+	static UINT8 seen = 0; // so we dont have to check all this shit constantly
+	int numCalls = call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
+
+	if (!seen && numCalls > 0 && mobj_type == MT_NULL && (
+		   hook->hook_type == MOBJ_HOOK(MobjThinker    )
+		|| hook->hook_type == MOBJ_HOOK(MobjCollide    )
+		|| hook->hook_type == MOBJ_HOOK(MobjMoveCollide)
+		|| hook->hook_type == MOBJ_HOOK(MobjFuse       )
+		|| hook->hook_type == MOBJ_HOOK(MobjThinker    )
+		|| hook->hook_type == MOBJ_HOOK(BossThinker    )
+	))
+	{
+		seen = 1;
+		CONS_Alert(
+			CONS_WARNING, "%s\n", va(
+			"%s hooks not attached to a specific mobj type may cause performance issues!",
+			mobjHookNames[hook->hook_type])
+		);
+
+		// print which script triggered it, ty indev <3
+		for (int k = 0; k < mobjHookIds[mobj_type][hook->hook_type].numHooks; ++k)
+		{
+			lua_getref(gL, hookRefs[mobjHookIds[mobj_type][hook->hook_type].ids[k].id]);
+
+			lua_Debug ar;
+			lua_getinfo(gL, ">S", &ar);
+
+			CONS_Printf("%s:%d\n", ar.short_src, ar.linedefined);
+		}
+	}
+
+	return numCalls;
+}
+
+/*
+FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
+{
 	return call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
 }
+*/
 
 static int call_hooks
 (
