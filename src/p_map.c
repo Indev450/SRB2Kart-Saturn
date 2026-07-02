@@ -322,12 +322,12 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	if (thing == tmthing)
 		return true;
 
-	// Ignore... things.
-	if (!tmthing || P_MobjWasRemoved(thing))
-		return true;
-
 	I_Assert(!P_MobjWasRemoved(tmthing));
 	I_Assert(!P_MobjWasRemoved(thing));
+
+	// Ignore... things.
+	if (P_MobjWasRemovedCompat(tmthing) || P_MobjWasRemoved(thing))
+		return true;
 
 	// Ignore spectators
 	if ((tmthing->player && tmthing->player->spectator)
@@ -3371,11 +3371,14 @@ void P_BouncePlayerMove(mobj_t *mo)
 {
 	fixed_t leadx, leady;
 	fixed_t trailx, traily;
-	fixed_t mmomx = 0, mmomy = 0;
-	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
+	fixed_t mmomx, mmomy;
+	fixed_t oldmomx, oldmomy;
 
-	if (!mo->player)
+	if (mo->player == NULL)
 		return;
+
+	oldmomx = mo->momx;
+	oldmomy = mo->momy;
 
 	if (mo->player->spectator)
 	{

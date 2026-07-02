@@ -1466,11 +1466,7 @@ static void P_UpdateRemovedOrbital(mobj_t *target, mobj_t *inflictor, mobj_t *so
 {
 	// SRB2kart
 	// I wish I knew a better way to do this
-#ifndef COMPAT_VANILLA
-	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
-#else
-	if (target->target && target->target->player && target->target->player->mo)
-#endif
+	if (!P_MobjWasRemovedCompat(target->target) && target->target->player && !P_MobjWasRemovedCompat(target->target->player->mo))
 	{
 		if (target->target->player->kartstuff[k_eggmanheld] && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->kartstuff[k_eggmanheld] = 0;
@@ -1483,11 +1479,7 @@ static void P_UpdateRemovedOrbital(mobj_t *target, mobj_t *inflictor, mobj_t *so
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->kartstuff[k_itemamount])
 				{
-#ifndef COMPAT_VANILLA
-					if (!P_MobjWasRemoved(target->target->hnext))
-#else
-					if (target->target->hnext)
-#endif
+					if (!P_MobjWasRemovedCompat(target->target->hnext))
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 
 					target->target->player->kartstuff[k_itemamount] = 0;
@@ -2245,11 +2237,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		return false;
 
 	// well no clue but this may happen ig
-#ifndef COMPAT_VANILLA
-	if (P_MobjWasRemoved(target))
-#else
-	if (!target)
-#endif
+	if (P_MobjWasRemovedCompat(target))
 		return false;
 
 	if (target->health <= 0)
@@ -2266,7 +2254,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				return false;
 		}
 
-		if (source && source->player && source->player->spectator)
+		if (!P_MobjWasRemovedCompat(source) && source->player && source->player->spectator)
 			return false;
 	}
 

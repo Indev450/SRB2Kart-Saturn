@@ -291,6 +291,17 @@ FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 	return (!mobj || mobj->thinker.function != (actionf_p1)P_MobjThinker);
 }
 
+// stupid, but kart allows mobjs that are marked to be removed to be accessed and modified in many cases
+// so can only check if its not NULL in vanilla compat mode
+FUNCINLINE static ATTRINLINE boolean P_MobjWasRemovedCompat(const mobj_t *mobj)
+{
+#ifdef COMPAT_VANILLA
+	return (!mobj);
+#else
+	return P_MobjWasRemoved(mobj);
+#endif
+}
+
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
 fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
 #define P_GetFloorZ(mobj, sector, x, y, line) P_MobjFloorZ(mobj, sector, NULL, x, y, line, false, false)
