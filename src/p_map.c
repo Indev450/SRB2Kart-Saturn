@@ -136,14 +136,17 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->eflags & MFE_SPRUNG) // Object was already sprung this tic
 		return false;
 
-	// Spectators don't trigger springs.
-	if (object->player && object->player->spectator)
-		return false;
-
-	if (UNLIKELY(object->player && (object->player->pflags & PF_NIGHTSMODE)))
+	if (object->player)
 	{
-		/*Someone want to make these work like bumpers?*/
-		return false;
+		// Spectators don't trigger springs.
+		if (object->player->spectator)
+			return false;
+
+		if (nightsplayer(object->player))
+		{
+			/*Someone want to make these work like bumpers?*/
+			return false;
+		}
 	}
 
 	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
@@ -160,10 +163,15 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (spring->eflags & MFE_VERTICALFLIP)
 		vertispeed *= -1;
 
+	// Vertical springs teleport you on TOP of them.
 	if (vertispeed > 0)
+	{
 		object->z = spring->z + spring->height + 1;
+	}
 	else if (vertispeed < 0)
+	{
 		object->z = spring->z - object->height - 1;
+	}
 	else
 	{
 		// Horizontal springs teleport you in FRONT of them.
@@ -215,7 +223,9 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player)
 	{
 		if (spring->flags & MF_ENEMY) // Spring shells
+		{
 			P_SetTarget(&spring->target, object);
+		}
 
 		if (horizspeed && object->player->cmd.forwardmove == 0 && object->player->cmd.sidemove == 0)
 		{
@@ -350,12 +360,13 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	}
 #endif
 
-	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)) || (thing->flags & MF_NOCLIPTHING))
+	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)))
 		return true;
 
 	// Don't collide with your buddies while NiGHTS-flying.
-	if (UNLIKELY(tmthing->player && thing->player && (maptol & TOL_NIGHTS)
-		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE))))
+	if (nightsmode &&
+		tmthing->player && thing->player &&
+		(nightsplayer(tmthing->player) || nightsplayer(thing->player)))
 		return true;
 
 	blockdist = thing->radius + tmthing->radius;
@@ -3294,7 +3305,7 @@ stairstep:
 	if (bestslideline != NULL)
 		P_HitSlideLine(bestslideline); // clip the moves
 
-	if (UNLIKELY((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player))
+	if (twodmo(mo) && mo->player)
 	{
 		mo->momx = tmxmove;
 		tmymove = 0;
@@ -4201,7 +4212,7 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
  * Must clear tmthing at tic end, as it might contain a pointer to a removed thinker, or the level might have ended/been ended and we clear the objects it was pointing too. Hopefully we don't need to carry this between tics for sync. */
 void P_MapStart(void)
 {
-	if (UNLIKELY(tmthing))
+	if (tmthing)
 		I_Error("P_MapStart: tmthing set!");
 }
 

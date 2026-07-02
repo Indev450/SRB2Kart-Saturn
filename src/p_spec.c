@@ -3882,7 +3882,7 @@ DoneSection2:
 
 					player->kartstuff[k_lapanimation] = 80;
 
-					if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
+					if (nightsplayer(player))
 						player->drillmeter += 48*20;
 
 					if (netgame && player->laps >= (UINT8)cv_numlaps.value)
@@ -7134,7 +7134,7 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		return false;
 
 	// Allow this to affect pushable objects at some point?
-	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) || UNLIKELY(thing->player->pflags & PF_NIGHTSMODE)))
+	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) || nightsplayer(thing->player)))
 	{
 		INT32 dist;
 		INT32 speed;
@@ -7164,7 +7164,7 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		// Written with bits and pieces of P_HomingAttack
 		if ((speed > 0) && (P_CheckSight(thing, tmpusher->source)))
 		{
-			if (LIKELY(!(thing->player->pflags & PF_NIGHTSMODE)))
+			if (!nightsplayer(thing->player))
 			{
 				// only push wrt Z if health & 1 (mapthing has ambush flag)
 				if (tmpusher->source->health & 1)

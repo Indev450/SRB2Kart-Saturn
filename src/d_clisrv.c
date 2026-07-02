@@ -3449,7 +3449,7 @@ void CL_ClearPlayer(INT32 playernum)
 	if (players[playernum].mo)
 	{
 		// Don't leave a NiGHTS ghost!
-		if (UNLIKELY((players[playernum].pflags & PF_NIGHTSMODE) && players[playernum].mo->tracer))
+		if (nightsplayer(&players[playernum]) && players[playernum].mo->tracer)
 			P_RemoveMobj(players[playernum].mo->tracer);
 		P_RemoveMobj(players[playernum].mo);
 	}
