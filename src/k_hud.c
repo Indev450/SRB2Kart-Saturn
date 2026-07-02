@@ -4576,7 +4576,11 @@ static void K_drawCheckpointDebugger(void)
 	else
 		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Skip: %d)", stplyr->starpostnum, numstarposts, ((numstarposts/2) + stplyr->starpostnum)));
 
-	V_DrawString(8, 192, 0, va("Waypoint dist: Prev %d, Next %d", stplyr->kartstuff[k_prevcheck], stplyr->kartstuff[k_nextcheck]));
+	// really gnarly hack
+	const INT32 prevcheck = (stprevnextchecks[0] != INT32_MAX) ? stprevnextchecks[0]: stplyr->kartstuff[k_prevcheck];
+	const INT32 nextcheck = (stprevnextchecks[1] != INT32_MAX) ? stprevnextchecks[1]: stplyr->kartstuff[k_nextcheck];
+
+	V_DrawString(8, 192, 0, va("Waypoint dist: Prev %d, Next %d", prevcheck, nextcheck));
 }
 
 // determines if gametype info (laps/bumpers) should be hidden
