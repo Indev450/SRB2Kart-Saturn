@@ -2503,7 +2503,7 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
 
 	// Build the sky dome! Yes!
-	if (sky->rebuild)
+	if (sky->rebuild || !sky->vbo)
 	{
 		// delete VBO when already exists
 		if (sky->vbo)
@@ -3221,8 +3221,8 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		float dy = stransform->viewaiming * 2;
 
-		if (stransform->fliptype == TRANSFORM_FLIP
-			|| stransform->fliptype == TRANSFORM_MIRRORFLIP)
+		if (stransform->fliptype == TRANSFORM_FLIP ||
+			stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
