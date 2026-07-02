@@ -3190,6 +3190,9 @@ void P_SlideMove(mobj_t *mo, boolean forceslide)
 	INT16 hitcount = 0;
 	boolean success = false;
 
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (tmhitthing && mo->z + mo->height > tmhitthing->z && mo->z < tmhitthing->z + tmhitthing->height)
 	{
 		// Don't mess with your momentum if it's a pushable object. Pushables do their own crazy things already.
@@ -3226,6 +3229,9 @@ void P_SlideMove(mobj_t *mo, boolean forceslide)
 	bestslideline = NULL;
 
 retry:
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (++hitcount == 3)
 		goto stairstep; // don't loop forever
 
@@ -3274,7 +3280,13 @@ retry:
 		// the move must have hit the middle, so stairstep
 stairstep:
 		if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true)) //Allow things to drop off.
+		{
+			if (P_MobjWasRemovedCompat(mo))
+				return;
+
 			P_TryMove(mo, mo->x + mo->momx, mo->y, true);
+		}
+
 		return;
 	}
 
@@ -3286,7 +3298,12 @@ stairstep:
 		newy = FixedMul(mo->momy, bestslidefrac);
 
 		if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true))
+		{
 			goto stairstep;
+		}
+
+		if (P_MobjWasRemovedCompat(mo))
+			return;
 	}
 
 	// Now continue along the wall.
@@ -3357,8 +3374,11 @@ stairstep:
 				goto retry;
 		}
 
+		if (P_MobjWasRemovedCompat(mo))
+			return;
+
 		success = true;
-	} while(tmxmove || tmymove);
+	} while (tmxmove || tmymove);
 }
 
 //
@@ -3373,6 +3393,9 @@ void P_BouncePlayerMove(mobj_t *mo)
 	fixed_t trailx, traily;
 	fixed_t mmomx, mmomy;
 	fixed_t oldmomx, oldmomy;
+
+	if (P_MobjWasRemovedCompat(mo))
+		return;
 
 	if (mo->player == NULL)
 		return;
@@ -3468,6 +3491,9 @@ void P_BouncePlayerMove(mobj_t *mo)
 
 	if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true))
 	{
+		if (P_MobjWasRemovedCompat(mo))
+			return;
+
 		P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true);
 	}
 }
@@ -3485,6 +3511,9 @@ void P_BounceMove(mobj_t *mo)
 	INT32 hitcount;
 	fixed_t mmomx = 0, mmomy = 0;
 
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (mo->player)
 	{
 		P_BouncePlayerMove(mo);
@@ -3501,6 +3530,9 @@ void P_BounceMove(mobj_t *mo)
 	hitcount = 0;
 
 retry:
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (++hitcount == 3)
 		goto bounceback; // don't loop forever
 
@@ -3559,7 +3591,12 @@ bounceback:
 		newy = FixedMul(mmomy, bestslidefrac);
 
 		if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true))
+		{
+			if (P_MobjWasRemovedCompat(mo))
+				return;
+
 			goto bounceback;
+		}
 	}
 
 	// Now continue along the wall.
