@@ -4807,11 +4807,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	}
 
 	// Then recount to make sure item amount is correct
-#ifndef COMPAT_VANILLA
-	if (!P_MobjWasRemoved(orbit->target) && orbit->target->player)
-#else
-	if (orbit->target && orbit->target->player)
-#endif
+	if (!P_MobjWasRemovedCompat(orbit->target) && orbit->target->player)
 	{
 		INT32 num = 0;
 
@@ -4828,11 +4824,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 				prev->movedir = num;
 		}
 
-#ifndef COMPAT_VANILLA
-		if (!P_MobjWasRemoved(orbit->target))
-#else
-		if (orbit->target)
-#endif
+		if (!P_MobjWasRemovedCompat(orbit->target))
 			orbit->target->player->kartstuff[k_itemamount] = num;
 	}
 }
@@ -4979,7 +4971,7 @@ static void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z
 // Move the hnext chain!
 static void K_MoveHeldObjects(player_t *player)
 {
-	if (!player->mo)
+	if (P_MobjWasRemovedCompat(player->mo))
 		return;
 
 	if (!player->mo->hnext)
@@ -6867,7 +6859,7 @@ static void K_PlayerItemThink(player_t *player, boolean onground, boolean oldatt
 					{
 						mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BANANA_SHIELD);
 
-						if (!mo)
+						if (P_MobjWasRemovedCompat(mo))
 						{
 							player->kartstuff[k_itemamount] = moloop;
 							break;
@@ -6928,7 +6920,7 @@ static void K_PlayerItemThink(player_t *player, boolean onground, boolean oldatt
 						newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->kartstuff[k_itemamount]) * moloop) << FRACBITS) + ANGLE_90;
 						mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_ORBINAUT_SHIELD);
 
-						if (!mo)
+						if (P_MobjWasRemovedCompat(mo))
 						{
 							player->kartstuff[k_itemamount] = moloop;
 							break;
@@ -6971,7 +6963,7 @@ static void K_PlayerItemThink(player_t *player, boolean onground, boolean oldatt
 						newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->kartstuff[k_itemamount]) * moloop) << FRACBITS) + ANGLE_90;
 						mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_JAWZ_SHIELD);
 
-						if (!mo)
+						if (P_MobjWasRemovedCompat(mo))
 						{
 							player->kartstuff[k_itemamount] = moloop;
 							break;
