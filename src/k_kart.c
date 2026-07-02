@@ -67,7 +67,8 @@ static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_stairjank = {"stairjank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_stairjank = {"stairjank", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_stairjanksfx = {"stairjanksfx", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
@@ -4724,11 +4725,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	}
 
 	// Then recount to make sure item amount is correct
-#ifndef COMPAT_VANILLA
-	if (!P_MobjWasRemoved(orbit->target) && orbit->target->player)
-#else
-	if (orbit->target && orbit->target->player)
-#endif
+	if (!P_MobjWasRemovedCompat(orbit->target) && orbit->target->player)
 	{
 		INT32 num = 0;
 
@@ -4745,11 +4742,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 				prev->movedir = num;
 		}
 
-#ifndef COMPAT_VANILLA
-		if (!P_MobjWasRemoved(orbit->target))
-#else
-		if (orbit->target)
-#endif
+		if (!P_MobjWasRemovedCompat(orbit->target))
 			orbit->target->player->kartstuff[k_itemamount] = num;
 	}
 }
@@ -4896,7 +4889,7 @@ static void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z
 // Move the hnext chain!
 static void K_MoveHeldObjects(player_t *player)
 {
-	if (!player->mo)
+	if (P_MobjWasRemovedCompat(player->mo))
 		return;
 
 	if (!player->mo->hnext)
@@ -6219,6 +6212,64 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->kartstuff[k_brakedrift] = 0;
 }
 
+INT32 stprevnextchecks[2] = {INT32_MAX, INT32_MAX}; // there wont be any map this big, wont there?.....
+
+// K_KartUpdatePosition has a bug where whatever player comes last in the players array
+// gets its distance calculations applied twice
+// since we cannot fix this due to compat concerns (kartstuff is exposed after all)
+// we gotta do this shit hack to atleast fix the debugcheckpoint display
+static void K_KartUpdatePositionDebugHack(player_t *player, player_t *otherplayer)
+{
+	mobj_t *mo;
+	fixed_t pmo;
+	fixed_t ppcd, pncd;
+
+	// dont need this crap
+	if (!cv_kartdebugcheckpoint.value)
+		return;
+
+	// not checking against ourselves
+	if (player != otherplayer)
+		return;
+
+	// dont care if its not first displayplayer
+	// since this is only used for the debug display
+	if (player != &players[displayplayers[0]])
+		return;
+
+	ppcd = pncd = 0;
+	stprevnextchecks[0] = stprevnextchecks[1] = 0;
+
+	// This checks every thing on the map, and looks for MT_BOSS3WAYPOINT (the thing we're using for checkpoint wp's, for now)
+	for (mo = waypointcap; mo != NULL; mo = mo->tracer)
+	{
+		const boolean isprevcheckpointp = mo->health == player->starpostnum;
+		const boolean isnextcheckpointp = mo->health == (player->starpostnum + 1);
+
+		if ((isprevcheckpointp || isnextcheckpointp) && (!mo->movecount || mo->movecount == player->laps+1))
+		{
+			pmo = P_AproxDistance(P_AproxDistance(	mo->x - player->mo->x,
+													mo->y - player->mo->y),
+													mo->z - player->mo->z) / FRACUNIT;
+
+			if (isprevcheckpointp)
+			{
+				stprevnextchecks[0] += pmo;
+				ppcd++;
+			}
+
+			if (isnextcheckpointp)
+			{
+				stprevnextchecks[1] += pmo;
+				pncd++;
+			}
+		}
+	}
+
+	if (ppcd > 1) stprevnextchecks[0] /= ppcd;
+	if (pncd > 1) stprevnextchecks[1] /= pncd;
+}
+
 //
 // K_KartUpdatePosition
 //
@@ -6229,6 +6280,9 @@ void K_KartUpdatePosition(player_t *player)
 	fixed_t i, ppcd, pncd, ipcd, incd;
 	fixed_t pmo, imo;
 	mobj_t *mo;
+
+	// always reset this
+	stprevnextchecks[0] = stprevnextchecks[1] = INT32_MAX;
 
 	if (player->spectator || !player->mo)
 		return;
@@ -6242,11 +6296,12 @@ void K_KartUpdatePosition(player_t *player)
 
 		if (G_RaceGametype())
 		{
-			if ((((players[i].starpostnum) + (numstarposts + 1) * players[i].laps) >
-				((player->starpostnum) + (numstarposts + 1) * player->laps)))
+			const INT32 iplayerlaps = (players[i].starpostnum + (numstarposts + 1) * players[i].laps);
+			const INT32 pplayerlaps = (player->starpostnum + (numstarposts + 1) * player->laps);
+
+			if (iplayerlaps > pplayerlaps)
 				position++;
-			else if (((players[i].starpostnum) + (numstarposts+1)*players[i].laps) ==
-				((player->starpostnum) + (numstarposts+1)*player->laps))
+			else if (iplayerlaps == pplayerlaps)
 			{
 				ppcd = pncd = ipcd = incd = 0;
 
@@ -6329,6 +6384,9 @@ void K_KartUpdatePosition(player_t *player)
 					if (players[i].starposttime < player->starposttime)
 						position++;
 				}
+
+				// stupid hack
+				K_KartUpdatePositionDebugHack(player, &players[i]);
 			}
 		}
 		else if (G_BattleGametype())
@@ -6598,7 +6656,7 @@ static void K_PlayerItemThink(player_t *player, boolean onground, boolean oldatt
 					{
 						mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BANANA_SHIELD);
 
-						if (!mo)
+						if (P_MobjWasRemovedCompat(mo))
 						{
 							player->kartstuff[k_itemamount] = moloop;
 							break;
@@ -6659,7 +6717,7 @@ static void K_PlayerItemThink(player_t *player, boolean onground, boolean oldatt
 						newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->kartstuff[k_itemamount]) * moloop) << FRACBITS) + ANGLE_90;
 						mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_ORBINAUT_SHIELD);
 
-						if (!mo)
+						if (P_MobjWasRemovedCompat(mo))
 						{
 							player->kartstuff[k_itemamount] = moloop;
 							break;
@@ -6702,7 +6760,7 @@ static void K_PlayerItemThink(player_t *player, boolean onground, boolean oldatt
 						newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->kartstuff[k_itemamount]) * moloop) << FRACBITS) + ANGLE_90;
 						mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_JAWZ_SHIELD);
 
-						if (!mo)
+						if (P_MobjWasRemovedCompat(mo))
 						{
 							player->kartstuff[k_itemamount] = moloop;
 							break;

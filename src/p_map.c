@@ -136,14 +136,17 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->eflags & MFE_SPRUNG) // Object was already sprung this tic
 		return false;
 
-	// Spectators don't trigger springs.
-	if (object->player && object->player->spectator)
-		return false;
-
-	if (UNLIKELY(object->player && (object->player->pflags & PF_NIGHTSMODE)))
+	if (object->player)
 	{
-		/*Someone want to make these work like bumpers?*/
-		return false;
+		// Spectators don't trigger springs.
+		if (object->player->spectator)
+			return false;
+
+		if (nightsplayer(object->player))
+		{
+			/*Someone want to make these work like bumpers?*/
+			return false;
+		}
 	}
 
 	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
@@ -160,10 +163,15 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (spring->eflags & MFE_VERTICALFLIP)
 		vertispeed *= -1;
 
+	// Vertical springs teleport you on TOP of them.
 	if (vertispeed > 0)
+	{
 		object->z = spring->z + spring->height + 1;
+	}
 	else if (vertispeed < 0)
+	{
 		object->z = spring->z - object->height - 1;
+	}
 	else
 	{
 		// Horizontal springs teleport you in FRONT of them.
@@ -215,7 +223,9 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player)
 	{
 		if (spring->flags & MF_ENEMY) // Spring shells
+		{
 			P_SetTarget(&spring->target, object);
+		}
 
 		if (horizspeed && object->player->cmd.forwardmove == 0 && object->player->cmd.sidemove == 0)
 		{
@@ -312,12 +322,12 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	if (thing == tmthing)
 		return true;
 
-	// Ignore... things.
-	if (!tmthing || P_MobjWasRemoved(thing))
-		return true;
-
 	I_Assert(!P_MobjWasRemoved(tmthing));
 	I_Assert(!P_MobjWasRemoved(thing));
+
+	// Ignore... things.
+	if (P_MobjWasRemovedCompat(tmthing) || P_MobjWasRemoved(thing))
+		return true;
 
 	// Ignore spectators
 	if ((tmthing->player && tmthing->player->spectator)
@@ -350,12 +360,13 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	}
 #endif
 
-	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)) || (thing->flags & MF_NOCLIPTHING))
+	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)))
 		return true;
 
 	// Don't collide with your buddies while NiGHTS-flying.
-	if (UNLIKELY(tmthing->player && thing->player && (maptol & TOL_NIGHTS)
-		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE))))
+	if (nightsmode &&
+		tmthing->player && thing->player &&
+		(nightsplayer(tmthing->player) || nightsplayer(thing->player)))
 		return true;
 
 	blockdist = thing->radius + tmthing->radius;
@@ -2594,20 +2605,41 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	{
 		/* use a shorter sound if not two tics have passed
 		 * since the last step */
-		//S_ReducedVFXSound(thing, (thing->player->stairjank >= 16 ?  sfx_s23b : sfx_s268), NULL);
-		//S_StartSound(thing, (thing->player->stairjank >= 16 ?  sfx_s23b : sfx_s268));
+		//S_ReducedVFXSound(thing, (thing->player->stairjank >= 16 ? sfx_s23b : sfx_s268), NULL);
+		//S_StartSound(thing, (thing->player->stairjank >= 16 ? sfx_s23b : sfx_s268));
 		// sound does not work out all that well for kart maps
 
-		// TODO: maybe spawn smol dust effect similar to RR?
-		/*if (!thing->player->stairjank)
+		// best i can do...
+		if (cv_stairjanksfx.value)
+			S_StartSoundAtVolume(thing, (thing->player->stairjank >= 8 ? sfx_s23b : sfx_s268), 192); // dont blast this at full volume lul
+
+		//if (!thing->player->stairjank)
 		{
-			mobj_t * spark = P_SpawnMobjFromMobj(thing, 0, 0, 0, MT_JANKSPARK);
-			spark->fuse = 9;
-			spark->cusval = K_StairJankFlip(ANGLE_90);
+			// 90 degrees to direction you're facing
+			fixed_t dirx = -FINESINE(thing->angle>>ANGLETOFINESHIFT);
+			fixed_t diry = FINECOSINE(thing->angle>>ANGLETOFINESHIFT);
+			fixed_t offset = thing->radius;
+
+			if (leveltime % 8 < 4)
+			{
+				dirx = -dirx;
+				diry = -diry;
+			}
+
+			mobj_t * spark = P_SpawnMobj(thing->x + FixedMul(dirx, offset), thing->y + FixedMul(diry, offset), thing->z, MT_DRIFTDUST);
+			spark->momx = FixedMul(dirx, FRACUNIT) + (6 + ((int)leveltime % 5))*(thing->momx)/10;
+			spark->momy = FixedMul(diry, FRACUNIT) + (6 + ((int)leveltime % 5))*(thing->momy)/10;
+			spark->momz = 5*FRACUNIT;
+			spark->scale = mapobjectscale/5;
+			spark->destscale = mapobjectscale/2;
+			spark->islocal = true;
+			//spark->fuse = 9;
+			spark->color = SKINCOLOR_WHITE;
+			//spark->cusval = K_StairJankFlip(ANGLE_90);
 			P_SetTarget(&spark->target, thing);
-			P_SetTarget(&spark->owner, thing);
-			spark->renderflags |= RF_REDUCEVFX;
-		}*/
+			//P_SetTarget(&spark->owner, thing);
+			//spark->renderflags |= RF_REDUCEVFX;
+		}
 
 		thing->player->stairjank = 9;
 		//thing->player->stairjank = 17;
@@ -2663,7 +2695,7 @@ boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y)
 			if (tmfloorz - thing->z > maxstep)
 				return false; // too big a step up
 		}
-	} while(tryx != x || tryy != y);
+	} while (tryx != x || tryy != y);
 
 	// the move is ok,
 	// so link the thing into its new position
@@ -3158,6 +3190,9 @@ void P_SlideMove(mobj_t *mo, boolean forceslide)
 	INT16 hitcount = 0;
 	boolean success = false;
 
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (tmhitthing && mo->z + mo->height > tmhitthing->z && mo->z < tmhitthing->z + tmhitthing->height)
 	{
 		// Don't mess with your momentum if it's a pushable object. Pushables do their own crazy things already.
@@ -3194,6 +3229,9 @@ void P_SlideMove(mobj_t *mo, boolean forceslide)
 	bestslideline = NULL;
 
 retry:
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (++hitcount == 3)
 		goto stairstep; // don't loop forever
 
@@ -3242,7 +3280,13 @@ retry:
 		// the move must have hit the middle, so stairstep
 stairstep:
 		if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true)) //Allow things to drop off.
+		{
+			if (P_MobjWasRemovedCompat(mo))
+				return;
+
 			P_TryMove(mo, mo->x + mo->momx, mo->y, true);
+		}
+
 		return;
 	}
 
@@ -3254,7 +3298,12 @@ stairstep:
 		newy = FixedMul(mo->momy, bestslidefrac);
 
 		if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true))
+		{
 			goto stairstep;
+		}
+
+		if (P_MobjWasRemovedCompat(mo))
+			return;
 	}
 
 	// Now continue along the wall.
@@ -3273,7 +3322,7 @@ stairstep:
 	if (bestslideline != NULL)
 		P_HitSlideLine(bestslideline); // clip the moves
 
-	if (UNLIKELY((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player))
+	if (twodmo(mo) && mo->player)
 	{
 		mo->momx = tmxmove;
 		tmymove = 0;
@@ -3325,8 +3374,11 @@ stairstep:
 				goto retry;
 		}
 
+		if (P_MobjWasRemovedCompat(mo))
+			return;
+
 		success = true;
-	} while(tmxmove || tmymove);
+	} while (tmxmove || tmymove);
 }
 
 //
@@ -3339,11 +3391,17 @@ void P_BouncePlayerMove(mobj_t *mo)
 {
 	fixed_t leadx, leady;
 	fixed_t trailx, traily;
-	fixed_t mmomx = 0, mmomy = 0;
-	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
+	fixed_t mmomx, mmomy;
+	fixed_t oldmomx, oldmomy;
 
-	if (!mo->player)
+	if (P_MobjWasRemovedCompat(mo))
 		return;
+
+	if (mo->player == NULL)
+		return;
+
+	oldmomx = mo->momx;
+	oldmomy = mo->momy;
 
 	if (mo->player->spectator)
 	{
@@ -3433,6 +3491,9 @@ void P_BouncePlayerMove(mobj_t *mo)
 
 	if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true))
 	{
+		if (P_MobjWasRemovedCompat(mo))
+			return;
+
 		P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true);
 	}
 }
@@ -3450,6 +3511,9 @@ void P_BounceMove(mobj_t *mo)
 	INT32 hitcount;
 	fixed_t mmomx = 0, mmomy = 0;
 
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (mo->player)
 	{
 		P_BouncePlayerMove(mo);
@@ -3466,6 +3530,9 @@ void P_BounceMove(mobj_t *mo)
 	hitcount = 0;
 
 retry:
+	if (P_MobjWasRemovedCompat(mo))
+		return;
+
 	if (++hitcount == 3)
 		goto bounceback; // don't loop forever
 
@@ -3524,7 +3591,12 @@ bounceback:
 		newy = FixedMul(mmomy, bestslidefrac);
 
 		if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true))
+		{
+			if (P_MobjWasRemovedCompat(mo))
+				return;
+
 			goto bounceback;
+		}
 	}
 
 	// Now continue along the wall.
@@ -4179,7 +4251,7 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
  * Must clear tmthing at tic end, as it might contain a pointer to a removed thinker, or the level might have ended/been ended and we clear the objects it was pointing too. Hopefully we don't need to carry this between tics for sync. */
 void P_MapStart(void)
 {
-	if (UNLIKELY(tmthing))
+	if (tmthing)
 		I_Error("P_MapStart: tmthing set!");
 }
 

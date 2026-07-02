@@ -4247,6 +4247,14 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 	char tmp[MAXREPLAYQUERY+1];
 	memcpy(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1);
 
+	Lock_search_state();
+	if (!replaynamesloaded)
+	{
+		Unlock_search_state();
+		return false;
+	}
+	Unlock_search_state();
+
 	if (M_TextInputHandle(&replayqueryinput, choice))
 	{
 		S_StartSound(NULL, sfx_menu1);

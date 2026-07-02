@@ -84,11 +84,6 @@ float gl_viewsin = 0.0f, gl_viewcos = 0.0f;
 static float gl_viewludsin, gl_viewludcos;
 static angle_t gl_aimingangle;
 
-static float yaw = 0.0f;
-static float inv_yaw = 0.0f;
-static float cos_inv_yaw = 0.0f;
-static float sin_inv_yaw = 0.0f;
-
 static constexpr float deg2radians = (M_PIf / 180.0f);
 
 seg_t    *gl_curline = NULL;
@@ -4764,9 +4759,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	// if the sprite is out of our view, dont need to draw it X)
 	if (!gld_SphereInFrustum(
-							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
+							(FixedToFloat(interp.x)) + gl_viewsin * (x1 + x2) / 2.0f,
 							 FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
-							 FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							 FixedToFloat(interp.y) - (-gl_viewcos) * (x1 + x2) / 2.0f,
 							 //1.5 == sqrt(2) + small delta for MF_FOREGROUND
 							 std::max<float>(FixedToFloat(spr_width)  * spritexscale,
 											 FixedToFloat(spr_height) * spriteyscale) / 2.0f * 1.5f))
@@ -4984,9 +4979,9 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	y2 *= thing_scale;
 
 	if (!gld_SphereInFrustum(
-							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
+							(FixedToFloat(interp.x)) + gl_viewsin * (x1 + x2) / 2.0f,
 							 FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
-							 FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							 FixedToFloat(interp.y) - (-gl_viewcos) * (x1 + x2) / 2.0f,
 							 //1.5 == sqrt(2) + small delta for MF_FOREGROUND
 							 std::max<float>(FixedToFloat(spr_width)  * thing_scale,
 											 FixedToFloat(spr_height) * thing_scale) / 2.0f * 1.5f))
@@ -5116,24 +5111,22 @@ void HWR_BuildSkyDome(void)
 	int c, r;
 	signed char yflip;
 	static constexpr int row_count = 4;
-	int col_count = 4;
+	static constexpr int col_count = (4 * 16);
 	float delta;
 
 	gl_sky_t *sky = &gl_sky;
 	gl_skyvertex_t *vertex_p;
 	const texture_t *texture = textures[texturetranslation[skytexture]];
 
-	col_count *= 16;
-
 	if ((sky->columns != col_count) || (sky->rows != row_count))
 		HWR_ClearSkyDome();
 
 	sky->columns = col_count;
 	sky->rows = row_count;
-	sky->vertex_count = 2 * sky->rows * (sky->columns * 2 + 2) + sky->columns * 2;
+	sky->vertex_count = 2 * row_count * (col_count * 2 + 2) + col_count * 2;
 
 	if (!sky->loops)
-		sky->loops = static_cast<gl_skyloopdef_t*>(malloc((sky->rows * 2 + 2) * sizeof(sky->loops[0])));
+		sky->loops = static_cast<gl_skyloopdef_t*>(malloc((row_count * 2 + 2) * sizeof(sky->loops[0])));
 
 	// create vertex array
 	if (!sky->data)
@@ -5397,12 +5390,6 @@ void HWR_SetTransform(float fpov)
 	HWR_SetTransformAiming(&atransform);
 	atransform.angley = static_cast<float>(viewangle >> ANGLETOFINESHIFT)*(FINEDEGREE);
 
-	yaw = 270.0f - atransform.angley;
-	inv_yaw = 180.0f - yaw;
-	const float inv_yaw_radians = inv_yaw * deg2radians;
-	cos_inv_yaw = cosf(inv_yaw_radians);
-	sin_inv_yaw = sinf(inv_yaw_radians);
-
 	// only needed for sprite billboarding
 	if (cv_glspritebillboarding.value && !cv_glshearing.value)
 	{
@@ -5540,7 +5527,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
-		gl_collect_skywalls = (allow_portals && !rootportal && portallist.base && (!skyboxmo[0] || !cv_skybox.value)); // if portals have been drawn in the main view, then render skywalls differently
+		// if portals have been drawn in the main view, then render skywalls differently
+		gl_collect_skywalls = (allow_portals && !rootportal && portallist.base && (!skyboxmo[0] || !cv_skybox.value));
 
 		// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
 		// This fixes specific effects not working, such as horizon lines.

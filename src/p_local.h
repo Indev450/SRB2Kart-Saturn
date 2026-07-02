@@ -59,8 +59,12 @@ extern "C" {
 
 #define AIMINGTOSLOPE(aiming) FINESINE((aiming>>ANGLETOFINESHIFT) & FINEMASK)
 
-#define mariomode (maptol & TOL_MARIO)
-#define twodlevel (maptol & TOL_2D)
+// unused modes, kept for compat
+#define nightsmode           (UNLIKELY(maptol & TOL_NIGHTS))
+#define nightsplayer(player) (UNLIKELY((player)->pflags & PF_NIGHTSMODE))
+#define mariomode            (UNLIKELY(maptol & TOL_MARIO))
+#define twodlevel            (UNLIKELY(maptol & TOL_2D))
+#define twodmo(mobj)         (UNLIKELY(twodlevel || ((mobj)->flags2 & MF2_TWOD)))
 
 //
 // P_TICK
@@ -285,6 +289,17 @@ void P_SceneryThinker(mobj_t *mobj);
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
 	return (!mobj || mobj->thinker.function != (actionf_p1)P_MobjThinker);
+}
+
+// stupid, but kart allows mobjs that are marked to be removed to be accessed and modified in many cases
+// so can only check if its not NULL in vanilla compat mode
+FUNCINLINE static ATTRINLINE boolean P_MobjWasRemovedCompat(const mobj_t *mobj)
+{
+#ifdef COMPAT_VANILLA
+	return (!mobj);
+#else
+	return P_MobjWasRemoved(mobj);
+#endif
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
