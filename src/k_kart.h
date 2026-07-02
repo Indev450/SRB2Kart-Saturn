@@ -33,6 +33,8 @@ extern consvar_t cv_bananajitter;
 extern consvar_t cv_bananthrowroll;
 extern consvar_t cv_airsparks;
 
+extern INT32 stprevnextchecks[2];
+
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
 INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush);
