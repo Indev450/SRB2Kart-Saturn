@@ -74,7 +74,7 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx += FixedMul(move, FINECOSINE(angle));
 
-	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
+	if (!twodmo(mo))
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
@@ -90,7 +90,7 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx = FixedMul(move, FINECOSINE(angle));
 
-	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
+	if (!twodmo(mo))
 		mo->momy = FixedMul(move,FINESINE(angle));
 }
 
@@ -475,7 +475,7 @@ void P_PlayLivesJingle(player_t *player)
 
 	if (UNLIKELY(use1upSound))
 		S_StartSound(NULL, sfx_oneup);
-	else if (UNLIKELY(mariomode))
+	else if (mariomode)
 		S_StartSound(NULL, sfx_marioa);
 	else
 	{
@@ -503,7 +503,7 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 			S_StartSound(NULL, sfx);
 		}
 		else
-			S_StartSound(source, UNLIKELY(mariomode) ? sfx_mario8 : sfx_khurt1 + key);
+			S_StartSound(source, mariomode ? sfx_mario8 : sfx_khurt1 + key);
 	}
 	else
 		S_StartSound(source, sfx_slip);
@@ -1725,7 +1725,7 @@ static void P_DoBubbleBreath(player_t *player)
 	else
 		zh = player->mo->z + FixedDiv(player->mo->height,5*(FRACUNIT/4));
 
-	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL && !(player->pflags & PF_NIGHTSMODE)))
+	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL && !nightsplayer(player)))
 		return;
 
 	if (P_RandomChance(FRACUNIT/16))
@@ -2298,7 +2298,7 @@ static void P_MovePlayer(player_t *player)
 		P_3dMovement(player);
 	}
 
-	if (UNLIKELY(maptol & TOL_2D)) // psure this doesent even work at all
+	if (twodlevel) // psure this doesent even work at all
 		runspd = FixedMul(runspd, 2*FRACUNIT/3);
 
 	/////////////////////////
@@ -2748,8 +2748,8 @@ boolean P_LookForEnemies(player_t *player)
 		if (modist > FixedMul(RING_DIST, player->mo->scale))
 			continue; // out of range
 
-		if (UNLIKELY((twodlevel || player->mo->flags2 & MF2_TWOD)
-		&& abs(player->mo->y-mo->y) > player->mo->radius))
+
+		if (twodmo(player->mo) && abs(player->mo->y-mo->y) > player->mo->radius)
 			continue; // not in your 2d plane
 
 		if (closestmo && modist > P_AproxDistance(P_AproxDistance(player->mo->x-closestmo->x,
@@ -3508,7 +3508,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 	boolean cameranoclip;
 	mobj_t *mo = player->mo;
 
-	cameranoclip = ((player->pflags & (PF_NOCLIP|PF_NIGHTSMODE))
+	cameranoclip = (nightsplayer(player)
 	|| (mo->flags & (MF_NOCLIP|MF_NOCLIPHEIGHT)) // Noclipping player camera noclips too!!
 	|| (leveltime < introtime)); // Kart intro cam
 
@@ -4097,7 +4097,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			angle -= (angle - thiscam->pitch)/2;
 	}
 
-	if (player->playerstate != PST_DEAD && LIKELY(!((player->pflags & PF_NIGHTSMODE) && player->exiting)))
+	if (player->playerstate != PST_DEAD && !(nightsplayer(player) && player->exiting))
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
 
 	if (!camstill && !timeover) // Keep the view still...
@@ -4174,7 +4174,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Team changing in Team Match and CTF
 	// Pressing fire assigns you to a team that needs players if allowed.
 	// Partial code reproduction from p_tick.c autobalance code.
-	else if (UNLIKELY(G_GametypeHasTeams()))
+	else if (G_GametypeHasTeams())
 	{
 		INT32 changeto = 0;
 		INT32 z, numplayersred = 0, numplayersblue = 0;
@@ -4871,7 +4871,7 @@ void P_PlayerThink(player_t *player)
 
 	// Even if not NiGHTS, pull in nearby objects when walking around as John Q. Elliot.
 	if (UNLIKELY(!objectplacing && !((netgame || multiplayer) && player->spectator)
-	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper])))
+	&& nightsmode && (!nightsplayer(player) || player->powers[pw_nights_helper])))
 	{
 		thinker_t *th;
 		mobj_t *mo2;
@@ -4973,7 +4973,7 @@ void P_PlayerThink(player_t *player)
 #endif
 
 	// check for use
-	if (LIKELY(!(player->pflags & PF_NIGHTSMODE)))
+	if (!nightsplayer(player))
 	{
 		if (cmd->buttons & BT_BRAKE)
 			player->pflags |= PF_USEDOWN;
@@ -5164,7 +5164,7 @@ void P_PlayerAfterThink(player_t *player)
 		}
 	}
 
-	if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
+	if (nightsplayer(player))
 	{
 		player->powers[pw_gravityboots] = 0;
 	}

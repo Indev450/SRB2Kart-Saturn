@@ -172,7 +172,7 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 
 	do
 	{
-		if (UNLIKELY(state == S_NULL))
+		if (state == S_NULL)
 		{ // Bad SOC!
 			CONS_Alert(CONS_ERROR, "Cannot remove player mobj by setting its state to S_NULL.\n");
 			//P_RemoveMobj(mobj);
@@ -905,7 +905,7 @@ static void P_PlayerFlip(mobj_t *mo)
 	G_GhostAddFlip((INT32) (mo->player - players));
 	// Flip aiming to match!
 
-	if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
+	if (nightsplayer(mo->player)) // NiGHTS doesn't use flipcam
 	{
 		if (mo->tracer)
 			mo->tracer->eflags ^= MFE_VERTICALFLIP;
@@ -998,7 +998,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 
 	if (mo->player)
 	{
-		if (UNLIKELY(mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE)))
+		if (UNLIKELY(mo->player->climbing || nightsplayer(mo->player)))
 			return 0;
 
 		if (!(mo->flags2 & MF2_OBJECTFLIP) != !(mo->player->powers[pw_gravityboots])) // negated to turn numeric into bool - would be double negated, but not needed if both would be
@@ -1177,7 +1177,7 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 		}
 		else if (abs(player->rmomx) < mo->scale
 		    && abs(player->rmomy) < mo->scale
-		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
+		    && (!(player->cmd.forwardmove && !twodmo(mo)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
 		{
@@ -1619,7 +1619,7 @@ void P_XYMovement(mobj_t *mo)
 	// Check the gravity status.
 	P_CheckGravity(mo, false);
 
-	if (UNLIKELY(player && !moved && player->pflags & PF_NIGHTSMODE && mo->target))
+	if (player && !moved && nightsplayer(player) && mo->target)
 	{
 		angle_t fa;
 
@@ -1669,11 +1669,14 @@ void P_XYMovement(mobj_t *mo)
 	if (mo->flags & MF_MISSILE || mo->flags2 & MF2_SKULLFLY || mo->type == MT_SHELL || mo->type == MT_VULTURE)
 		return; // no friction for missiles ever
 
-	if (player && player->homing) // no friction for homing
-		return;
+	if (player)
+	{
+		if (player->homing) // no friction for homing
+			return;
 
-	if (UNLIKELY(player && player->pflags & PF_NIGHTSMODE))
-		return; // no friction for NiGHTS players
+		if (nightsplayer(player))
+			return; // no friction for NiGHTS players
+	}
 
 	if ((mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
 			&& (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT>>8)) // Special exception for tumbleweeds on slopes
@@ -2221,7 +2224,7 @@ static boolean P_ZMovement(mobj_t *mo)
 				|| mo->type == MT_CANNONBALLDECOR
 				|| mo->type == MT_FALLINGROCK)
 			{
-				if (UNLIKELY(maptol & TOL_NIGHTS))
+				if (nightsmode)
 					mom.z = -FixedDiv(mom.z, 10*FRACUNIT);
 				else
 					mom.z = -FixedMul(mom.z, FixedDiv(17*FRACUNIT,20*FRACUNIT));
@@ -2359,11 +2362,9 @@ static boolean P_ZMovement(mobj_t *mo)
 		{
 			if (mo->flags2 & MF2_SKULLFLY) // the skull slammed into something
 				mo->momz = -mo->momz;
-			else
-			// Flags bounce
-			if (UNLIKELY(mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG))
+			else if (UNLIKELY(mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG)) // Flags bounce
 			{
-				if (UNLIKELY(maptol & TOL_NIGHTS))
+				if (nightsmode)
 					mo->momz = -FixedDiv(mo->momz, 10*FRACUNIT);
 				else
 					mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT,20*FRACUNIT));
@@ -2429,7 +2430,7 @@ static void P_PlayerZMovement(mobj_t *mo)
 		else
 			mo->z = mo->floorz;
 
-		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
+		if (nightsplayer(mo->player))
 		{
 			// bounce off floor if you were flying towards it
 			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 0 && mo->player->flyangle < 180)
@@ -2620,7 +2621,7 @@ nightsdone:
 		else
 			mo->z = mo->ceilingz - mo->height;
 
-		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
+		if (nightsplayer(mo->player))
 		{
 			// bounce off ceiling if you were flying towards it
 			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 180 && mo->player->flyangle <= 359)
@@ -2665,7 +2666,7 @@ nightsdone:
 			}
 
 			// hit the ceiling
-			if (UNLIKELY(mariomode))
+			if (mariomode)
 				S_StartSound(mo, sfx_mario1);
 
 			if (!mo->player->climbing)
@@ -3223,7 +3224,7 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 		player_flipcam = cv_flipcam[pnum].value;
 	}
 
-	const boolean flipcam = (player_flipcam && player->mo->eflags & MFE_VERTICALFLIP && LIKELY(!(player->pflags & PF_NIGHTSMODE)));
+	const boolean flipcam = (player_flipcam && player->mo->eflags & MFE_VERTICALFLIP && !nightsplayer(player));
 	UINT8 postimgtype = 0;
 
 	if (encoremode)
@@ -3406,7 +3407,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 			P_CheckPosition(mobj, mobj->x, mobj->y);
 			goto animonly;
 		}
-		else if (UNLIKELY(mobj->player->pflags & PF_MACESPIN))
+		else if (mobj->player->pflags & PF_MACESPIN)
 		{
 			P_CheckPosition(mobj, mobj->x, mobj->y);
 			goto animonly;
@@ -3520,7 +3521,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	}
 	else
 	{
-		if (LIKELY(!(mobj->player->pflags & PF_NIGHTSMODE))) // "jumping" is used for drilling
+		if (!nightsplayer(mobj->player)) // "jumping" is used for drilling
 			mobj->player->jumping = 0;
 
 		mobj->player->pflags &= ~PF_JUMPED;
@@ -8552,7 +8553,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (mobj->tracer && mobj->tracer->player)
 				{
-					if (LIKELY(!(mobj->tracer->player->pflags & PF_NIGHTSMODE)))
+					if (!nightsplayer(mobj->tracer->player))
 					{
 						mobj->flags &= ~MF_NOGRAVITY;
 						mobj->flags2 &= ~MF2_DONTDRAW;
@@ -8576,7 +8577,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						P_SetTarget(&mobj->target, NULL);
 					}
 
-					if (UNLIKELY(mobj->tracer->player->pflags & PF_NIGHTSMODE))
+					if (nightsplayer(mobj->tracer->player))
 					{
 						if (mobj->tracer->player->bonustime)
 						{
@@ -9078,7 +9079,7 @@ void P_MobjThinker(mobj_t *mobj)
 	const sector_t *sec1 = mobj->subsector ? mobj->subsector->sector : NULL;
 
 	// 970 allows ANY mobj to trigger a linedef exec
-	if (UNLIKELY(!mobj->islocal && sec1 && GETSECSPECIAL(sec1->special, 2) == 8)) // BEWARE: islocal does not exist in vanilla
+	if (!mobj->islocal && sec1 && GETSECSPECIAL(sec1->special, 2) == 8) // BEWARE: islocal does not exist in vanilla
 	{
 		sector_t *sec2;
 		sec2 = P_ThingOnSpecial3DFloor(mobj);
@@ -9144,7 +9145,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags2 & MF2_FIRING && mobj->target && mobj->health > 0)
 		P_FiringThink(mobj);
 
-	if (UNLIKELY(mobj->flags & MF_AMBIENT))
+	if (mobj->flags & MF_AMBIENT)
 	{
 		if (leveltime % mobj->health)
 			return;
@@ -9208,8 +9209,8 @@ void P_MobjThinker(mobj_t *mobj)
 		P_ButteredSlope(mobj);
 	}
 
-	if (UNLIKELY(mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health
-		&& P_CheckDeathPitCollide(mobj))) // extra pit check in case these didn't have momz
+	if (mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health
+		&& P_CheckDeathPitCollide(mobj)) // extra pit check in case these didn't have momz
 	{
 		P_KillMobj(mobj, NULL, NULL);
 		return;
@@ -9218,10 +9219,7 @@ void P_MobjThinker(mobj_t *mobj)
 	// Crush enemies!
 	if (mobj->ceilingz - mobj->floorz < mobj->height)
 	{
-		if (UNLIKELY((
-		(mobj->flags & (MF_ENEMY|MF_BOSS)
-			&& mobj->flags & MF_SHOOTABLE)
-		|| mobj->type == MT_EGGSHIELD))
+		if (((mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->flags & MF_SHOOTABLE) || mobj->type == MT_EGGSHIELD)
 		&& !(mobj->flags & MF_NOCLIPHEIGHT)
 		&& mobj->health > 0)
 		{
@@ -9243,7 +9241,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return;
 
-	if (UNLIKELY(P_WeaponOrPanel(mobj->type)))
+	if (P_WeaponOrPanel(mobj->type))
 	{
 		if (mobj->health == 0) // Fading tile
 		{
@@ -10131,14 +10129,14 @@ void P_RemoveMobj(mobj_t *mobj)
 		}
 	}
 	// Rings only, please!
-	else if (UNLIKELY(mobj->spawnpoint &&
+	else if (mobj->spawnpoint &&
 		 !(mobj->flags2 & MF2_DONTRESPAWN) &&
 		  (mobj->type == MT_RING
 		|| mobj->type == MT_COIN
 		|| mobj->type == MT_BLUEBALL
 		|| mobj->type == MT_REDTEAMRING
 		|| mobj->type == MT_BLUETEAMRING
-		|| P_WeaponOrPanel(mobj->type))))
+		|| P_WeaponOrPanel(mobj->type)))
 	{
 		itemrespawnque[iquehead] = mobj->spawnpoint;
 		itemrespawntime[iquehead] = leveltime;

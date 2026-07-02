@@ -250,7 +250,8 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
 	I_Assert(movedir < NUMDIRS);
 
 	tryx = actor->x + FixedMul(speed*xspeed[movedir], actor->scale);
-	if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
+
+	if (twodmo(actor))
 		tryy = actor->y;
 	else
 		tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
@@ -328,7 +329,7 @@ void P_NewChaseDir(mobj_t *actor)
 	else
 		d[1] = DI_NODIR;
 
-	if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
+	if (twodmo(actor))
 		d[2] = DI_NODIR;
 	if (deltay < -FixedMul(10*FRACUNIT, actor->scale))
 		d[2] = DI_SOUTH;
@@ -2762,10 +2763,10 @@ void A_Invincibility(void *thing)
 	{
 		S_StopMusic();
 
-		if (UNLIKELY(mariomode))
+		if (mariomode)
 			G_GhostAddColor((INT32) (player - players), GHC_INVINCIBLE);
 
-		S_ChangeMusicInternal((UNLIKELY(mariomode)) ? "minvnc" : "invinc", false);
+		S_ChangeMusicInternal(mariomode ? "minvnc" : "invinc", false);
 	}
 }
 
@@ -4359,7 +4360,7 @@ void A_MouseThink(void *thing)
 		|| (actor->eflags & MFE_VERTICALFLIP && actor->z + actor->height == actor->ceilingz))
 		&& !actor->reactiontime)
 	{
-		if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
+		if (twodmo(actor))
 		{
 			if (P_RandomChance(FRACUNIT/2))
 				actor->angle += ANGLE_180;

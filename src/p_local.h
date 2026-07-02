@@ -59,8 +59,12 @@ extern "C" {
 
 #define AIMINGTOSLOPE(aiming) FINESINE((aiming>>ANGLETOFINESHIFT) & FINEMASK)
 
-#define mariomode (maptol & TOL_MARIO)
-#define twodlevel (maptol & TOL_2D)
+// unused modes, kept for compat
+#define nightsmode           (UNLIKELY(maptol & TOL_NIGHTS))
+#define nightsplayer(player) (UNLIKELY((player)->pflags & PF_NIGHTSMODE))
+#define mariomode            (UNLIKELY(maptol & TOL_MARIO))
+#define twodlevel            (UNLIKELY(maptol & TOL_2D))
+#define twodmo(mobj)         (UNLIKELY(twodlevel || ((mobj)->flags2 & MF2_TWOD)))
 
 //
 // P_TICK
