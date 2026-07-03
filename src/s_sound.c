@@ -1297,9 +1297,7 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 
 		if (!value)
 		{
-			CONS_Alert(CONS_WARNING,
-					"MUSICDEF: Field '%s' is missing name. (file %s, line %d)\n",
-					stoken, wadfiles[wadnum]->filename, line);
+			CONS_Alert(CONS_WARNING, "MUSICDEF: Field '%s' is missing name. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 			(void)strtok(NULL, " ");
 			return true;
 		}
@@ -1332,9 +1330,7 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 
 		if (!value)
 		{
-			CONS_Alert(CONS_WARNING,
-					"MUSICDEF: Field '%s' is missing value. (file %s, line %d)\n",
-					stoken, wadfiles[wadnum]->filename, line);
+			CONS_Alert(CONS_WARNING, "MUSICDEF: Field '%s' is missing value. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 			(void)strtok(NULL, " ");
 			return true;
 		}
@@ -1344,9 +1340,7 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 
 			if (!def)
 			{
-				CONS_Alert(CONS_ERROR,
-						"MUSICDEF: No music definition before field '%s'. (file %s, line %d)\n",
-						stoken, wadfiles[wadnum]->filename, line);
+				CONS_Alert(CONS_ERROR, "MUSICDEF: No music definition before field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 				return false;
 			}
 
@@ -1360,9 +1354,11 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 
 // turn _ into spaces.
 #define ADDDEF(field)\
+	int err = 0;\
 	STRBUFCPY(def->field, textline);\
 	for (textline = def->field; *textline; textline++)\
-		if (*textline == '_') *textline = ' ';
+		if (err == 0 && *textline == ' ') {err = 1; CONS_Alert(CONS_WARNING, "MUSICDEF: Erroneous whitespace detected in field '%s': '%s'.\n(file %s, line %d) Musicdef might not work correctly!\n", stoken, def->field, wadfiles[wadnum]->filename, line);}\
+			if (*textline == '_') *textline = ' ';
 
 			if (fasticmp(stoken, "usage"))
 			{
