@@ -1277,13 +1277,6 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 		}
 		else
 		{
-			if (!S_MusicExists(value, false, true)) // && !S_MusicExists(value, true, false) idk if we wanna check for midi?
-			{
-				CONS_Alert(CONS_WARNING, "MUSICDEF: No music found for lump %s. (file %s, line %d)\n", value, wadfiles[wadnum]->filename, line);
-				//(void)strtok(NULL, " "); if we skip this the rest of the musicdef will also be skipped, even if we return true here :chaosleep:
-				//return true;
-			}
-
 			def = S_FindMusicCredit(value);
 
 			// Nothing found, add to the end.
