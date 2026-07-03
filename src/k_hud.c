@@ -3948,9 +3948,22 @@ static void K_drawBattleFullscreen(void)
 
 	INT32 x = BASEVIDWIDTH/2;
 	INT32 y = (-64*FRACUNIT) + cardanim; // card animation goes from 0 to 164, 164 is the middle of the screen
-	INT32 splitflags = V_SNAPTOTOP; // I don't feel like properly supporting non-green resolutions, so you can have a misuse of SNAPTO instead
+	INT32 splitflags = splitscreen ? V_SNAPTOTOP : 0; // I don't feel like properly supporting non-green resolutions, so you can have a misuse of SNAPTO instead
 	fixed_t scale = FRACUNIT;
 	boolean drawcomebacktimer = true;	// lazy hack because it's cleaner in the long run.
+
+	// Small hack, if we're not in splitscreen we will not use V_SNAPTOTOP, instead we will just slightly offset
+	// y position so "attack or protect" doesn't slightly show before popping in
+	// We will also reduce this when is closer to finishing so when its at the bottom, the "hack offset" is 0
+	if (!splitscreen)
+	{
+		fixed_t offset = ((vid.height - vid.dup*BASEVIDHEIGHT)/vid.dup) * FRACUNIT/2;
+
+		// cardanim goes from 0 to 164, so when it is 164 offset will be multiplied by (1 - 164/164) = 0 :3
+		offset = FixedMul(offset, FRACUNIT - FixedDiv(cardanim, 164*FRACUNIT));
+
+		y -= offset;
+	}
 
 	if (!LUA_HudEnabled(hud_battlecomebacktimer))
 		drawcomebacktimer = false;
@@ -4039,12 +4052,12 @@ static void K_drawBattleFullscreen(void)
 			if (K_UseColorHud()) // Colourized hud
 			{
 				UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, colormap);
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, splitflags, kp_timeoutstickerclr, colormap);
 			}
 			else
-				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, splitflags, kp_timeoutsticker, NULL);
 
-			V_DrawKartString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
+			V_DrawKartString(x-txoff, ty, splitflags, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		}
 	}
 
