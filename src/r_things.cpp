@@ -1241,9 +1241,9 @@ static void R_ProjectSprite(mobj_t *thing)
 		return;
 
 	const boolean mirrored = thing->mirrored;
-	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
-	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+	const boolean vflip    = R_ThingVerticallyFlipped(thing);
+	const boolean hflip    = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
+	const boolean papersprite = R_ThingIsPaperSprite(thing);
 
 	// transform the origin point
 	tr_x = interp.x - viewx;
@@ -3022,9 +3022,35 @@ boolean R_CheckMobjInterpDist(mobj_t *thing)
 	return R_CheckInterpDist(thing);
 }
 
-boolean R_ThingIsFullBright(mobj_t *thing)
+boolean R_ThingHorizontallyFlipped(mobj_t *thing)
+{
+	return (thing->frame & FF_HORIZONTALFLIP);
+}
+
+boolean R_ThingVerticallyFlipped(mobj_t *thing)
+{
+	return (thing->eflags & MFE_VERTICALFLIP); //(thing->frame & FF_VERTICALFLIP);
+}
+
+boolean R_ThingIsPaperSprite(mobj_t *thing)
+{
+	return (thing->frame & FF_PAPERSPRITE);
+}
+
+template<typename T>
+boolean R_ThingIsFullBrightT(T *thing)
 {
 	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
+}
+
+boolean R_PrecipThingIsFullBright(precipmobj_t *thing)
+{
+	return R_ThingIsFullBrightT(thing);
+}
+
+boolean R_ThingIsFullBright(mobj_t *thing)
+{
+	return R_ThingIsFullBrightT(thing);
 }
 
 boolean R_ThingIsSemiBright(mobj_t *thing)
