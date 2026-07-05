@@ -745,9 +745,11 @@ static const char* OP_AllControlsTooltips[sizeof(OP_AllControlsMenu)/sizeof(OP_A
 	{IT_STRING | IT_CVAR,  NULL, "X deadzone"                 , &cv_xdeadzone[pnum]      , 100}, \
 	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"                 , &cv_ydeadzone[pnum]      , 105}, \
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},                                               \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]         , 120}, \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumblestrength[pnum] , 125}, \
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]     , 130},
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]          , 120}, \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumble_strength[pnum] , 125}, \
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]      , 130},
+
+//TODO: add menu for controller rumble stuff
 
 static menuitem_t OP_Joystick1Menu[] =
 {
