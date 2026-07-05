@@ -34,7 +34,7 @@
 
 
 // extra colourisation stuff
-static CV_PossibleValue_t colorspeedlines_cons_t[] = {{0, "Off"}, {1, "Normal"}, {2, "+Driftcharge"}, {3, "Drift only"}, {0, NULL}};
+static CV_PossibleValue_t colorspeedlines_cons_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
 consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorspeedlines_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_coloredsneakertrail = {"sneakertrailcolor", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -3526,13 +3526,14 @@ static INT32 K_StairJankFlip(INT32 value)
 // if not cv_bananthrowroll option "+Onground"
 static void K_ResetBananaRollangle(mobj_t* mo)
 {
-	if (cv_bananthrowroll.value != 1)
-		return;
-
 	if (!mo->rollangle)
 		return;
 
-	if (mo->type != MT_BANANA && mo->type != MT_EGGMANITEM)
+	if (mo->type != MT_BANANA && mo->type != MT_EGGMANITEM) // always reset eggboxes
+		return;
+
+	// keep banans "rotated" if we want them to
+	if (mo->type == MT_BANANA && cv_bananthrowroll.value == 2)
 		return;
 
 	// only reset if on ground
@@ -5485,59 +5486,15 @@ boolean K_PlayerEffectsShouldBlend(player_t *player)
 	return false;
 }
 
-static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
+FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player)
 {
-	UINT8 speedcolor = SKINCOLOR_NONE;
-	const UINT8 playercolor = player->mo->color;
-
-	if (colorSpeed)
-	{
-		if (cv_coloredspeedlines.value != 3)
-			speedcolor = playercolor;
-
-		if (cv_coloredspeedlines.value >= 2 && player->kartstuff[k_driftboost])
-		{
-			if (player->kartstuff[k_driftboost] <= 20)
-				speedcolor = SKINCOLOR_SAPPHIRE;
-			else if (player->kartstuff[k_driftboost] <= 50)
-				speedcolor = SKINCOLOR_RASPBERRY;
-			else if (player->kartstuff[k_driftboost] <= 125)
-				speedcolor = K_RainbowColor();
-
-			if (cv_coloredspeedlines.value == 2)
-				speedcolor = (leveltime & 1) ? playercolor : speedcolor;
-		}
-	}
-
-	if (cv_coloredspeedlines.value != 3)
-	{
-		if (player->kartstuff[k_eggmanexplode])
-		{
-			// Make it red when you have the eggman speed boost
-			speedcolor = SKINCOLOR_RED;
-		}
-		else if (player->kartstuff[k_invincibilitytimer])
-		{
-			speedcolor = playercolor;
-		}
-	}
-
-	return speedcolor;
-}
-
-typedef INT32 (*randomFunc)(INT32 min, INT32 max);
-
-FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
-{
-	const randomFunc randomfunc = synched ? P_RandomRange : M_RandomRange;
-
 	fixed_t rand_x;
 	fixed_t rand_y;
 	fixed_t rand_z;
 
-	rand_z = player->mo->z + (player->mo->height/2) + (randomfunc(-20,20) * player->mo->scale);
-	rand_y = player->mo->y + (randomfunc(-36,36) * player->mo->scale);
-	rand_x = player->mo->x + (randomfunc(-36,36) * player->mo->scale);
+	rand_z = player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale);
+	rand_y = player->mo->y + (P_RandomRange(-36,36) * player->mo->scale);
+	rand_x = player->mo->x + (P_RandomRange(-36,36) * player->mo->scale);
 
 	mobj_t *fast = P_SpawnMobj(rand_x, rand_y, rand_z, MT_FASTLINE);
 
@@ -5545,7 +5502,7 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 	fast->momx = 3*player->mo->momx/4;
 	fast->momy = 3*player->mo->momy/4;
 	fast->momz = 3*player->mo->momz/4;
-	fast->islocal = !synched;
+	//fast->islocal = false;
 	P_SetTarget(&fast->target, player->mo); // easier lua access
 
 	K_MatchGenericExtraFlags(fast, player->mo);
@@ -5556,8 +5513,11 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 
 		if (cv_coloredspeedlines.value)
 		{
-			fast->color = K_GetSpeedLineColor(player, colorSpeed);
-			fast->colorized = true;
+			if (colorSpeed || player->kartstuff[k_invincibilitytimer]) // let invul color them even when players go rather slow
+			{
+				fast->color = player->mo->color;
+				fast->colorized = true;
+			}
 		}
 
 		if (colorSpeed && K_PlayerEffectsShouldBlend(player))
@@ -5586,11 +5546,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// Speed lines
 	if ((player->kartstuff[k_sneakertimer] || player->kartstuff[k_driftboost] || player->kartstuff[k_startboost]) && player->speed > 0)
 	{
-		K_SpawnNormalSpeedLines(player, true);
-	}
-	else if ((cv_coloredspeedlines.value == 1 || cv_coloredspeedlines.value == 2) && player->kartstuff[k_eggmanexplode]) // gotta love the speedlines calling synched rng :chaosleep:
-	{
-		K_SpawnNormalSpeedLines(player, false);
+		K_SpawnNormalSpeedLines(player);
 	}
 
 	if (player->playerstate == PST_DEAD || player->kartstuff[k_respawn] > 1) // Ensure these are set correctly here
