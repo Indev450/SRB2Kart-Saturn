@@ -7319,6 +7319,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			boolean grounded = P_IsObjectOnGround(mobj);
 
 			//P_MobjCheckWaterVisual(mobj);
+			// rotate thrown eggboxes and bananas mid air!
 			if (cv_bananthrowroll.value && !grounded)
 			{
 				// tilt n tumble
@@ -7341,7 +7342,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				//P_SpawnItemLandDust(mobj);
 			}
 
-			P_RollPitchMobj(mobj);
+			// do not rotate eggman items on slopes
+			// they are meant to deceive the player
+			// having them rotated makes them stand out a lot more
+			// since random items do not roll´n pitch on slopes!
+			if (mobj->type == MT_BANANA)
+				P_RollPitchMobj(mobj);
 
 			if (mobj->threshold > 0)
 				mobj->threshold--;
