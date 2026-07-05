@@ -1694,6 +1694,7 @@ boolean I_InitTcpNetwork(void)
 			hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
 		}
 	}
+
 	if (M_CheckProtoParam("ip"))
 	{
 		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartexec.cfg\" -noerror\n", srb2home));

@@ -3046,7 +3046,7 @@ boolean R_ThingIsPaperSprite(mobj_t *thing)
 }
 
 template<typename T>
-boolean R_ThingIsFullBrightT(T *thing)
+static boolean R_ThingIsFullBrightT(T *thing)
 {
 	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
 }
