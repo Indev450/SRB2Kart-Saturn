@@ -1563,8 +1563,8 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	{ // mpc 12-04-2018
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
 #define clip(x,y) (x>y) ? y : x
-		w = clip(w,vid.width);
-		h = clip(h,vid.height);
+		w = clip(w, vid.width);
+		h = clip(h, vid.height);
 #undef clip
 		for (v = 0; v < h; v++, dest += vid.width)
 		{

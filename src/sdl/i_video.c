@@ -1816,15 +1816,18 @@ void I_StartupGraphics(void)
 			framebuffer = SDL_TRUE;
 	}
 
+	// Choose Software renderer
 	if (M_CheckParm("-software"))
 		rendermode = render_soft;
 #ifdef HWRENDER
+	// Choose OpenGL renderer
 	else if (M_CheckParm("-opengl"))
 		rendermode = render_opengl;
 
 	msaa = 0; boolean msaa_set = false;
 	a2c = false; boolean a2c_set = false;
 
+	// MSAA antialiasing
 	if (M_CheckParm("-msaa") && M_IsNextParm())
 	{
 		const char* str = M_GetNextParm();
