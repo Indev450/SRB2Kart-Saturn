@@ -1059,7 +1059,7 @@ void G_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
+	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL || demo.playback)
 	{
 		return;
 	}
@@ -1092,6 +1092,12 @@ void G_DeviceRumbleTick(void)
 
 		// allow lua to do some crap for spectators
 		if (player->spectator || !player->mo)
+		{
+			continue;
+		}
+
+		// only rumble for local players!
+		if (!P_IsLocalPlayer(player))
 		{
 			continue;
 		}
