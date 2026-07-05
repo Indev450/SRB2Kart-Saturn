@@ -100,9 +100,10 @@ typedef enum
 	gc_custom2, // Lua scriptable
 	gc_custom3, // Lua scriptable
 	gc_director,
-	gc_freecam, // Toggle for freecam while ingame
-	gc_camfloat, // alternative button for raising cam
-	gc_camsink, // alternative button for sinking
+	// freecam specific controls
+	gc_freecam,  // Toggle for freecam while ingame
+	gc_camfloat, // alternative button for raising camera
+	gc_camsink,  // alternative button for sinking camera
 	gc_strafeleft,
 	gc_straferight,
 	num_gamecontrols
@@ -112,9 +113,18 @@ typedef enum
 extern consvar_t cv_mousexsens, cv_mouseysens;
 extern consvar_t cv_controlperkey;
 extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
+
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
+
+extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_strength[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_spinout[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_sneakerboost[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_offroad[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_bananadrag[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_stairjank[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_brakedrift[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble_driftcharge[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_gamepadifunfocused;
 extern consvar_t cv_gamepadledifunfocused;

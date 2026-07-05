@@ -5492,9 +5492,9 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player)
 	fixed_t rand_y;
 	fixed_t rand_z;
 
-	rand_z = player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale);
-	rand_y = player->mo->y + (P_RandomRange(-36,36) * player->mo->scale);
-	rand_x = player->mo->x + (P_RandomRange(-36,36) * player->mo->scale);
+	rand_z = player->mo->z + (player->mo->height/2) + (P_RandomRange(-20, 20) * player->mo->scale);
+	rand_y = player->mo->y + (P_RandomRange(-36, 36) * player->mo->scale);
+	rand_x = player->mo->x + (P_RandomRange(-36, 36) * player->mo->scale);
 
 	mobj_t *fast = P_SpawnMobj(rand_x, rand_y, rand_z, MT_FASTLINE);
 
