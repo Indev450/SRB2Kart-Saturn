@@ -3055,58 +3055,44 @@ static int lib_kSetHyuCountdown(lua_State *L)
 
 static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
 {
-	INT32 player = -1;
-	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	INT32 pnum = -1;
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
 	UINT8 color = (UINT8)luaL_checkinteger(L, 2); // skincolor
 
-	if (!plr)
+	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 
 	if (color >= MAXTRANSLATIONS)
 		return luaL_error(L, "color %d out of range (0 - %d).", color, MAXTRANSLATIONS-1);
 
-	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
-	{
-		if (plr - players == displayplayers[i])
-		{
-			player = i;
-			break;
-		}
-	}
+	pnum = P_GetLocalPlayerNumForPlayer(player);
 
 	// Not a local player
-	if (player == -1) return 0;
+	if (pnum == -1) return 0;
 
 	// pls update with color 0 when youre done with changing led stuff so it can get player color again
-	G_SetPlayerGamepadIndicatorColor(player, color);
+	G_SetPlayerGamepadIndicatorColor(pnum, color);
 
 	return 0;
 }
 
 static int lib_gPlayerDeviceRumble(lua_State *L)
 {
-	INT32 player = -1;
-	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	INT32 pnum = -1;
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
 	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
 	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
 	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
 
-	if (!plr)
+	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 
-	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
-	{
-		if (plr - players == displayplayers[i])
-		{
-			player = i;
-			break;
-		}
-	}
+	pnum = P_GetLocalPlayerNumForPlayer(player);
 
 	// Not a local player
-	if (player == -1) return 0;
+	if (pnum == -1) return 0;
 
-	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
+	G_PlayerDeviceRumble(pnum, low_strength, high_strength, duration);
 
 	return 0;
 }

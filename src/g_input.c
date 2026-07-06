@@ -1107,14 +1107,13 @@ void G_DeviceRumbleTick(void)
 
 		const player_t *player = P_GetLocalPlayerForNum(i);
 
-		// allow lua to do some crap for spectators
-		if (player->spectator || !player->mo)
+		if (!player)
 		{
 			continue;
 		}
 
-		// only rumble for local players!
-		if (!P_IsLocalPlayer(player))
+		// allow lua to do some crap for spectators
+		if (player->spectator || !player->mo)
 		{
 			continue;
 		}
