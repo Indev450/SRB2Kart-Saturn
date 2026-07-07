@@ -36,6 +36,7 @@ static menu_t SP_TimeAttackDef, SP_ReplayDef, SP_GuestReplayDef, SP_GhostDef;
 menu_t OP_ControlsDef, OP_AllControlsDef;
 menu_t OP_MouseOptionsDef;
 menu_t OP_Joystick1Def, OP_Joystick2Def, OP_Joystick3Def, OP_Joystick4Def;
+menu_t OP_Joystick1RumbleDef, OP_Joystick2RumbleDef, OP_Joystick3RumbleDef, OP_Joystick4RumbleDef;
 
 // Custom cvar menu
 menu_t OP_CustomCvarMenuDef;
@@ -725,6 +726,14 @@ static const char* OP_AllControlsTooltips[sizeof(OP_AllControlsMenu)/sizeof(OP_A
 	// The rest is null, for now
 };
 
+// i really do not feel like messing with setup routines
+// and macro preprocessor cannot eval maths for string shit like this :chaosleep:
+#define RUMBDEF_0 OP_Joystick1RumbleDef
+#define RUMBDEF_1 OP_Joystick2RumbleDef
+#define RUMBDEF_2 OP_Joystick3RumbleDef
+#define RUMBDEF_3 OP_Joystick4RumbleDef
+#define RUMBDEF(x) RUMBDEF_##x
+
 #define OP_JOYMENU(pnum)                                                                         \
 	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},                                             \
 	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"           , &cv_aimaxis[pnum]        ,  15}, \
@@ -745,11 +754,8 @@ static const char* OP_AllControlsTooltips[sizeof(OP_AllControlsMenu)/sizeof(OP_A
 	{IT_STRING | IT_CVAR,  NULL, "X deadzone"                 , &cv_xdeadzone[pnum]      , 100}, \
 	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"                 , &cv_ydeadzone[pnum]      , 105}, \
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},                                               \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]          , 120}, \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumble_strength[pnum] , 125}, \
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]      , 130},
-
-//TODO: add menu for controller rumble stuff
+	{IT_SUBMENU|IT_STRING, NULL, "Rumble Options..."          , &RUMBDEF(pnum)           , 120}, \
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]     , 125},
 
 static menuitem_t OP_Joystick1Menu[] =
 {
@@ -773,6 +779,46 @@ static menuitem_t OP_Joystick4Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad...", M_Setup4PJoystickMenu, 0},
 	OP_JOYMENU(3)
+};
+
+#undef RUMBDEF
+#undef RUMBDEF_0
+#undef RUMBDEF_1
+#undef RUMBDEF_2
+#undef RUMBDEF_3
+
+// FIXME: stair jank rumble should be greyed out if its disabled, but menus suck butt!
+#define OP_JOYRUMBLEMENU(pnum)                                                                       \
+	{IT_HEADER, NULL, "Global", NULL, 7},                                                            \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]              , 15}, \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumble_strength[pnum]     , 20}, \
+	{IT_HEADER, NULL, "Rumble Types", NULL, 27},                                                     \
+	{IT_STRING | IT_CVAR,  NULL, "Spinout"                    , &cv_rumble_spinout[pnum]      , 35}, \
+	{IT_STRING | IT_CVAR,  NULL, "Sneaker Boost"              , &cv_rumble_sneakerboost[pnum] , 40}, \
+	{IT_STRING | IT_CVAR,  NULL, "Offroad"                    , &cv_rumble_offroad[pnum]      , 45}, \
+	{IT_STRING | IT_CVAR,  NULL, "Banana Dragging"            , &cv_rumble_bananadrag[pnum]   , 50}, \
+	{IT_STRING | IT_CVAR,  NULL, "Stair Jank"                 , &cv_rumble_stairjank[pnum]    , 55}, \
+	{IT_STRING | IT_CVAR,  NULL, "Brake Drift"                , &cv_rumble_brakedrift[pnum]   , 60}, \
+	{IT_STRING | IT_CVAR,  NULL, "Drift Charge"               , &cv_rumble_driftcharge[pnum]  , 65}, \
+
+static menuitem_t OP_Joystick1RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(0)
+};
+
+static menuitem_t OP_Joystick2RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(1)
+};
+
+static menuitem_t OP_Joystick3RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(2)
+};
+
+static menuitem_t OP_Joystick4RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(3)
 };
 
 static menuitem_t OP_JoystickSetMenu[] =
@@ -2531,6 +2577,11 @@ menu_t OP_Joystick1Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP
 menu_t OP_Joystick2Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36, NULL);
 menu_t OP_Joystick3Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36, NULL);
 menu_t OP_Joystick4Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 30, 36, NULL);
+
+menu_t OP_Joystick1RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1RumbleMenu, &OP_Joystick1Def, 30, 36, NULL);
+menu_t OP_Joystick2RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2RumbleMenu, &OP_Joystick2Def, 30, 36, NULL);
+menu_t OP_Joystick3RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3RumbleMenu, &OP_Joystick3Def, 30, 36, NULL);
+menu_t OP_Joystick4RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4RumbleMenu, &OP_Joystick4Def, 30, 36, NULL);
 
 menu_t OP_JoystickSetDef  =
 {
