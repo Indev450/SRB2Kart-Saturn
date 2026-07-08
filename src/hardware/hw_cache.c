@@ -575,7 +575,8 @@ void HWR_ClearAllTextures(void)
 void HWR_InitMapTextures(void)
 {
 	gl_textures = NULL;
-}*/
+}
+*/
 
 static void FreeMapTexture(GLMapTexture_t *tex)
 {

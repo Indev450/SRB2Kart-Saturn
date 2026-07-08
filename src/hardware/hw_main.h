@@ -200,7 +200,7 @@ extern consvar_t cv_gllightdither;
 extern consvar_t cv_glfiltermode;
 extern consvar_t cv_glanisotropicmode;
 
-extern consvar_t cv_glsolvetjoin, cv_glpolytile, cv_glpolyshape;
+extern consvar_t cv_glsolvetjoin;
 
 extern consvar_t cv_glbatching;
 
