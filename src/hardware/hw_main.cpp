@@ -3702,7 +3702,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			wallVerts[1].z = baseWallVerts[2].z + (baseWallVerts[2].z - baseWallVerts[1].z) * heightmult;
 		}
 
-		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(sprmo->frame & FF_FULLBRIGHT));
+		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !R_ThingIsFullBright(sprmo));
 
 		Surf.PolyColor.s.alpha = alpha;
 
@@ -3756,7 +3756,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	if (!sprmo->subsector)
 		return;
 
-	const boolean papersprite = (sprmo->frame & FF_PAPERSPRITE);
+	const boolean papersprite = R_ThingIsPaperSprite(sprmo);
 	const sector_t *sector = sprmo->subsector->sector;
 
 	if (sector->numlights)
@@ -3915,7 +3915,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	const precipmobj_t *sprmo = spr->precip;
+	precipmobj_t *sprmo = spr->precip;
 
 	if (!sprmo->subsector)
 		return;
@@ -3961,11 +3961,10 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	if (sector->numlights)
 	{
-		INT32 light;
+		// Always use the light at the top instead of whatever I was doing before
+		INT32 light = R_GetPlaneLight(sector, sprmo->z, false); // sprmo->z + sprmo->height
 
-		light = R_GetPlaneLight(sector, sprmo->z, false); // Always use the light at the top instead of whatever I was doing before
-
-		if (!(sprmo->frame & FF_FULLBRIGHT))
+		if (!R_PrecipThingIsFullBright(sprmo))
 			lightlevel = static_cast<INT32>(*sector->lightlist[light].lightlevel);
 
 		if (sector->lightlist[light].extra_colormap)
@@ -3973,7 +3972,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	}
 	else
 	{
-		if (!(sprmo->frame & FF_FULLBRIGHT))
+		if (!R_PrecipThingIsFullBright(sprmo))
 			lightlevel = static_cast<INT32>(sector->lightlevel);
 
 		if (sector->extra_colormap)
@@ -4557,7 +4556,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+	const boolean papersprite = R_ThingIsPaperSprite(thing);
 
 	// transform the origin point
 	tr_x = FixedToFloat(interp.x);
@@ -4571,8 +4570,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		return;
 
 	const boolean mirrored = thing->mirrored;
-	const boolean vflip    = (thing->eflags & MFE_VERTICALFLIP);
-	const boolean hflip    = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean vflip    = R_ThingVerticallyFlipped(thing);
+	const boolean hflip    = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK

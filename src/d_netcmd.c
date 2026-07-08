@@ -1008,9 +1008,17 @@ void D_RegisterClientCommands(void)
 
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
-		CV_RegisterVar(&cv_rumble[i]);
-		CV_RegisterVar(&cv_rumblestrength[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
+
+		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_rumble_strength[i]);
+		CV_RegisterVar(&cv_rumble_spinout[i]);
+		CV_RegisterVar(&cv_rumble_sneakerboost[i]);
+		CV_RegisterVar(&cv_rumble_offroad[i]);
+		CV_RegisterVar(&cv_rumble_bananadrag[i]);
+		CV_RegisterVar(&cv_rumble_stairjank[i]);
+		CV_RegisterVar(&cv_rumble_brakedrift[i]);
+		CV_RegisterVar(&cv_rumble_driftcharge[i]);
 	}
 
 	CV_RegisterVar(&cv_gamepadifunfocused);

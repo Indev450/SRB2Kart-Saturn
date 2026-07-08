@@ -411,7 +411,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	if (!sprframe)
 		return 0;
 
-	if (sprframe->rotate != SRF_SINGLE || (mo->frame & FF_PAPERSPRITE))
+	if (sprframe->rotate != SRF_SINGLE || R_ThingIsPaperSprite(mo))
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll * mo->player->kartstuff[k_aizdriftstrat]);
