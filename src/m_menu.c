@@ -25,6 +25,7 @@
 #include "d_netcmd.h"
 #include "d_clisrv.h"
 #include "i_net.h"
+#include "i_system.h"
 #include "console.h"
 #include "r_fps.h"
 #include "r_local.h"
@@ -275,6 +276,8 @@ static void M_ConfirmTeamScramble(INT32 choice);
 static void M_ConfirmTeamChange(INT32 choice);
 static void M_ConfirmSpectateChange(INT32 choice);
 static void M_QuitSRB2(INT32 choice);
+
+static void M_SaturnReportIssue(INT32 choice);
 
 // Single Player
 static void M_TimeAttack(INT32 choice);
@@ -10586,6 +10589,20 @@ static void M_QuitSRB2(INT32 choice)
 	// between 1 and maximum number.
 	(void)choice;
 	M_StartMessage(quitmsg[M_RandomKey(NUM_QUITMESSAGES)], M_QuitResponse, MM_YESNO);
+}
+
+// ===========
+// SATURN MENU
+// ===========
+
+static void M_SaturnReportIssue(INT32 choice)
+{
+	(void)choice;
+	int url = I_OpenURL(SATURNISSUEPAGE);
+
+	// SDL_OpenURL unsupported or failed
+	if (url == -1)
+		M_StartMessage(M_GetText("Failed to Open Web Page.\nPlease open the following page in your web browser:\n\n" SATURNISSUEPAGE "\n\n(Press a key)\n"), NULL, MM_NOTHING);
 }
 
 #ifdef HAVE_DISCORDRPC

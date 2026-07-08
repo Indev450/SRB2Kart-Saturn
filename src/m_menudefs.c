@@ -1784,6 +1784,7 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	140},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	145},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	150}, // uwu
+	{IT_STRING|IT_CALL,     NULL,   "Report an Issue",                   M_SaturnReportIssue,       155}
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -1807,6 +1808,7 @@ static const char* OP_SaturnTooltips[] =
 	"Options for Saturn specific HUD things.",
 	"Options for sprite distortion effects.",
 	"See the people who helped make this project possible!",
+	"Noticed a bug, have a Suggestion or other Feedback?\nFeel free to tell us!",
 };
 
 enum
@@ -1828,6 +1830,7 @@ enum
 	sm_hud,
 	sm_distortionmenu,
 	sm_credits,
+	sm_issue,
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =

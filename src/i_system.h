@@ -216,6 +216,10 @@ static inline void I_HandleInterrupt(void)
 		I_Quit();
 }
 
+/** \brief Open A URL
+ */
+int I_OpenURL(const char *url);
+
 /**	\brief	The I_GetDiskFreeSpace function
 
 	\param	freespace	a INT64 pointer to hold the free space amount
