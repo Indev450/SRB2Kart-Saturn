@@ -1711,8 +1711,6 @@ int I_OpenURL(const char *url)
 
 static void I_ShowErrorBox(const char *title, const char *msg)
 {
-	int url = -1;
-
 	if (M_CheckParm("-dedicated"))
 		return;
 
@@ -1738,11 +1736,13 @@ static void I_ShowErrorBox(const char *title, const char *msg)
 	SDL_ShowMessageBox(&messageboxdata, &buttonid);
 
 	if (buttonid == 1)
-		url = I_OpenURL(SATURNISSUEPAGE);
+	{
+		int url = I_OpenURL(SATURNISSUEPAGE);
 
-	// SDL_OpenURL unsupported or failed
-	if (url == -1)
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to Open Web Page", "Please open the following page in your web browser:\n" SATURNISSUEPAGE, NULL);
+		// SDL_OpenURL unsupported or failed
+		if (url == -1)
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to Open Web Page", "Please open the following page in your web browser:\n" SATURNISSUEPAGE, NULL);
+	}
 }
 
 static void I_ShowSimpleErrorBox(const char *title, char *msg)
