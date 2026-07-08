@@ -1700,7 +1700,7 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	sprintf(signal_name, "%s", signame);
 }
 
-static int I_OpenURL(const char *url)
+int I_OpenURL(const char *url)
 {
 #if SDL_VERSION_ATLEAST(2,0,14)
 	return SDL_OpenURL(va("%s", url));
