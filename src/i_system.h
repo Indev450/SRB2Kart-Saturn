@@ -14,6 +14,9 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
+// page for Saturn issue reports
+#define SATURNISSUEPAGE "https://github.com/Indev450/SRB2Kart-Saturn/issues"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
