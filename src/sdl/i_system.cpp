@@ -691,7 +691,7 @@ void I_OutputMsg(const char *fmt, ...)
 //
 // I_GetKey
 //
-INT32 I_GetKey (void)
+INT32 I_GetKey(void)
 {
 	// Warning: I_GetKey empties the event queue till next keypress
 	event_t *ev;
