@@ -757,6 +757,45 @@ void R_UpdateMobjInterpolators(void)
 	}
 }
 
+// reset banan and eggbox rollangle when they´re on the ground
+// if not cv_bananthrowroll option "+Onground"
+static void R_ResetBananaRollangle(mobj_t* mobj)
+{
+	if (!mobj->rollangle)
+		return;
+
+	if (mobj->type != MT_BANANA && mobj->type != MT_EGGMANITEM) // always reset eggboxes
+		return;
+
+	// keep banans "rotated" if we want them to
+	if (mobj->type == MT_BANANA && cv_bananthrowroll.value == 2)
+		return;
+
+	// only reset if on ground
+	if (!P_IsObjectOnGround(mobj))
+		return;
+
+	mobj->rollangle = 0;
+}
+
+// Reset our Sprite scales and offsets
+// at the start of the tic
+// this is just to make things simpler
+// as we dont have to reset it ourselves after use
+// done at the start so lua can still overwrite everything
+static void R_ResetMobjSpriteStuff(mobj_t *mobj)
+{
+	mobj->spritexscale  = mobj->realxscale;
+	mobj->spriteyscale  = mobj->realyscale;
+	mobj->spritexoffset = mobj->realxoffset;
+	mobj->spriteyoffset = mobj->realyoffset;
+
+	mobj->temprollangle = 0;
+
+	// kinda stupid but idk where else to put this
+	R_ResetBananaRollangle(mobj);
+}
+
 //
 // P_ResetMobjInterpolationState
 //
@@ -795,19 +834,9 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 		mobj->player->old_frameangle = mobj->player->frameangle;
 	}
 
-	// Reset our Sprite scales and offsets
-	// at the start of the tic
-	// this is just to make things simpler
-	// as we dont have to reset it ourselves after use
-	// done at the start so lua can still overwrite everything
-
 	// technically not interpolation related
 	// but this saves us another thinkerloop and multiple checks lel
-	mobj->spritexscale  = mobj->realxscale;
-	mobj->spriteyscale  = mobj->realyscale;
-	mobj->spritexoffset = mobj->realxoffset;
-	mobj->spriteyoffset = mobj->realyoffset;
-	mobj->temprollangle = 0;
+	R_ResetMobjSpriteStuff(mobj);
 
 	mobj->resetinterp = false;
 }
