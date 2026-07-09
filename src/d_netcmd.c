@@ -566,6 +566,7 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"MODIFYVOTE",
 	"PICKVOTE",
 	"REMOVEPLAYER",
+	"DISCORD",
 	"LUACMD",
 	"LUAVAR"
 };
