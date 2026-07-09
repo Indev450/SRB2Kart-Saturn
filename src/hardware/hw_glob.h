@@ -54,7 +54,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 // --------
 extern extrasubsector_t *extrasubsectors;
 #ifdef PARANOIA
-extern size_t addsubsector;
+extern size_t num_extra_subsector;
 #endif
 
 void HWR_FreeExtraSubsectors(void);

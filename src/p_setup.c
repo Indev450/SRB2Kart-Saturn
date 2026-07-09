@@ -117,6 +117,7 @@ line_t *spawnlines = NULL;
 side_t *spawnsides = NULL;
 INT32 numstarposts = 0;
 boolean levelloading = false;
+UINT8 levelfadecol = 120;
 
 virtres_t *curmapvirt = NULL;
 
@@ -2959,7 +2960,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// 99% of the things already did, so.
 	// Map header should always be in place at this point
 	INT32 i;
-	UINT8 levelfadecol;
 	boolean ranspecialwipe = false;
 	lumpnum_t encoreLump = LUMPERROR;
 	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
