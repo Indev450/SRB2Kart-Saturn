@@ -5986,6 +5986,10 @@ static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD
 
 static void HWR_DoPostProcessor(void)
 {
+	// no flashes or screen waving if we want less vfx!
+	if (cv_reducevfx.value)
+		return;
+
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
 	if (!HWR_ShouldUsePaletteRendering())
@@ -6025,7 +6029,7 @@ static void HWR_DoPostProcessor(void)
 		return;
 
 	// Not supported in splitscreen - someone want to add support?
-	if (splitscreen || cv_reducevfx.value)
+	if (splitscreen)
 		return;
 
 	//UINT8 viewnum = R_GetViewNumber();
@@ -6083,44 +6087,60 @@ static void HWR_DoPostProcessor(void)
 	// Flipping of the screen isn't done here anymore
 }
 
-void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
+//
+// wipes
+//
+static lumpnum_t wipelumpnum;
+
+// puts wipe lumpname in wipename[9]
+static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 {
 	static char lumpname[9] = "FADEmmss";
-	lumpnum_t lumpnum;
 	size_t lsize;
 
+	// screen textures disabled completely
 	if (cv_glscreentextures.value == 0)
 	{
-		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
-		return;
+		return false;
 	}
 
-	if (wipenum > 99 || scrnnum > 99) // not a valid wipe number
+	// not a valid wipe number
+	if (wipenum > 99 || scrnnum > 99)
 	{
-		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
-		return; // shouldn't end up here really, the loop should've stopped running beforehand
+		return false; // shouldn't end up here really, the loop should've stopped running beforehand
 	}
 
 	// puts the numbers into the lumpname
 	sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)wipenum, (UINT16)scrnnum);
-	lumpnum = W_CheckNumForName(lumpname);
+	wipelumpnum = W_CheckNumForName(lumpname);
 
-	if (lumpnum == LUMPERROR) // again, shouldn't be here really
+	// again, shouldn't be here really
+	if (wipelumpnum == LUMPERROR)
 	{
-		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
-		return;
+		return false;
 	}
 
-	lsize = W_LumpLength(lumpnum);
+	lsize = W_LumpLength(wipelumpnum);
 
 	if (!(lsize == 256000 || lsize == 64000 || lsize == 16000 || lsize == 4000))
 	{
 		CONS_Alert(CONS_WARNING, "Fade mask lump %s of incorrect size, ignored\n", lumpname);
-		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
-		return; // again, shouldn't get here if it is a bad size
+		return false; // again, shouldn't get here if it is a bad size
 	}
 
-	HWR_GetFadeMask(lumpnum);
+	return true;
+}
+
+void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
+{
+	if (!HWR_WipeCheck(wipenum, scrnnum))
+	{
+		// just draw a black screen instead of rapidly flashing a white screen
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
+		return;
+	}
+
+	HWR_GetFadeMask(wipelumpnum);
 	GL_DoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
 }
 
