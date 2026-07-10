@@ -3522,27 +3522,6 @@ static INT32 K_StairJankFlip(INT32 value)
 	return K_AltFlip(value, 2);
 }
 
-// reset banan and eggbox rollangle when they´re on the ground
-// if not cv_bananthrowroll option "+Onground"
-static void K_ResetBananaRollangle(mobj_t* mo)
-{
-	if (!mo->rollangle)
-		return;
-
-	if (mo->type != MT_BANANA && mo->type != MT_EGGMANITEM) // always reset eggboxes
-		return;
-
-	// keep banans "rotated" if we want them to
-	if (mo->type == MT_BANANA && cv_bananthrowroll.value == 2)
-		return;
-
-	// only reset if on ground
-	if (!P_IsObjectOnGround(mo))
-		return;
-
-	mo->rollangle = 0;
-}
-
 #define SLOPEROLL_DIV 3
 void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 {
@@ -3555,9 +3534,6 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 
 	I_Assert(mo->subsector != NULL);
 	I_Assert(mo->subsector->sector != NULL);
-
-	// kinda stupid but idk where else to put this
-	K_ResetBananaRollangle(mo);
 
 	if (!K_ShouldSlopeRoll(mo))
 	{

@@ -691,7 +691,7 @@ void I_OutputMsg(const char *fmt, ...)
 //
 // I_GetKey
 //
-INT32 I_GetKey (void)
+INT32 I_GetKey(void)
 {
 	// Warning: I_GetKey empties the event queue till next keypress
 	event_t *ev;
@@ -1700,7 +1700,7 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	sprintf(signal_name, "%s", signame);
 }
 
-static int I_OpenURL(const char *url)
+int I_OpenURL(const char *url)
 {
 #if SDL_VERSION_ATLEAST(2,0,14)
 	return SDL_OpenURL(va("%s", url));
@@ -1736,7 +1736,13 @@ static void I_ShowErrorBox(const char *title, const char *msg)
 	SDL_ShowMessageBox(&messageboxdata, &buttonid);
 
 	if (buttonid == 1)
-		I_OpenURL("https://github.com/Indev450/SRB2Kart-Saturn/issues");
+	{
+		int url = I_OpenURL(SATURNISSUEPAGE);
+
+		// SDL_OpenURL unsupported or failed
+		if (url == -1)
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to Open Web Page", "Please open the following page in your web browser:\n" SATURNISSUEPAGE, NULL);
+	}
 }
 
 static void I_ShowSimpleErrorBox(const char *title, char *msg)
