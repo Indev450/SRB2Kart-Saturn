@@ -34,8 +34,8 @@ size_t I_GetFreeMem(size_t *total)
   /* return si.freeram; */
   char buf[1024];
   char *memTag;
-  UINT32 freeKBytes;
-  UINT32 totalKBytes;
+  size_t freeKBytes;
+  size_t totalKBytes;
   INT32 n;
   INT32 meminfo_fd = -1;
 
@@ -46,7 +46,7 @@ size_t I_GetFreeMem(size_t *total)
   if (n < 0)
     {
       // Error
-      *total = 0L;
+      *total = 0;
       return 0;
     }
 
@@ -54,7 +54,7 @@ size_t I_GetFreeMem(size_t *total)
   if (NULL == (memTag = strstr(buf, MEMTOTAL)))
     {
       // Error
-      *total = 0L;
+      *total = 0;
       return 0;
     }
 
@@ -64,7 +64,7 @@ size_t I_GetFreeMem(size_t *total)
   if (NULL == (memTag = strstr(buf, MEMFREE)))
     {
       // Error
-      *total = 0L;
+      *total = 0;
       return 0;
     }
 

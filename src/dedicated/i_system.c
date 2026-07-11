@@ -74,6 +74,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <time.h>
 #if defined (__linux__)
 #include <sys/vfs.h>
+#elif defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
 #else
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -2047,13 +2053,13 @@ size_t I_GetFreeMem(size_t *total)
 		*total = 32 << 20;
 	return 32 << 20;
 #elif defined (_WIN32)
-	MEMORYSTATUS info;
+	MEMORYSTATUSEX info;
 
-	info.dwLength = sizeof (MEMORYSTATUS);
-	GlobalMemoryStatus( &info );
+	info.dwLength = sizeof (MEMORYSTATUSEX);
+	GlobalMemoryStatusEx( &info );
 	if (total)
-		*total = (size_t)info.dwTotalPhys;
-	return (size_t)info.dwAvailPhys;
+		*total = (size_t)info.ullTotalPhys;
+	return (size_t)info.ullAvailPhys;
 #elif defined (__OS2__)
 	UINT32 pr_arena;
 
@@ -2086,7 +2092,7 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
@@ -2095,12 +2101,12 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
 	memTag += sizeof (MEMTOTAL);
-	totalKBytes = (size_t)atoi(memTag);
+	totalKBytes = strtoul(memTag, NULL, 10);
 
 	if ((memTag = strstr(buf, MEMAVAILABLE)) == NULL)
 	{
@@ -2114,7 +2120,7 @@ size_t I_GetFreeMem(size_t *total)
 		{
 			// Error
 			if (total)
-				*total = 0L;
+				*total = 0;
 			return 0;
 		}
 		freeKBytes = MemAvailable;
@@ -2122,16 +2128,46 @@ size_t I_GetFreeMem(size_t *total)
 	else
 	{
 		memTag += sizeof (MEMAVAILABLE);
-		freeKBytes = atoi(memTag);
+		freeKBytes = strtoul(memTag, NULL, 10);
 	}
 
 	if (total)
 		*total = totalKBytes << 10;
 	return freeKBytes << 10;
+#elif defined(__APPLE__)
+	/* macOS */
+	mach_port_t host = mach_host_self();
+	kern_return_t kr;
+	mach_msg_type_number_t count;
+	vm_size_t v_page_size;
+	struct vm_statistics64 vm_stats;
+	uint64_t total_mem, free_mem;
+	size_t size;
+
+	size = sizeof(total_mem);
+	if (sysctlbyname("hw.memsize", &total_mem, &size, NULL, 0) < 0)
+		total_mem = 0;
+
+	kr = host_page_size(host, &v_page_size);
+	if (kr != KERN_SUCCESS)
+		v_page_size = 4096;
+
+	count = HOST_VM_INFO64_COUNT;
+	kr = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stats, &count);
+	if (kr == KERN_SUCCESS)
+		free_mem = (uint64_t)(vm_stats.free_count + vm_stats.inactive_count) * v_page_size;
+	else
+		free_mem = 0;
+
+	if (total)
+		*total = (size_t)total_mem;
+	return (size_t)free_mem;
 #else
 	// Guess 48 MB.
 	if (total)
+	{
 		*total = 48<<20;
+	}
 	return 48<<20;
 #endif
 }
