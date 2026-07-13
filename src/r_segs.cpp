@@ -716,7 +716,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	auto overflow_clamp = [&](INT64 overflow_test)
 	{
 		// This is not INT32_MIN on purpose! INT32_MIN makes the drawers freak out.
-		return (fixed_t)std::clamp<INT64>(overflow_test, (INT64)(-INT32_MAX), (INT64)INT32_MAX);
+		return (fixed_t)std::clamp<INT64>(overflow_test, (-INT32_MAX), INT32_MAX);
 	};
 
 	dc->numlights = 0;
