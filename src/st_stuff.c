@@ -14,6 +14,7 @@
 ///        Does palette indicators as well (red pain/berserk, bright pickup)
 
 #include "doomdef.h"
+#include "d_main.h"
 #include "g_game.h"
 #include "g_input.h"
 #include "k_director.h"
@@ -172,7 +173,8 @@ INT32 st_palette = 0;
 void ST_ResetPaletteStuff(void)
 {
 	st_palette = 0;
-	V_SetPalette(0);
+	if (loaded_config)
+		V_SetPalette(0);
 }
 
 static void ST_doPaletteStuff(void)
