@@ -1425,6 +1425,11 @@ static void I_Fork(void)
 }
 #endif/*NEWSIGNALHANDLER*/
 
+int I_OpenURL(const char *url)
+{
+	return -1;
+}
+
 INT32 I_StartupSystem(void)
 {
 	I_StartupConsole();
