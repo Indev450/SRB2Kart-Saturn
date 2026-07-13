@@ -275,20 +275,6 @@ static void D_Renderview(void)
 
 	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
-	if (rendermode == render_soft && cv_homremoval.value)
-	{
-		if (cv_homremoval.value == 1)
-		{
-			// Clear the software screen buffer to remove HOM
-			memset(vid.screens[0], 31, vid.width * vid.height);
-		}
-		else if (cv_homremoval.value == 2)
-		{
-			//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-			memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
-		}
-	}
-
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)

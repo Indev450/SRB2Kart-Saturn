@@ -1389,6 +1389,21 @@ void R_RenderPlayerView(player_t *player)
 	maskcount_t*    masks    = static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
 	const boolean   skybox   = (skyboxmo[0] && cv_skybox.value);
 
+	// Only do it if it's the first screen being rendered
+	if (cv_homremoval.value && viewssnum == 0)
+	{
+		if (cv_homremoval.value == 1)
+		{
+			// Clear the software screen buffer to remove HOM
+			memset(vid.screens[0], 31, vid.width * vid.height);
+		}
+		else if (cv_homremoval.value == 2)
+		{
+			//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+			memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
+		}
+	}
+
 	// load previous saved value of skyVisible for the player
 	skyVisible = skyVisiblePerPlayer[viewssnum];
 
@@ -1455,10 +1470,12 @@ void R_RenderPlayerView(player_t *player)
 	NetUpdate();
 
 	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
+
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
 	PS_STOP_TIMING(ps_bsptime);
+
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
@@ -1466,8 +1483,8 @@ void R_RenderPlayerView(player_t *player)
 
 	ps_numsprites.value.i = numvisiblesprites;
 
-	PS_START_TIMING(ps_sw_portaltime);
 	// Portal rendering. Hijacks the BSP traversal.
+	PS_START_TIMING(ps_sw_portaltime);
 	if (portal_base)
 	{
 		portal_t *portal;
@@ -1517,6 +1534,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
+
 	free(masks);
 
 	// Check for new console commands.
