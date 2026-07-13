@@ -333,7 +333,7 @@ void Portal_AddSkyboxPortals(void)
 	INT32 i;
 	UINT16 count = 0;
 
-	for (i = 0; i < MAXVISPLANES; i++, pl++)
+	for (i = 0; i < MAXVISPLANES; i++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
