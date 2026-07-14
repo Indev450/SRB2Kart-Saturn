@@ -723,7 +723,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			if (alpha < 255)
 			{
 				shader = SHADER_WATERREFRACT;
-				GL_DrawWaterPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags|PF_ColorMapped, shader);
+				GL_DrawWaterPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags|PF_ColorMapped);
 			}
 		}
 		else
@@ -815,7 +815,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 				// Draw
 				if (shader == SHADER_WATERREFRACT)
-					GL_DrawWaterPolygon(&Surf, horizonpts, 6, PolyFlags, shader);
+					GL_DrawWaterPolygon(&Surf, horizonpts, 6, PolyFlags);
 				else
 					HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
 			}
@@ -4352,14 +4352,14 @@ static void HWR_RenderRefractionWater(void)
 
 	// all this bullshit
 	// just so either ceiling or floor planes can be captured in the opposite plane........
-	// sincerely im not sure if the performance tradeoff is worth it
-	// considering most water floors in a water fof with a ceiling (or vice versa) are mapping oversights
-	// but ig this is technically more "correct" (this all sucks massive ass regardless sned help)
 
 	// caveat with all of this is
 	// some translucent things behind water planes may not get the refraction...
 	// i have no clue how to ever fix that (maybe another pass with more depth compares? kinda wonder if we even need the whole drawnode thing in gl anyways)
 	// but it seems like software also suffers from this in some cases
+
+	// other idea: copy only screen parts that water covers similar to software but per plane
+	// maybe that will be fast enough?
 
 	static std::vector<gl_drawnode_t> waterdrawnodes;
 

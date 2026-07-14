@@ -2498,10 +2498,9 @@ void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, F
 		Clamp2D(GL_TEXTURE_WRAP_T);
 }
 
-void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader)
+void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
 {
-	GL_SetShader(HWR_GetShaderFromTarget(shader));
-	GL_PreparePolygon(pSurf, PolyFlags);
+	GL_SetShader(HWR_GetShaderFromTarget(SHADER_WATERREFRACT));
 
 	pglActiveTexture(GL_TEXTURE4);
 	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_TEX]);
@@ -2511,18 +2510,7 @@ void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumP
 	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_DEPTHTEX]);
 	pglActiveTexture(GL_TEXTURE0);
 
-	pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
-	pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
-	pglDrawArrays(GL_TRIANGLE_FAN, 0, iNumPts);
-
-	if (PolyFlags & PF_RemoveYWrap)
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	if (PolyFlags & PF_ForceWrapX)
-		Clamp2D(GL_TEXTURE_WRAP_S);
-
-	if (PolyFlags & PF_ForceWrapY)
-		Clamp2D(GL_TEXTURE_WRAP_T);
+	GL_DrawPolygon(pSurf, pOutVerts, iNumPts, PolyFlags);
 }
 
 void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray)
