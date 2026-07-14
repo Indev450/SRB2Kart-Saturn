@@ -1480,6 +1480,19 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
 		GL_DrawScreenTexture(tex, NULL, 0);
 
+#ifdef USE_FBO_OGL
+	// FIXME: this is incredibly stupid
+	// but the final screen texture will NOT be drawn in the downsample fbo
+	if (tex == HWD_SCREENTEXTURE_GENERIC2 &&
+		UseScreenFBO() && HWR_ShouldUsePaletteRendering())
+	{
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
+		GL_EnableShader();
+		GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+		GL_UnSetShader();
+	}
+#endif
+
 	image = malloc(screen_width*screen_height*3);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, image);
