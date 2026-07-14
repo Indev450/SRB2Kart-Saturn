@@ -1525,8 +1525,7 @@ void R_RenderPlayerView(player_t *player)
 
 	R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 	PS_START_TIMING(ps_sw_planetime);
-	if (!skybox)
-		R_DrawSkyPlanes();
+	R_DrawSkyPlanes();
 	R_DrawPlanes();
 	PS_STOP_TIMING(ps_sw_planetime);
 	// draw mid texture and sprite
