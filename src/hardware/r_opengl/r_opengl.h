@@ -104,6 +104,8 @@ void GL_Framebuffer_Disable(void);
 extern int supportFBO;
 #endif
 
+void GL_CopyMainFramebufferTexture(void);
+
 // ==========================================================================
 //                                                                     GLOBAL
 // ==========================================================================

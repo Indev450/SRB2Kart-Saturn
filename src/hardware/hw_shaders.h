@@ -322,6 +322,112 @@
 	"}\n" \
 	"#endif\0"
 
+// water refraction stuff
+// what a mess....
+
+//FIXME: add proper scaling instead of 0.05 (this seems to actually work out tho?)
+
+// mix the uhh scene texture with the uhh water plane or smth
+// alpha is handled in a dogshit way, and i have no idea why i gotta mix the lighttable shit with it
+// but this matches up pretty perfectly somehow
+// this is probably complete shit but i dont care
+// got the idea for depth testing from https://lettier.github.io/3d-game-shaders-for-beginners/screen-space-refraction.html
+#define GLSL_WATERREFRACT_TEXEL \
+	"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
+	"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
+	"float sdistort = sin(a) * amp;\n" \
+	"float cdistort = cos(a) * amp;\n" \
+	"vec2 uv = gl_FragCoord.xy / scr_resolution;\n" \
+	"vec2 scene_uv = uv + vec2(sdistort, cdistort) * 0.05;\n" \
+	"float scenedepth = texture2D(scene_depth_tex, scene_uv).r;\n" \
+	"vec4 watersurface = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n" \
+	"vec4 scene;\n" \
+	"vec4 texel;\n" \
+	"float refractalpha = 0.0;\n" \
+	"bool pixelinfront = scenedepth < gl_FragCoord.z;\n" \
+	"if (pixelinfront) {\n" \
+		"scene = watersurface;\n" \
+		"texel = watersurface;\n" \
+	"} else {\n" \
+		"refractalpha = (watersurface.a * poly_color.a);\n" \
+		"scene = texture2D(scene_tex, scene_uv);\n" \
+		"texel = mix(scene, watersurface, refractalpha);\n" \
+	"}\n"
+
+// copy paste but needs to modify this for palrender stuff
+// the refracted mix shouldnt have the actual alpha applied
+// as we do this during the mix phase in GLSL_WATERREFRACT_TEXEL
+#define GLSL_PALETTEWATER_RENDERING \
+	"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((watersurface * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
+	"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
+	"float light_y = clamp(floor(R_DoomColormap(lighting, z, gl_FragCoord.xy)), 0.0, 31.0);\n" \
+	"vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (light_y + 0.5) / 32.0);\n" \
+	"vec4 final_color = texture2D(lighttable_tex, lighttable_coord);\n" \
+	"if (pixelinfront) {\n" \
+		"final_color.a = (texel.a * poly_color.a);\n" \
+	"} else {\n" \
+		"final_color = mix(scene, final_color, refractalpha);\n" \
+		"final_color.a = texel.a;\n" \
+	"}\n" \
+	"gl_FragColor = final_color;\n" \
+
+// adjusted values to match software a little better
+	// original values
+	//"const float freq = 0.025;\n"
+	//"const float amp = 0.025;\n"
+
+	// adjusted values
+	//"const float freq = 0.03;\n"
+	//"const float amp = 0.018;\n"
+
+	// this shouldnt distort too much horizontally
+	// but needs a little more ripples
+
+#define GLSL_WATERREFRACT_FRAGMENT_SHADER \
+	"#version 120\n" \
+	GLSL_FLOOR_FUDGES \
+	"const float freq = 0.03;\n" \
+	"const float amp = 0.018;\n" \
+	"const float speed = 2.0;\n" \
+	"const float pi = 3.14159;\n" \
+	"#ifdef SRB2_PALETTE_RENDERING\n" \
+	"uniform sampler2D tex;\n" \
+	"uniform sampler2D scene_tex;\n" \
+	"uniform sampler2D scene_depth_tex;\n" \
+	"uniform sampler3D palette_lookup_tex;\n" \
+	"uniform sampler2D lighttable_tex;\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform float lighting;\n" \
+	"uniform float leveltime;\n" \
+	GLSL_DOOM_COLORMAP \
+	"void main(void) {\n" \
+		GLSL_WATERREFRACT_TEXEL \
+		GLSL_PALETTEWATER_RENDERING \
+	"}\n" \
+	"#else\n" \
+	"uniform sampler2D tex;\n" \
+	"uniform sampler2D scene_tex;\n" \
+	"uniform sampler2D scene_depth_tex;\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform vec4 tint_color;\n" \
+	"uniform vec4 fade_color;\n" \
+	"uniform float lighting;\n" \
+	"uniform float fade_start;\n" \
+	"uniform float fade_end;\n" \
+	"uniform float leveltime;\n" \
+	GLSL_DOOM_COLORMAP \
+	GLSL_DOOM_LIGHT_EQUATION \
+	"void main(void) {\n" \
+		GLSL_WATERREFRACT_TEXEL \
+		"vec4 base_color = texel * poly_color;\n" \
+		"vec4 final_color = base_color;\n" \
+		GLSL_SOFTWARE_TINT_EQUATION \
+		GLSL_SOFTWARE_FADE_EQUATION \
+		"final_color.a = pixelinfront ? (texel.a * poly_color.a) : texel.a;\n" \
+		"gl_FragColor = final_color;\n" \
+	"}\n" \
+	"#endif\0"
+
 //
 // Fog block shader
 //

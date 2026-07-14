@@ -68,6 +68,7 @@ enum
 // Performance stats
 extern ps_metric_t ps_hw_nodesorttime;
 extern ps_metric_t ps_hw_nodedrawtime;
+extern ps_metric_t ps_hw_waterdrawtime;
 extern ps_metric_t ps_hw_spritesorttime;
 extern ps_metric_t ps_hw_spritedrawtime;
 

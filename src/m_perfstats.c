@@ -98,6 +98,7 @@ perfstatrow_t rendertime_rows[] = {
 	{" sprdraw", " Sprite render: ", &ps_hw_spritedrawtime, PS_TIME|PS_LEVEL|PS_HW},
 	{" nodesrt", " Drwnode sort:  ", &ps_hw_nodesorttime, PS_TIME|PS_LEVEL|PS_HW},
 	{" nodedrw", " Drwnode render:", &ps_hw_nodedrawtime, PS_TIME|PS_LEVEL|PS_HW},
+	{" wtrdrw",  " Water render:  ", &ps_hw_waterdrawtime, PS_TIME|PS_LEVEL|PS_HW},
 	{" other  ", " Other:         ", &ps_otherrendertime, PS_TIME|PS_LEVEL|PS_HW},
 #endif
 
@@ -536,6 +537,7 @@ static void PS_UpdateFrameStats(void)
 				ps_skyboxtime.value.p +
 				ps_hw_nodesorttime.value.p +
 				ps_hw_nodedrawtime.value.p +
+				ps_hw_waterdrawtime.value.p +
 				ps_hw_spritesorttime.value.p +
 				ps_hw_spritedrawtime.value.p;
 
