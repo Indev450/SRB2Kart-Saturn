@@ -242,7 +242,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 #ifdef USE_FBO_OGL
 	if (usefbo)
 	{
-		GL_FBO_BindMainFramebuffer();
+		GL_FBO_BindMainFramebuffer(SCREEN_FBO);
 	}
 #endif
 

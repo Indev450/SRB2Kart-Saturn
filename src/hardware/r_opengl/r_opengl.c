@@ -3376,9 +3376,11 @@ static void GL_FBO_Generate(int fbonum, int width, int height)
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 }
 
-void GL_FBO_BindMainFramebuffer(void)
+void GL_FBO_BindMainFramebuffer(int fbonum)
 {
-	if (supportFBO == FBOext_NONE)
+	fboobj_t *fbo = &fbos[fbonum];
+
+	if (supportFBO == FBOext_NONE || !fbo->init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
