@@ -39,7 +39,7 @@ void GL_EnableStencilTest(void);
 void GL_DisableStencilTest(void);
 
 void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags);
-void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader);
+void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags);
 void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray);
 void GL_Draw2DLine(F2DCoord *v1, F2DCoord *v2, RGBA_t Color);
 
