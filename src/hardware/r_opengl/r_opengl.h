@@ -98,16 +98,9 @@ extern PFNglGetString pglGetString;
 #endif
 
 #ifdef USE_FBO_OGL
-enum fboobjectnum
-{
-    SCREEN_FBO,
-    NUMFBOOBJS
-};
-
-void GL_FBO_BindMainFramebuffer(int fbonum);
-void GL_FBO_Enable(int fbonum, int width, int height);
-void GL_FBO_Destroy(int fbonum);
-void GL_FBO_DestroyAll(void);
+void GL_Framebuffer_Unbind(void);
+void GL_Framebuffer_Enable(void);
+void GL_Framebuffer_Disable(void);
 extern int supportFBO;
 #endif
 

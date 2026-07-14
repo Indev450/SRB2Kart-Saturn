@@ -203,9 +203,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
-		GL_FBO_Enable(SCREEN_FBO, w, h);
+		GL_Framebuffer_Enable();
 	else
-		GL_FBO_Destroy(SCREEN_FBO);
+		GL_Framebuffer_Disable();
 
 	if (UseScreenFBO() && HWR_UseShader())
 	{
@@ -242,7 +242,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 #ifdef USE_FBO_OGL
 	if (usefbo)
 	{
-		GL_FBO_BindMainFramebuffer(SCREEN_FBO);
+		GL_Framebuffer_Unbind();
 	}
 #endif
 
@@ -273,7 +273,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 #ifdef USE_FBO_OGL
 	if (usefbo)
 	{
-		GL_FBO_Enable(SCREEN_FBO, realwidth, realheight);
+		GL_Framebuffer_Enable();
 	}
 #endif
 

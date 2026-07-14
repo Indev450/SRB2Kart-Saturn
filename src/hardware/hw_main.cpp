@@ -5971,7 +5971,7 @@ void HWR_Shutdown(void)
 	GL_FlushScreenTextures();
 	HWR_ClearAllTextures();
 #ifdef USE_FBO_OGL
-	GL_FBO_DestroyAll();
+	GL_Framebuffer_Disable();
 #endif
 }
 
