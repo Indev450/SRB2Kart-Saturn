@@ -173,6 +173,15 @@ boolean supportstencil = false;
 //			can know when the textures aren't there, as textures are always considered resident in their virtual memory
 static GLuint screenTextures[NUMSCREENTEXTURES] = {};
 
+// for water refraction
+enum
+{
+	SCENE_TEX,
+	SCENE_DEPTHTEX,
+	NUMSCENETEXTURES
+};
+static GLuint sceneTextures[NUMSCENETEXTURES] = {};
+
 #define byte2float(byte) (GLfloat)(byte / 255.0f)
 
 // -----------------+
@@ -723,6 +732,9 @@ typedef enum
 	gluniform_palette_lookup_tex, // 3d texture containing the rgb->index lookup table
 	gluniform_lighttable_tex, // 2d texture containing a light table
 
+	gluniform_scene_tex,
+	gluniform_scene_depth_tex,
+
 	// misc.
 	gluniform_leveltime,
 
@@ -885,7 +897,7 @@ void SetupGLFunc4(void)
 	{ \
 		GL_MSG_Warning("failed to get OpenGL FBO function: %s\n", #func); \
 		GL_DBG_Printf("\nFBO: No framebuffer object support\n"); \
-		supportFBO = false; \
+		supportFBO = FBO_NONE; \
 		return; \
 	} \
 
@@ -2386,6 +2398,9 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	// misc.
 	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
+
+	shader->uniforms[gluniform_scene_tex]             = GETUNI("scene_tex");
+	shader->uniforms[gluniform_scene_depth_tex]       = GETUNI("scene_depth_tex");
 #undef GETUNI
 
 	// set permanent uniform values
@@ -2399,6 +2414,9 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	UNIFORM_1(shader->uniforms[gluniform_palette_tex], 2, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_palette_lookup_tex], 1, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
+
+	UNIFORM_1(shader->uniforms[gluniform_scene_tex], 4, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_scene_depth_tex], 5, pglUniform1i);
 
 	// restore gl shader state
 	pglUseProgram(gl_shaderstate.program);
@@ -2465,6 +2483,33 @@ static void GL_PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
 {
 	GL_PreparePolygon(pSurf, PolyFlags);
+
+	pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
+	pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, iNumPts);
+
+	if (PolyFlags & PF_RemoveYWrap)
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	if (PolyFlags & PF_ForceWrapX)
+		Clamp2D(GL_TEXTURE_WRAP_S);
+
+	if (PolyFlags & PF_ForceWrapY)
+		Clamp2D(GL_TEXTURE_WRAP_T);
+}
+
+void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader)
+{
+	GL_SetShader(HWR_GetShaderFromTarget(shader));
+	GL_PreparePolygon(pSurf, PolyFlags);
+
+	pglActiveTexture(GL_TEXTURE4);
+	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_TEX]);
+	pglActiveTexture(GL_TEXTURE0);
+
+	pglActiveTexture(GL_TEXTURE5);
+	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_DEPTHTEX]);
+	pglActiveTexture(GL_TEXTURE0);
 
 	pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
 	pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
@@ -3247,7 +3292,7 @@ void GL_SetTransform(FTransform *stransform)
 #ifdef USE_FBO_OGL
 static void GL_Framebuffer_DeleteAttachments(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	// Unbind the framebuffer
@@ -3267,7 +3312,7 @@ static void GL_Framebuffer_DeleteAttachments(void)
 
 static void GL_Framebuffer_Generate(void)
 {
-	if (!supportFBO || framebufferobject.init || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || framebufferobject.init || !UseScreenFBO())
 		return;
 
 	// Generate the framebuffer
@@ -3287,10 +3332,10 @@ static void GL_Framebuffer_Generate(void)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
-		pglBindTexture(GL_TEXTURE_2D, 0);
 
 		// Attach the framebuffer texture to the framebuffer
 		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, framebufferobject.tex, 0);
+		pglBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	// Generate the renderbuffer
@@ -3332,7 +3377,7 @@ static void GL_Framebuffer_Generate(void)
 
 		// if this fails, dont retry it a gazillion times
 		// this wouldnt recover
-		supportFBO = false;
+		supportFBO = FBO_NONE;
 		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 		return;
 	}
@@ -3345,7 +3390,7 @@ static void GL_Framebuffer_Generate(void)
 
 void GL_Framebuffer_Unbind(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3354,13 +3399,13 @@ void GL_Framebuffer_Unbind(void)
 
 void GL_Framebuffer_Enable(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || !UseScreenFBO())
 		return;
 
 	GL_Framebuffer_Generate();
 
 	// failed
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
@@ -3369,7 +3414,7 @@ void GL_Framebuffer_Enable(void)
 
 void GL_Framebuffer_Disable(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3383,6 +3428,52 @@ void GL_Framebuffer_Disable(void)
 	GL_Framebuffer_DeleteAttachments();
 }
 #endif
+
+// faster than fbo blitting ig...
+// just copies the whole framebuffer as a texture
+void GL_CopyMainFramebufferTexture(void)
+{
+	if (!sceneTextures[SCENE_TEX])
+	{
+		pglGenTextures(1, &sceneTextures[SCENE_TEX]);
+		pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_TEX]);
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		Clamp2D(GL_TEXTURE_WRAP_S);
+		Clamp2D(GL_TEXTURE_WRAP_T);
+		pglBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	if (!sceneTextures[SCENE_DEPTHTEX])
+	{
+		pglGenTextures(1, &sceneTextures[SCENE_DEPTHTEX]);
+		pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_DEPTHTEX]);
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, screen_width, screen_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		Clamp2D(GL_TEXTURE_WRAP_S);
+		Clamp2D(GL_TEXTURE_WRAP_T);
+		pglBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	// now copy the whole scene
+	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_TEX]);
+	pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_width, screen_height);
+
+	// not sure why, but this is needed
+	// otherwise bad things happen
+	tex_downloaded = sceneTextures[SCENE_TEX];
+
+	// and copy the depth from the scene
+	// we need this for depth testing within the shader
+	// so we can discard stuff in front of the water
+	// this aint reflections after all!
+	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_DEPTHTEX]);
+	pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_width, screen_height);
+
+	pglBindTexture(GL_TEXTURE_2D, 0);
+}
 
 static const float defaultscreenVerts[12] =
 {
@@ -3505,6 +3596,10 @@ void GL_FlushScreenTextures(void)
 {
 	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
 	memset(screenTextures, 0, sizeof(screenTextures));
+
+	// gotta wipe the scene textures for the water refraction stuff aswell
+	pglDeleteTextures(NUMSCENETEXTURES, sceneTextures);
+	memset(sceneTextures, 0, sizeof(sceneTextures));
 }
 
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
