@@ -295,31 +295,10 @@
 	"#endif\0"
 
 // water refraction stuff
-// what a mess....
-
-//FIXME: add proper scaling instead of 0.05 (this seems to actually work out tho?)
-
-// mix the uhh scene texture with the uhh water plane or smth
-// alpha is handled in a dogshit way, and i have no idea why i gotta mix the lighttable shit with it
-// but this matches up pretty perfectly somehow
 // this is probably complete shit but i dont care
 // got the idea for depth testing from https://lettier.github.io/3d-game-shaders-for-beginners/screen-space-refraction.html
-#define GLSL_WATERREFRACT_TEXEL \
-	"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
-	"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-	"float sdistort = sin(a) * amp;\n" \
-	"float cdistort = cos(a) * amp;\n" \
-	"vec2 uv = gl_FragCoord.xy / scr_resolution;\n" \
-	"vec2 scene_uv = uv + vec2(sdistort, cdistort) * 0.05;\n" \
-	"float scenedepth = texture2D(scene_depth_tex, scene_uv).r;\n" \
-	"vec4 texel;\n" \
-	"if (scenedepth < gl_FragCoord.z) {\n" \
-		"discard;\n" \
-	"} else {\n" \
-		"texel = texture2D(scene_tex, scene_uv);\n" \
-	"}\n"
 
-// adjusted values to match software a little better
+	// adjusted values to match software a little better
 	// original values
 	//"const float freq = 0.025;\n"
 	//"const float amp = 0.025;\n"
@@ -331,21 +310,29 @@
 	// this shouldnt distort too much horizontally
 	// but needs a little more ripples
 
+	// FIXME: this probably needs some actual scaling in relation to the water texture?
+
 #define GLSL_WATERREFRACT_FRAGMENT_SHADER \
 	"#version 120\n" \
-	GLSL_FLOOR_FUDGES \
 	"const float freq = 0.03;\n" \
 	"const float amp = 0.018;\n" \
 	"const float speed = 2.0;\n" \
 	"const float pi = 3.14159;\n" \
 	"uniform sampler2D scene_tex;\n" \
 	"uniform sampler2D scene_depth_tex;\n" \
+	"uniform vec2 scr_resolution;\n" \
 	"uniform float leveltime;\n" \
-	GLSL_DOOM_COLORMAP \
-	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
-		GLSL_WATERREFRACT_TEXEL \
-		"gl_FragColor = texel;\n" \
+		"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
+		"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
+		"float sdistort = sin(a) * amp;\n" \
+		"float cdistort = cos(a) * amp;\n" \
+		"vec2 uv = (gl_FragCoord.xy / scr_resolution) + vec2(sdistort, cdistort) * 0.05;\n" \
+		"float scenedepth = texture2D(scene_depth_tex, uv).r;\n" \
+		"if (scenedepth < gl_FragCoord.z) {\n" \
+			"discard;\n" \
+		"}\n" \
+		"gl_FragColor = texture2D(scene_tex, uv);\n" \
 	"}\0"
 
 //
