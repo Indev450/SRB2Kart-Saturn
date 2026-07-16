@@ -3433,6 +3433,19 @@ void GL_CopyMainFramebufferTexture(void)
 		pglBindTexture(GL_TEXTURE_2D, 0);
 	}
 
+	// now copy the whole scene
+	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_TEX]);
+	pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_width, screen_height);
+
+	// not sure why, but this is needed
+	// otherwise bad things happen
+	tex_downloaded = sceneTextures[SCENE_TEX];
+
+	pglBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void GL_CopyMainFramebufferDepth(void)
+{
 	if (!sceneTextures[SCENE_DEPTHTEX])
 	{
 		pglGenTextures(1, &sceneTextures[SCENE_DEPTHTEX]);
@@ -3444,14 +3457,6 @@ void GL_CopyMainFramebufferTexture(void)
 		Clamp2D(GL_TEXTURE_WRAP_T);
 		pglBindTexture(GL_TEXTURE_2D, 0);
 	}
-
-	// now copy the whole scene
-	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_TEX]);
-	pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_width, screen_height);
-
-	// not sure why, but this is needed
-	// otherwise bad things happen
-	tex_downloaded = sceneTextures[SCENE_TEX];
 
 	// and copy the depth from the scene
 	// we need this for depth testing within the shader
