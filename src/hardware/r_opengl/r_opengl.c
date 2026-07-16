@@ -2518,7 +2518,7 @@ void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, F
 		Clamp2D(GL_TEXTURE_WRAP_T);
 }
 
-void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
+void GL_DrawWaterPolygon(FOutVector *pOutVerts, FUINT iNumPts)
 {
 	GL_SetShader(HWR_GetShaderFromTarget(SHADER_WATERREFRACT));
 
@@ -2530,7 +2530,10 @@ void GL_DrawWaterPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumP
 	pglBindTexture(GL_TEXTURE_2D, sceneTextures[SCENE_DEPTHTEX]);
 	pglActiveTexture(GL_TEXTURE0);
 
-	GL_DrawPolygon(pSurf, pOutVerts, iNumPts, PolyFlags);
+	GL_PreparePolygon(NULL, PF_NoTexture|PF_Ripple);
+
+	pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, iNumPts);
 }
 
 void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray)
