@@ -105,6 +105,7 @@ extern int supportFBO;
 #endif
 
 void GL_CopyMainFramebufferTexture(void);
+void GL_CopyMainFramebufferDepth(void);
 
 // ==========================================================================
 //                                                                     GLOBAL

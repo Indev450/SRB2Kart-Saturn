@@ -728,15 +728,6 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		else if (cv_ripplewater.value && (PolyFlags & PF_Ripple))
 		{
 			shader = SHADER_WATER;
-
-			// handle water refraction
-			// this is not needed on opague water at all
-			// FIXME: this is ugly
-			if (alpha < 255)
-			{
-				shader = SHADER_WATERREFRACT;
-				GL_DrawWaterPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags|PF_ColorMapped);
-			}
 		}
 		else
 			shader = SHADER_FLOOR;
@@ -744,8 +735,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		PolyFlags |= PF_ColorMapped;
 	}
 
-	if (shader != SHADER_WATERREFRACT)
-		HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
+	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
 	if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
 	{
@@ -826,10 +816,165 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 				horizonpts[4].y = gl_viewz;
 
 				// Draw
-				if (shader == SHADER_WATERREFRACT)
-					GL_DrawWaterPolygon(&Surf, horizonpts, 6, PolyFlags);
-				else
-					HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
+				HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
+			}
+		}
+	}
+#undef SETUP3DVERT
+}
+
+// cut down version of HWR_RenderPlane
+// which renders only the refracted scene in place of planes
+// FIXME: we probably could just use stencil stuff for this
+// but i hate messing with that
+static void HWR_RenderRefractionPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, sector_t *FOFsector)
+{
+	FSurfaceInfo Surf = {};
+	FOutVector *v3d;
+	polyvertex_t *pv;
+	pslope_t *slope = NULL;
+
+	size_t nrPlaneVerts;
+	INT32 i;
+
+	float height; // constant y for all points on the convex flat polygon
+
+	static FOutVector *planeVerts = NULL;
+	static UINT16 numAllocedPlaneVerts = 0;
+
+	poly_t *planepoly = xsub->planepoly;
+
+	// no convex poly were generated for this subsector
+	if (!planepoly)
+		return;
+
+	nrPlaneVerts = planepoly->numpts;
+
+	if (nrPlaneVerts < 3) // not even a triangle ?
+		return;
+
+	const sector_t *sec = FOFsector;
+
+	// Get the slope pointer to simplify future code
+	if (!isceiling && sec->f_slope)
+		slope = sec->f_slope;
+	else if (isceiling && sec->c_slope)
+		slope = sec->c_slope;
+
+	height = FixedToFloat(fixedheight);
+
+	// Allocate plane-vertex buffer if we need to
+	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
+	{
+		numAllocedPlaneVerts = (UINT16)nrPlaneVerts;
+		Z_Free(planeVerts);
+		Z_Malloc(numAllocedPlaneVerts * sizeof (FOutVector), PU_LEVEL, &planeVerts);
+	}
+
+	pv = planepoly->pts;
+
+#define SETUP3DVERT(vert, vx, vy) {\
+		vert->s = 0.0f;\
+		vert->t = 0.0f;\
+\
+		if (slope)\
+		{\
+			fixedheight = P_GetSlopeZAt(slope, FloatToFixed((vx)), FloatToFixed((vy)));\
+			height = FixedToFloat(fixedheight);\
+		}\
+\
+		vert->x = (vx);\
+		vert->y = height;\
+		vert->z = (vy);\
+\
+}
+	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++, v3d++, pv++)
+		SETUP3DVERT(v3d, pv->x, pv->y);
+
+	// this does not need PF_Occlude or smth, treat it as if it wasnt there at all lol
+	GL_DrawWaterPolygon(&Surf, planeVerts, nrPlaneVerts, PF_NoTexture|PF_Ripple); // this does not need a texture
+
+	// not sure if horizonlines even work with this lol
+	if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
+	{
+		// Horizon lines
+		FOutVector horizonpts[6];
+		float dist, vx, vy;
+		float x1, y1, xd, yd;
+		UINT8 numplanes, j;
+		vertex_t v; // For determining the closest distance from the line to the camera, to split render planes for minimum distortion;
+
+		static constexpr float renderdist    = 27000.0f; // How far out to properly render the plane
+		static constexpr float farrenderdist = 32768.0f; // From here, raise plane to horizon level to fill in the line with some texture distortion
+
+		const seg_t *line = &segs[subsector->firstline];
+
+		for (i = 0; i < subsector->numlines; i++, line++)
+		{
+			if (line->polyseg)
+				continue;
+
+			line_t* ld = line->linedef;
+
+			// this check sucks and is a hotspot lel
+			if (LIKELY(ld->special != HORIZONSPECIAL))
+				continue;
+
+			if (R_PointOnSegSide(viewx, viewy, line) != 0)
+				continue;
+
+			P_ClosestPointOnLine(viewx, viewy, ld, &v);
+			dist = FixedToFloat(R_PointToDist(v.x, v.y));
+
+			x1 = (line->fv1.x);
+			y1 = (line->fv1.y);
+
+			xd = (line->fv2.x) - x1;
+			yd = (line->fv2.y) - y1;
+
+			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
+			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
+
+			if (dist > 100.0f)
+				numplanes = 100;
+			else
+				numplanes = (UINT8)dist + 1;
+
+			for (j = 0; j < numplanes; j++)
+			{
+				// Left side
+				vx = x1 + xd * j / numplanes;
+				vy = y1 + yd * j / numplanes;
+				SETUP3DVERT((&horizonpts[1]), vx, vy);
+
+				dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
+				vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
+				vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
+				SETUP3DVERT((&horizonpts[0]), vx, vy);
+
+				// Right side
+				vx = x1 + xd * (j+1) / numplanes;
+				vy = y1 + yd * (j+1) / numplanes;
+				SETUP3DVERT((&horizonpts[2]), vx, vy);
+
+				dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
+				vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
+				vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
+				SETUP3DVERT((&horizonpts[3]), vx, vy);
+
+				// Horizon fills
+				vx = (horizonpts[0].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
+				vy = (horizonpts[0].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
+				SETUP3DVERT((&horizonpts[5]), vx, vy);
+				horizonpts[5].y = gl_viewz;
+
+				vx = (horizonpts[3].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
+				vy = (horizonpts[3].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
+				SETUP3DVERT((&horizonpts[4]), vx, vy);
+				horizonpts[4].y = gl_viewz;
+
+				// Draw
+				GL_DrawWaterPolygon(&Surf, horizonpts, 6, PF_NoTexture|PF_Ripple);
 			}
 		}
 	}
@@ -4254,7 +4399,9 @@ static void HWR_RenderDrawNodes(void)
 
 	// Reversed order
 	for (i = 0; i < numdrawnodes; i++)
+	{
 		sortindex[i] = numdrawnodes - i - 1;
+	}
 
 	// The order is correct apart from planes in the same subsector.
 	// So scan the list and sort out these cases.
@@ -4308,14 +4455,6 @@ static void HWR_RenderDrawNodes(void)
 				{
 					planeinfo_t *plane = &drawnode->u.plane;
 
-					// if its a water plane
-					// we draw them seperately before...
-					// this has to be done so both ceiling and floor can be included in the refraction part
-					if (cv_ripplewater.value && plane->alpha < 255 && plane->blend & PF_Ripple)
-					{
-						break;
-					}
-
 					// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
 					gl_frontsector = NULL;
 
@@ -4338,7 +4477,6 @@ static void HWR_RenderDrawNodes(void)
 
 					HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
 											  polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
-
 				}
 				break;
 			case DRAWNODE_WALL:
@@ -4364,22 +4502,14 @@ static void HWR_RenderDrawNodes(void)
 
 static void HWR_RenderRefractionWater(void)
 {
-	// TODO: defer water plane render to happen after EVERYTHING
-	// otherwise skybox water cant capture the map geometry properly
-	// so the map may draw over the water plane in some cases
-	// see hadal trench
-	// didnt notice any other map besides this, yet.....
-
-	// all this bullshit
-	// just so either ceiling or floor planes can be captured in the opposite plane........
-
-	// caveat with all of this is
-	// some translucent things behind water planes may not get the refraction...
-	// i have no clue how to ever fix that (maybe another pass with more depth compares? kinda wonder if we even need the whole drawnode thing in gl anyways)
-	// but it seems like software also suffers from this in some cases
-
-	// other idea: copy only screen parts that water covers similar to software but per plane
-	// maybe that will be fast enough?
+	// this basically just draws a refracted screen copy in the place of water planes
+	// best approach i can think of to handle translucent things being drawn behind water planes
+	// this means other translucent shit will appear "correctly" and does not cause any sorting issues
+	// caveat: anything translucent behind water planes will be unaffected by the refraction effect
+	// there just is no better way to do this unless we wanna trash performance to hell by doing a screen copy per water plane
+	// it "might" be possible to only partially copy the screen like the software renderer
+	// but that will be rather tricky to implement since we dont really have "screen bounds" we can use for this
+	// plus i also immensely suck at maths
 
 	static std::vector<gl_drawnode_t> waterdrawnodes;
 
@@ -4405,11 +4535,16 @@ static void HWR_RenderRefractionWater(void)
 
 		planeinfo_t *plane = &drawnode->u.plane;
 
+		// uh dont think we actually need this lol
+		// but better be safe for now
+		if (plane->alpha >= 255)
+			continue;
+
 		// this only applies to translucent water with ripple effect!
-		if (plane->alpha < 255 && plane->blend & PF_Ripple)
-		{
-			waterdrawnodes.push_back(drawnodes[w]);
-		}
+		if (!(plane->blend & PF_Ripple))
+			continue;
+
+		waterdrawnodes.push_back(drawnodes[w]);
 	}
 
 	const size_t numwaterdrawnodes = waterdrawnodes.size();
@@ -4418,67 +4553,29 @@ static void HWR_RenderRefractionWater(void)
 	if (!numwaterdrawnodes)
 		return;
 
-	// split floor and ceiling planes of the water fofs
-	// otherwise the floor might not be visible to the ceiling plane or the other way around
-	auto waterisfloor = [](const gl_drawnode_t &node) FUNCINLINE
+	// this is probably a bit wasteful
+	// since we only copy the screen once
+	// but you might be able to see both planes not overlap if you look from a wonky angle
+	auto wotercompare = [](const void *p1, const void *p2)
 	{
-		return !node.u.plane.isceiling;
+		const gl_drawnode_t *n1 = (const gl_drawnode_t *)p1;
+		const gl_drawnode_t *n2 = (const gl_drawnode_t *)p2;
+
+		return abs(n2->u.plane.fixedheight - viewz) -
+			   abs(n1->u.plane.fixedheight - viewz);
 	};
 
-	// stable_partition will move everything the predicate returns true for to the beginning preserving relative order (phew....)
-	// this is kinda lazy but i dont give a fuck honestly
-	auto watersplitend = std::stable_partition(waterdrawnodes.begin(), waterdrawnodes.end(), waterisfloor);
-	// we "could" capture the screen for each plane instead (that would also fix the dumbass sky probably), but man :chaobaba: that even kills my 3080 lmao
+	qs22j(waterdrawnodes.data(), waterdrawnodes.size(), sizeof(gl_drawnode_t), wotercompare);
 
-	// not sure if we *really* need to sort those?
-	// then again this sorts them relative to the viewheight
-	// this should mostly mean ceiling above floor
-	// but this might not always be true?
-	// tho this shouldnt cost much really
-	// the below is much worse
-	qs22j(waterdrawnodes.data(), numwaterdrawnodes, sizeof(gl_drawnode_t), CompareDrawNodePlanes);
+	GL_CopyMainFramebufferTexture();
+	GL_CopyMainFramebufferDepth();
 
-	// dont want copying screen contents twice
-	// that shit is kinda costly
-	boolean floorwater   = (watersplitend != waterdrawnodes.begin());
-	boolean ceilingwater = (watersplitend != waterdrawnodes.end());
-
-	// FIXME: i am not sure if we should draw the floor or ceiling planes first
-	// i am also not sure if that even matters?
-
-	// finally draw the wöter
-
-	if (floorwater)
+	// now finally render the refraction planes
+	for (auto &drawnode : waterdrawnodes)
 	{
-		// gladly we do not need fbos for this...
-		GL_CopyMainFramebufferTexture();
-
-		// floor water
-		for (auto it = waterdrawnodes.begin(); it != watersplitend; ++it)
-		{
-			planeinfo_t *plane = &it->u.plane;
-			gl_frontsector = NULL;
-			if (!(plane->blend & PF_NoTexture))
-				HWR_GetFlat(plane->lumpnum, R_NoEncore(plane->FOFSector, plane->isceiling));
-			HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
-							plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
-		}
-	}
-
-	if (ceilingwater)
-	{
-		GL_CopyMainFramebufferTexture();
-
-		// ceiling water
-		for (auto it = watersplitend; it != waterdrawnodes.end(); ++it)
-		{
-			planeinfo_t *plane = &it->u.plane;
-			gl_frontsector = NULL;
-			if (!(plane->blend & PF_NoTexture))
-				HWR_GetFlat(plane->lumpnum, R_NoEncore(plane->FOFSector, plane->isceiling));
-			HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
-							plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
-		}
+		planeinfo_t *plane = &drawnode.u.plane;
+		gl_frontsector = NULL;
+		HWR_RenderRefractionPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->FOFSector);
 	}
 
 	waterdrawnodes.clear();
@@ -5772,7 +5869,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	ps_hw_waterdrawtime.value.p = 0;
 
 	// thisll be a good mess making this toggable
-	if (cv_ripplewater.value)
+	if (cv_ripplewater.value && HWR_UseShader()) // dont need this without shaders do we
 	{
 		// should we not do this during portal render?
 		// wonder how bad the perf will be....
