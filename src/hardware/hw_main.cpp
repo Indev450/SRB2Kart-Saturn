@@ -894,8 +894,9 @@ static void HWR_RenderRefractionPlane(subsector_t *subsector, extrasubsector_t *
 	// this does not need PF_Occlude or smth, treat it as if it wasnt there at all lol
 	GL_DrawWaterPolygon(&Surf, planeVerts, nrPlaneVerts, PF_NoTexture|PF_Ripple); // this does not need a texture
 
-	// not sure if horizonlines even work with this lol
-	if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
+	//FIXME: horizonlines with fofs dont work in gl for some reason!
+	(void)subsector;
+	/*if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -978,6 +979,7 @@ static void HWR_RenderRefractionPlane(subsector_t *subsector, extrasubsector_t *
 			}
 		}
 	}
+	*/
 #undef SETUP3DVERT
 }
 
