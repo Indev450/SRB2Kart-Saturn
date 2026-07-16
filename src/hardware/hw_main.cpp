@@ -817,7 +817,6 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 // but i hate messing with that
 static void HWR_RenderRefractionPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, sector_t *FOFsector)
 {
-	FSurfaceInfo Surf = {};
 	FOutVector *v3d;
 	polyvertex_t *pv;
 	pslope_t *slope = NULL;
@@ -879,8 +878,7 @@ static void HWR_RenderRefractionPlane(subsector_t *subsector, extrasubsector_t *
 	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++, v3d++, pv++)
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
-	// this does not need PF_Occlude or smth, treat it as if it wasnt there at all lol
-	GL_DrawWaterPolygon(&Surf, planeVerts, nrPlaneVerts, PF_NoTexture|PF_Ripple); // this does not need a texture
+	GL_DrawWaterPolygon(planeVerts, nrPlaneVerts);
 
 	//FIXME: horizonlines with fofs dont work in gl for some reason!
 	(void)subsector;
