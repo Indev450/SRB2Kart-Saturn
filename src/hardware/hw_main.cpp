@@ -4549,6 +4549,8 @@ static void HWR_RenderRefractionWater(void)
 
 	qs22j(waterdrawnodes.data(), waterdrawnodes.size(), sizeof(gl_drawnode_t), wotercompare);
 
+	GL_SetTransform(&atransform);
+
 	GL_CopyMainFramebufferTexture();
 	GL_CopyMainFramebufferDepth();
 
@@ -5839,13 +5841,13 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
-	ps_numdrawnodes.value.i    = 0;
-	ps_hw_nodesorttime.value.p = 0;
-	ps_hw_nodedrawtime.value.p = 0;
+	ps_numdrawnodes.value.i     = 0;
+	ps_hw_nodesorttime.value.p  = 0;
+	ps_hw_nodedrawtime.value.p  = 0;
 	ps_hw_waterdrawtime.value.p = 0;
 
 	// thisll be a good mess making this toggable
-	if (cv_ripplewater.value && HWR_UseShader()) // dont need this without shaders do we
+	if (cv_ripplewater.value && HWR_UseShader() && !wireframe) // dont need this without shaders do we
 	{
 		// should we not do this during portal render?
 		// wonder how bad the perf will be....
