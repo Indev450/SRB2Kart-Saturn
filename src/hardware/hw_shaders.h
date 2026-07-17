@@ -271,23 +271,30 @@
 // Water surface shader
 //
 // Mostly guesstimated, rather than the rest being built off Software science.
-// Still needs to distort things underneath/around the water...
+// Still needs to distort things underneath/around the water... // huehueuehuehue
 //
+
+// readjusted to match software much more closely
+
+#define GLSL_WATER_CONST \
+	"const float freq = 0.07;\n" \
+	"const float amp = 0.07;\n" \
+	"const float amp_t = 0.025;\n" \
+	"const float speed = 4.0;\n" \
+	"const float pi = 3.14159;\n" \
+	"const float falltresh = 0.007;\n" \
 
 #define GLSL_WATER_TEXEL \
 	"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
 	"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-	"float sdistort = sin(a) * amp;\n" \
-	"float cdistort = cos(a) * amp;\n" \
-	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n"
+	"float falloff = 1.0 / (1.0 + water_z * falltresh);\n" \
+	"float distort = sin(a) * amp * falloff;\n" \
+	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - distort, gl_TexCoord[0].t));\n" \
 
 #define GLSL_WATER_FRAGMENT_SHADER \
 	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
-	"const float freq = 0.025;\n" \
-	"const float amp = 0.025;\n" \
-	"const float speed = 2.0;\n" \
-	"const float pi = 3.14159;\n" \
+	GLSL_WATER_CONST \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	"uniform sampler2D tex;\n" \
 	"uniform sampler3D palette_lookup_tex;\n" \
@@ -325,27 +332,9 @@
 // water refraction stuff
 // this is probably complete shit but i dont care
 // got the idea for depth testing from https://lettier.github.io/3d-game-shaders-for-beginners/screen-space-refraction.html
-
-	// adjusted values to match software a little better
-	// original values
-	//"const float freq = 0.025;\n"
-	//"const float amp = 0.025;\n"
-
-	// adjusted values
-	//"const float freq = 0.03;\n"
-	//"const float amp = 0.018;\n"
-
-	// this shouldnt distort too much horizontally
-	// but needs a little more ripples
-
-	// FIXME: this probably needs some actual scaling in relation to the water texture?
-
 #define GLSL_WATERREFRACT_FRAGMENT_SHADER \
 	"#version 120\n" \
-	"const float freq = 0.03;\n" \
-	"const float amp = 0.018;\n" \
-	"const float speed = 2.0;\n" \
-	"const float pi = 3.14159;\n" \
+	GLSL_WATER_CONST \
 	"uniform sampler2D scene_tex;\n" \
 	"uniform sampler2D scene_depth_tex;\n" \
 	"uniform vec2 scr_resolution;\n" \
@@ -353,9 +342,9 @@
 	"void main(void) {\n" \
 		"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
 		"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-		"float sdistort = sin(a) * amp;\n" \
-		"float cdistort = cos(a) * amp;\n" \
-		"vec2 uv = (gl_FragCoord.xy / scr_resolution) + vec2(sdistort, cdistort) * 0.05;\n" \
+		"float falloff = 1.0 / (1.0 + water_z * falltresh);\n" \
+		"float distort = sin(a) * amp * falloff;\n" \
+		"vec2 uv = (gl_FragCoord.xy / scr_resolution) + vec2(distort, distort * 2.0) * 0.04;\n" \
 		"float scenedepth = texture2D(scene_depth_tex, uv).r;\n" \
 		"if (scenedepth < gl_FragCoord.z) {\n" \
 			"discard;\n" \
