@@ -3665,6 +3665,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	fixed_t v1x, v1y, v2x, v2y;
 	INT32 shader = SHADER_NONE;
 
+	const boolean billboarding = (cv_glspritebillboarding.value && !cv_glshearing.value && !papersprite);
+
 	gpatch = spr->gpatch;
 
 	// cache the patch in the graphics card memory
@@ -3862,7 +3864,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value && !cv_glshearing.value && !papersprite)
+		if (billboarding)
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
 			realheight = realbot - realtop;
@@ -5723,6 +5725,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 {
 	gl_portallist_t portallist;
 
+	const boolean wireframe = HWR_IsWireframeMode();
+
 	player_t *viewplayer = &players[displayplayers[viewssnum]];
 	const float fpov = FixedToFloat(R_GetPlayerFov(viewplayer));
 
@@ -5783,7 +5787,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 		}
 	}
 
-	if (HWR_IsWireframeMode())
+	if (wireframe)
 		GL_SetSpecialState(HWD_SET_WIREFRAME, 1);
 
 	// FIXME: perfstats does not account for portal rendering!
@@ -5880,7 +5884,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 
 	HWR_RenderDrawNodes();
 
-	if (HWR_IsWireframeMode())
+	if (wireframe)
 		GL_SetSpecialState(HWD_SET_WIREFRAME, 0);
 
 	HWR_FreePortalList(portallist); // always call this just in case
