@@ -178,8 +178,7 @@ const char *wadSearchPaths[] = {
 
 /**	\brief WAD file to look for
 */
-#define WADKEYWORD1 "srb2.srb"
-#define WADKEYWORD2 "srb2.wad"
+#define WADKEYWORD "srb2.srb"
 /**	\brief holds wad path
 */
 static char returnWadPath[256];
@@ -561,12 +560,12 @@ void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char *txt;
-	va_list  argptr;
+	va_list argptr;
 
 	if (!fmt)
 		return;
 
-	va_start(argptr,fmt);
+	va_start(argptr, fmt);
 	len = vsnprintf(NULL, 0, fmt, argptr);
 	va_end(argptr);
 	if (len == 0)
@@ -577,7 +576,7 @@ void I_OutputMsg(const char *fmt, ...)
 	if (!txt)
 		I_Error("I_OutputMsg: Out of memory!\n");
 
-	va_start(argptr,fmt);
+	va_start(argptr, fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
 
@@ -2265,7 +2264,6 @@ void I_ShutdownSystem(void)
 		logstream = NULL;
 	}
 #endif
-
 }
 
 void I_GetDiskFreeSpace(INT64 *freespace)
@@ -2437,7 +2435,7 @@ static boolean isWadPathOk(const char *path)
 	if (!wad3path)
 		return false;
 
-	sprintf(wad3path, pandf, path, WADKEYWORD1);
+	sprintf(wad3path, pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
@@ -2477,10 +2475,10 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[255] = "";
+	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD1);
+	strcpy(tempsw, WADKEYWORD);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
 	if (fstemp == FS_FOUND)
 	{

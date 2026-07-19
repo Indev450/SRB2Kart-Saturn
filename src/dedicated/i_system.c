@@ -162,8 +162,7 @@ const char *wadSearchPaths[] = {
 
 /**	\brief WAD file to look for
 */
-#define WADKEYWORD1 "srb2.srb"
-#define WADKEYWORD2 "srb2.wad"
+#define WADKEYWORD "srb2.srb"
 /**	\brief holds wad path
 */
 static char returnWadPath[256];
@@ -526,16 +525,23 @@ void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char *txt;
-	va_list  argptr;
+	va_list argptr;
 
-	va_start(argptr,fmt);
+	if (!fmt)
+		return;
+
+	va_start(argptr, fmt);
 	len = vsnprintf(NULL, 0, fmt, argptr);
 	va_end(argptr);
 	if (len == 0)
 		return;
 
-	txt = malloc(len+1);
-	va_start(argptr,fmt);
+	txt = (char*)(malloc(len+1));
+
+	if (!txt)
+		I_Error("I_OutputMsg: Out of memory!\n");
+
+	va_start(argptr, fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
 
@@ -1421,6 +1427,7 @@ static void I_Fork(void)
 
 int I_OpenURL(const char *url)
 {
+	(void)url;
 	return -1;
 }
 
@@ -1813,20 +1820,12 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = malloc(256);
+	char *wad3path = (char*)(malloc(256));
 
 	if (!wad3path)
 		return false;
 
-	sprintf(wad3path, pandf, path, WADKEYWORD1);
-
-	if (FIL_ReadFileOK(wad3path))
-	{
-		free(wad3path);
-		return true;
-	}
-
-	sprintf(wad3path, pandf, path, WADKEYWORD2);
+	sprintf(wad3path, pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
@@ -1843,12 +1842,17 @@ static void pathonly(char *s)
 	size_t j;
 
 	for (j = strlen(s); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
-			if (s[j] == ':') s[j+1] = 0;
-			else s[j] = 0;
+			if (s[j] == ':')
+				s[j+1] = 0;
+			else
+				s[j] = 0;
+
 			return;
 		}
+	}
 }
 
 /**	\brief	search for srb2.srb in the given path
@@ -1864,7 +1868,7 @@ static const char *searchWad(const char *searchDir)
 	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD1);
+	strcpy(tempsw, WADKEYWORD);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
 	if (fstemp == FS_FOUND)
 	{
@@ -1985,17 +1989,22 @@ const char *I_LocateWad(void)
 static long get_entry(const char* name, const char* buf)
 {
 	long val;
-	char* hit = strstr(buf, name);
-	if (hit == NULL) {
+	const char* hit = strstr(buf, name);
+
+	if (hit == NULL)
+	{
 		return -1;
 	}
 
 	errno = 0;
 	val = strtol(hit + strlen(name), NULL, 10);
-	if (errno != 0) {
+
+	if (errno != 0)
+	{
 		CONS_Alert(CONS_ERROR, M_GetText("get_entry: strtol() failed: %s\n"), strerror(errno));
 		return -1;
 	}
+
 	return val;
 }
 #endif
