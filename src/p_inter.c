@@ -883,18 +883,20 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			break;
 		case MT_HOOPCOLLIDE:
 			// This produces a kind of 'domino effect' with the hoop's pieces.
-			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
-
+			for (; special != NULL && special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
 			i = 0;
-			for (; special->hnext != NULL && special->type == MT_HOOP; special = special->hnext)
+			for (; special != NULL && special->type == MT_HOOP; special = special->hnext)
 			{
-				if (!P_MobjWasRemoved(special->target))
+				if (!P_MobjWasRemoved(special))
 				{
 					special->fuse = 11;
 					special->movedir = i;
-					special->extravalue1 = special->target->extravalue1;
-					special->extravalue2 = special->target->extravalue2;
-					special->target->threshold = 4242;
+					if (!P_MobjWasRemoved(special->target))
+					{
+						special->extravalue1 = special->target->extravalue1;
+						special->extravalue2 = special->target->extravalue2;
+						special->target->threshold = 4242;
+					}
 				}
 				i++;
 			}
