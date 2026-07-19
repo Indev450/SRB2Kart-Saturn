@@ -7322,23 +7322,27 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	// "Stair jank" visuals akin to RR
 	if (cv_stairjank.value && player->stairjank > 0)
 	{
-		// 90 degrees to direction you're facing
-		fixed_t dirx = -FINESINE(player->mo->angle>>ANGLETOFINESHIFT);
-		fixed_t diry = FINECOSINE(player->mo->angle>>ANGLETOFINESHIFT);
-		fixed_t offset = player->mo->radius;
+		// only spawn em once
+		if (player->stairjank > 8)
+		{
+			// 90 degrees to direction you're facing
+			fixed_t dirx = -FINESINE(player->mo->angle>>ANGLETOFINESHIFT);
+			fixed_t diry = FINECOSINE(player->mo->angle>>ANGLETOFINESHIFT);
+			fixed_t offset = player->mo->radius;
 
-		dirx = K_AltFlip(-dirx, 4);
-		diry = K_AltFlip(-diry, 4);
+			dirx = K_AltFlip(-dirx, 4);
+			diry = K_AltFlip(-diry, 4);
 
-		mobj_t * spark = P_SpawnMobj(player->mo->x + FixedMul(dirx, offset), player->mo->y + FixedMul(diry, offset), player->mo->z, MT_DRIFTDUST);
-		spark->momx = FixedMul(dirx, FRACUNIT) + (6 + ((int)leveltime % 5))*(player->mo->momx)/10;
-		spark->momy = FixedMul(diry, FRACUNIT) + (6 + ((int)leveltime % 5))*(player->mo->momy)/10;
-		spark->momz = 5*FRACUNIT;
-		spark->scale = mapobjectscale/5;
-		spark->destscale = mapobjectscale/2;
-		spark->islocal = true;
-		spark->color = SKINCOLOR_WHITE;
-		P_SetTarget(&spark->target, player->mo);
+			mobj_t * spark = P_SpawnMobj(player->mo->x + FixedMul(dirx, offset), player->mo->y + FixedMul(diry, offset), player->mo->z, MT_DRIFTDUST);
+			spark->momx = FixedMul(dirx, FRACUNIT) + (6 + ((int)leveltime % 5))*(player->mo->momx)/10;
+			spark->momy = FixedMul(diry, FRACUNIT) + (6 + ((int)leveltime % 5))*(player->mo->momy)/10;
+			spark->momz = 5*FRACUNIT;
+			spark->scale = mapobjectscale/5;
+			spark->destscale = mapobjectscale/2;
+			spark->islocal = true;
+			spark->color = SKINCOLOR_WHITE;
+			P_SetTarget(&spark->target, player->mo);
+		}
 
 		player->mo->temprollangle += K_StairJankFlip(ANGLE_11hh / 2 / (17 / player->stairjank)); // TODO: make strength adjustable?
 	}
