@@ -2613,7 +2613,9 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		if (cv_stairjanksfx.value)
 			S_StartSoundAtVolume(thing, (thing->player->stairjank >= 8 ? sfx_s23b : sfx_s268), 192); // dont blast this at full volume lul
 
-		//if (!thing->player->stairjank)
+		// Can't spawn things during P_TryMove, because global variables :)
+		// TODO - move this elsewhere later, should probably be safe in K_KartPlayerThink or something
+		/*if (!thing->player->stairjank)
 		{
 			// 90 degrees to direction you're facing
 			fixed_t dirx = -FINESINE(thing->angle>>ANGLETOFINESHIFT);
@@ -2639,7 +2641,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			P_SetTarget(&spark->target, thing);
 			//P_SetTarget(&spark->owner, thing);
 			//spark->renderflags |= RF_REDUCEVFX;
-		}
+		}*/
 
 		thing->player->stairjank = 9;
 		//thing->player->stairjank = 17;
