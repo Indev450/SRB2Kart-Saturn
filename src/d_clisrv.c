@@ -3768,7 +3768,7 @@ static void Command_Ban(void)
 			return;
 
 		// player does not exist
-		if (!nodeingame[playernode[pn]])
+		if (playernode[pn] != UINT8_MAX && !nodeingame[playernode[pn]])
 			return;
 
 		WRITEUINT8(p, pn);
@@ -3889,7 +3889,7 @@ static void Command_Kick(void)
 			return;
 
 		// player does not exist
-		if (!nodeingame[playernode[pn]])
+		if (playernode[pn] != UINT8_MAX && !nodeingame[playernode[pn]])
 			return;
 
 		// Special case if we are trying to kick a player who is downloading the game state:
@@ -3941,6 +3941,19 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 	pnum = READUINT8(*p);
 	msg = READUINT8(*p);
 
+	if (pnum >= MAXPLAYERS)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal kick command received from %s for player %d\n"), player_names[playernum], pnum);
+		return;
+	}
+
+	// without this the server will remove itself and thus self destruct on dedicated
+	if (playernode[pnum] == UINT8_MAX || !nodeingame[playernode[pnum]])
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Attempting to kick player %d which is not in game received from %s\n"), pnum, player_names[playernum]);
+		return;
+	}
+
 	// FIXME: this does not work at all on dedi, servernode == 0 which is prevented from kick/ban command
 	if (playernode[pnum] == servernode && IsPlayerAdmin(playernum))
 	{
@@ -3949,13 +3962,6 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 		if (server)
 			COM_BufAddText("quit\n");
 
-		return;
-	}
-
-	// without this the server will remove itself and thus self destruct on dedicated
-	if (!nodeingame[playernode[pnum]])
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Attempting to kick player %d which is not in game received from %s\n"), pnum,  player_names[playernum]);
 		return;
 	}
 
