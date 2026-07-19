@@ -962,7 +962,7 @@ static void P_SpawnEmeraldHunt(void)
 	}
 }
 
-static void P_SpawnMapThings(void)
+static void P_SpawnMapThings(boolean spawnhoops)
 {
 	size_t i;
 	mapthing_t *mt;
@@ -1008,10 +1008,16 @@ static void P_SpawnMapThings(void)
 		// spawn hoops
 		if (mt->type == 1705 || mt->type == 1713)
 		{
-			// Z for objects Tails 05-26-2002
-			mt->z = (INT16)(mtsector->floorheight >> FRACBITS);
+			// Check for spawnhoops here so the hoops don't spawn ghost variants for players joining a netgame mid-level
+			// ...It's a long story.
+			if (spawnhoops)
+			{
+				// Z for objects Tails 05-26-2002
+				mt->z = (INT16)(mtsector->floorheight >> FRACBITS);
 
-			P_SpawnHoops(mt);
+				P_SpawnHoops(mt);
+			}
+
 			continue;
 		}
 
@@ -3082,7 +3088,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// a shit ton of time loading mobj thinkers.
 	CalculateDoomednumToMobjtype();
 
-	P_SpawnMapThings();
+	P_SpawnMapThings(!fromnetsave);
 
 	P_SpawnEmblems(!fromnetsave);
 
