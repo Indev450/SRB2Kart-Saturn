@@ -110,7 +110,7 @@ SINT8 joinnode = 0; // used for CL_VIEWSERVER
 boolean player_muted[MAXPLAYERS] = {};
 
 // Server specific vars
-UINT8 playernode[MAXPLAYERS] = {};
+UINT8 playernode[MAXPLAYERS] = {UINT8_MAX};
 
 // Minimum timeout for sending the savegame
 // The actual timeout will be longer depending on the savegame length
@@ -3768,7 +3768,7 @@ static void Command_Ban(void)
 			return;
 
 		// player does not exist
-		if (playernode[pn] != UINT8_MAX && !nodeingame[playernode[pn]])
+		if (!playeringame[pn])
 			return;
 
 		WRITEUINT8(p, pn);
@@ -3889,7 +3889,7 @@ static void Command_Kick(void)
 			return;
 
 		// player does not exist
-		if (playernode[pn] != UINT8_MAX && !nodeingame[playernode[pn]])
+		if (!playeringame[pn])
 			return;
 
 		// Special case if we are trying to kick a player who is downloading the game state:
@@ -3947,15 +3947,8 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 		return;
 	}
 
-	// without this the server will remove itself and thus self destruct on dedicated
-	if (playernode[pnum] == UINT8_MAX || !nodeingame[playernode[pnum]])
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Attempting to kick player %d which is not in game received from %s\n"), pnum, player_names[playernum]);
-		return;
-	}
-
 	// FIXME: this does not work at all on dedi, servernode == 0 which is prevented from kick/ban command
-	if (playernode[pnum] == servernode && IsPlayerAdmin(playernum))
+	if (pnum == serverplayer && IsPlayerAdmin(playernum))
 	{
 		CONS_Printf(M_GetText("Server is being shut down remotely. Goodbye!\n"));
 
@@ -3964,9 +3957,6 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 
 		return;
 	}
-
-	// make sure we dont read garbage anywhere
-	memset(reason, 0, sizeof(buf));
 
 	// Is playernum authorized to make this kick?
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum)
@@ -4011,6 +4001,16 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 		pnum = playernum;
 		msg = KICK_MSG_CON_FAIL;
 	}
+
+	// without this the server will remove itself and thus self destruct on dedicated
+	if (server && (playernode[pnum] == UINT8_MAX || !nodeingame[playernode[pnum]]))
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Attempting to kick player %d which is not in game received from %s\n"), pnum, player_names[playernum]);
+		return;
+	}
+
+	// make sure we dont read garbage anywhere
+	memset(reason, 0, sizeof(buf));
 
 	if (msg == KICK_MSG_CUSTOM_BAN || msg == KICK_MSG_CUSTOM_KICK)
 	{
