@@ -1812,7 +1812,7 @@ INT32 D_LookupPlayer(const char *s)
 
 	if ((playernum = atoi(s)))
 	{
-		playernum = max(min(playernum, MAXPLAYERS-1), 0);/* not out of range */
+		playernum = max(min(playernum, MAXPLAYERS-1), 0); /* not out of range */
 		return playernum;
 	}
 
@@ -5697,19 +5697,22 @@ static void Command_SkinSearch(void)
 	size_t i;
 	UINT16 s;
 	UINT16 ic = 0;
-	//skin_t *skininput = &skins[s];
-	for (i = 1; i < COM_Argc(); i++){
-		for( s = 0 ; s <  numallskins ; s++ )
+
+	for (i = 1; i < COM_Argc(); i++)
+	{
+		for (s = 0; s < numskins; s++)
 		{
 			skin_t *skininput = &skins[s];
-			if (strcasestr(skininput->realname,COM_Argv(i)))
+
+			if (strcasestr(skininput->realname, COM_Argv(i)))
 			{
 				ic++;
-				CONS_Printf("%d. %s%s:\x80 %s\n", ic,HU_SkinColorToConsoleColor(skininput->prefcolor),skininput->realname,skininput->name);
+				CONS_Printf("%d. %s%s:\x80 %s\n", ic, HU_SkinColorToConsoleColor(skininput->prefcolor), skininput->realname, skininput->name);
 			}
 		}
 	}
-				CONS_Printf("Total %d skins.\n", ic);
+
+	CONS_Printf("Total %d skins.\n", ic);
 }
 
 /** Sends a color change for the console player, unless that player is moving.
