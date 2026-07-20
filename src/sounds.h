@@ -59,6 +59,8 @@ typedef enum
 #define NUMSFXFREESLOTS 1600 // Matches SOC Editor.
 #define NUMSKINSFXSLOTS (MAXSKINS*NUMSKINSOUNDS)
 
+#define MAXSOUNDNAME 7
+
 //
 // SoundFX struct.
 //

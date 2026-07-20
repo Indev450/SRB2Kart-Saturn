@@ -972,7 +972,7 @@ sfxinfo_t S_sfx[NUMSFX] =
   // initialized to NULL
 };
 
-char freeslotnames[sfx_freeslot0 + NUMSFXFREESLOTS + NUMSKINSFXSLOTS][7] = {};
+static char freeslotnames[sfx_freeslot0 + NUMSFXFREESLOTS + NUMSKINSFXSLOTS][MAXSOUNDNAME] = {};
 
 // Prepare free sfx slots to add sfx at run time
 void S_InitRuntimeSounds(void)
@@ -985,16 +985,13 @@ void S_InitRuntimeSounds(void)
 	{
 		value = (i+1) - sfx_freeslot0;
 
-		if (value < 10)
-			sprintf(soundname, "fre00%d", value);
-		else if (value < 100)
-			sprintf(soundname, "fre0%d", value);
-		else if (value < 1000)
-			sprintf(soundname, "fre%d", value);
-		else
-			sprintf(soundname, "fr%d", value);
+		sprintf(soundname, "fr%04x", value);
 
-		strcpy(freeslotnames[value-1], soundname);
+		// this might happen when raising skinlimit
+		I_Assert(strlen(soundname) < MAXSOUNDNAME);
+
+		strncpy(freeslotnames[value-1], soundname, MAXSOUNDNAME-1);
+		freeslotnames[value-1][MAXSOUNDNAME-1] = '\0';
 
 		S_sfx[i].name = freeslotnames[value-1];
 		S_sfx[i].singularity = false;
@@ -1030,7 +1027,11 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 
 	if (i < NUMSFX)
 	{
-		strncpy(freeslotnames[i-sfx_freeslot0], name, 6);
+		I_Assert(strlen(name) < MAXSOUNDNAME);
+
+		strncpy(freeslotnames[i - sfx_freeslot0], name, MAXSOUNDNAME-1);
+		freeslotnames[i - sfx_freeslot0][MAXSOUNDNAME-1] = '\0';
+
 		S_sfx[i].singularity = singular;
 		S_sfx[i].priority = 60;
 		S_sfx[i].pitch = flags;
