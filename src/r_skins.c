@@ -817,7 +817,6 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	}
 
 #undef lnumskins
-	//sortSkinGrid();
 
 	return;
 }

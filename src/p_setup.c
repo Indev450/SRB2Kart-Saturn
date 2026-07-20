@@ -1047,22 +1047,22 @@ static void P_SpawnEmblems(boolean loademblems)
 
 	for (i = 0; i < numemblems; i++)
 	{
-		if (emblemlocations[i].level != gamemap || emblemlocations[i].type > ET_SKIN)
+		const emblem_t *emblemlocation = &emblemlocations[i];
+
+		if (emblemlocation->level != gamemap || emblemlocation->type > ET_SKIN)
 			continue;
 
-		emblemmobj = P_SpawnMobj(emblemlocations[i].x<<FRACBITS, emblemlocations[i].y<<FRACBITS,
-			emblemlocations[i].z<<FRACBITS, MT_EMBLEM);
+		emblemmobj = P_SpawnMobj(emblemlocation->x<<FRACBITS, emblemlocation->y<<FRACBITS, emblemlocation->z<<FRACBITS, MT_EMBLEM);
 
-		I_Assert(emblemlocations[i].sprite >= 'A' && emblemlocations[i].sprite <= 'Z');
-		P_SetMobjStateNF(emblemmobj, emblemmobj->info->spawnstate + (emblemlocations[i].sprite - 'A'));
+		I_Assert(emblemlocation->sprite >= 'A' && emblemlocation->sprite <= 'Z');
+		P_SetMobjStateNF(emblemmobj, emblemmobj->info->spawnstate + (emblemlocation->sprite - 'A'));
 
 		emblemmobj->health = i+1;
 		color = M_GetEmblemColor(&emblemlocations[i]);
 
 		emblemmobj->color = (UINT8)color;
 
-		if (emblemlocations[i].collected
-			|| (emblemlocations[i].type == ET_SKIN && emblemlocations[i].var != players[0].skin))
+		if (emblemlocation->collected || (emblemlocation->type == ET_SKIN && emblemlocation->var != players[0].skin))
 		{
 			P_UnsetThingPosition(emblemmobj);
 			emblemmobj->flags |= MF_NOCLIP;
