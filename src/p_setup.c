@@ -986,7 +986,18 @@ static void P_SpawnMapThings(boolean spawnhoops)
 
 	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
 	{
-		sector_t *mtsector = R_PointInSubsector((mt->x << FRACBITS), (mt->y << FRACBITS))->sector;
+		sector_t *mtsector;
+
+		// srb2kart - ignore rings, coins and item patterns!
+		if (mt->type == 300  || mt->type == 308  || mt->type == 309 ||
+		   (mt->type >= 600  && mt->type <= 609) ||
+		    mt->type == 1706 || mt->type == 1800)
+		{
+			mt->mobj = NULL;
+			continue;
+		}
+
+		mtsector = R_PointInSubsector((mt->x << FRACBITS), (mt->y << FRACBITS))->sector;
 
 		// Z for objects
 		mt->z = (INT16)(P_GetSectorFloorZAt(mtsector, (mt->x << FRACBITS), (mt->y << FRACBITS))) >> FRACBITS;
@@ -999,14 +1010,6 @@ static void P_SpawnMapThings(boolean spawnhoops)
 		}
 
 		mt->mobj = NULL;
-
-		// srb2kart - ignore rings, coins and item patterns!
-		if (mt->type == 300  || mt->type == 308  || mt->type == 309 ||
-		   (mt->type >= 600  && mt->type <= 609) ||
-		    mt->type == 1706 || mt->type == 1800)
-		{
-			continue;
-		}
 
 		// spawn hoops
 		if (mt->type == 1705 || mt->type == 1713)
