@@ -934,7 +934,7 @@ void G_ConsAllGhostTics(void)
 void G_ConsGhostTic(INT32 playernum)
 {
 	UINT8 ziptic;
-	fixed_t px,py,pz,gx,gy,gz;
+	fixed_t px, py, pz, gx, gy, gz;
 	mobj_t *testmo;
 	fixed_t syncleeway;
 	boolean nightsfail = false;
