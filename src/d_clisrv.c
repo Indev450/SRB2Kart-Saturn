@@ -110,7 +110,7 @@ SINT8 joinnode = 0; // used for CL_VIEWSERVER
 boolean player_muted[MAXPLAYERS] = {};
 
 // Server specific vars
-UINT8 playernode[MAXPLAYERS] = {};
+UINT8 playernode[MAXPLAYERS] = {UINT8_MAX};
 
 // Minimum timeout for sending the savegame
 // The actual timeout will be longer depending on the savegame length
@@ -3767,6 +3767,10 @@ static void Command_Ban(void)
 		if (pn == -1 || pn == 0)
 			return;
 
+		// player does not exist
+		if (!playeringame[pn])
+			return;
+
 		WRITEUINT8(p, pn);
 
 		if (COM_Argc() == 2)
@@ -3884,6 +3888,10 @@ static void Command_Kick(void)
 		if (pn == -1 || pn == 0)
 			return;
 
+		// player does not exist
+		if (!playeringame[pn])
+			return;
+
 		// Special case if we are trying to kick a player who is downloading the game state:
 		// trigger a timeout instead of kicking them, because a kick would only
 		// take effect after they have finished downloading
@@ -3933,6 +3941,13 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 	pnum = READUINT8(*p);
 	msg = READUINT8(*p);
 
+	if (pnum >= MAXPLAYERS)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal kick command received from %s for player %d\n"), player_names[playernum], pnum);
+		return;
+	}
+
+	// FIXME: this does not work at all on dedi, servernode == 0 which is prevented from kick/ban command
 	if (pnum == serverplayer && IsPlayerAdmin(playernum))
 	{
 		CONS_Printf(M_GetText("Server is being shut down remotely. Goodbye!\n"));
@@ -3986,6 +4001,16 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 		pnum = playernum;
 		msg = KICK_MSG_CON_FAIL;
 	}
+
+	// without this the server will remove itself and thus self destruct on dedicated
+	if (server && (playernode[pnum] == UINT8_MAX || !playeringame[pnum]))
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Attempting to kick player %d which is not in game received from %s\n"), pnum, player_names[playernum]);
+		return;
+	}
+
+	// make sure we dont read garbage anywhere
+	memset(reason, 0, sizeof(buf));
 
 	if (msg == KICK_MSG_CUSTOM_BAN || msg == KICK_MSG_CUSTOM_KICK)
 	{
