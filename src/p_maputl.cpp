@@ -842,7 +842,7 @@ void P_SetThingPosition(mobj_t *thing)
 		// at sector_t->touching_thinglist) are broken. When a node is
 		// added, new sector links are created.
 
-		P_CreateSecNodeList(thing,thing->x,thing->y);
+		P_CreateSecNodeList(thing, thing->x, thing->y);
 		thing->touching_sectorlist = sector_list; // Attach to Thing's mobj_t
 		sector_list = NULL; // clear for next time
 	}
