@@ -272,7 +272,7 @@ static boolean TrimVisplaneBounds(const visplane_t* plane, INT16* start, INT16* 
  * Applies the necessary offsets and rotation to give
  * a depth illusion to the skybox.
  */
-void Portal_AddSkybox(const visplane_t* plane)
+static void Portal_AddSkybox(const visplane_t* plane)
 {
 	INT16 start, end;
 	mapheader_t *mh;
@@ -333,10 +333,13 @@ void Portal_AddSkyboxPortals(void)
 	INT32 i;
 	UINT16 count = 0;
 
-	for (i = 0; i < MAXVISPLANES; i++, pl++)
+	for (i = 0; i < MAXVISPLANES; i++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
+			if (pl->minx >= pl->maxx)
+				continue;
+
 			if (pl->picnum == skyflatnum)
 			{
 				Portal_AddSkybox(pl);

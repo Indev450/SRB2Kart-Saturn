@@ -676,6 +676,7 @@ static void CV_palette_OnChange(void)
 {
 	if (!loaded_config)
 		return;
+
 	// reload palette
 	// recalculate Color Cube
 	V_ReloadPalette();

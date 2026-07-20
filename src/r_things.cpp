@@ -87,6 +87,8 @@ static drawseg_xrange_item_t *drawsegs_xrange;
 static size_t drawsegs_xrange_size = 0;
 static INT32 drawsegs_xrange_count = 0;
 
+#define CLIP_UNDEF -2
+
 //
 // Sprite rotation 0 is facing the viewer,
 //  rotation 1 is one angle turn CLOCKWISE around the axis.
@@ -2221,6 +2223,7 @@ static void R_SortVisSprites(vissprite_t* vsprsortedhead, UINT32 start, UINT32 e
 				best = ds;
 			}
 		}
+
 		if (best)
 		{
 			best->next->prev = best->prev;
@@ -2629,7 +2632,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 
 	for (x = x1; x <= x2; x++)
 	{
-		spr->clipbot[x] = spr->cliptop[x] = -2;
+		spr->clipbot[x] = spr->cliptop[x] = CLIP_UNDEF;
 	}
 
 	// Scan drawsegs from end to start for obscuring segs.
@@ -2658,29 +2661,26 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 
 			ds = curr->user;
 
-			if (ds->portalpass != 66) // unused?
+			if (ds->portalpass > 0 && ds->portalpass <= portalrender)
+				continue; // is a portal
+
+			if (ds->scale1 > ds->scale2)
 			{
-				if (ds->portalpass > 0 && ds->portalpass <= portalrender)
-					continue; // is a portal
+				lowscale = ds->scale2;
+				scale = ds->scale1;
+			}
+			else
+			{
+				lowscale = ds->scale1;
+				scale = ds->scale2;
+			}
 
-				if (ds->scale1 > ds->scale2)
-				{
-					lowscale = ds->scale2;
-					scale = ds->scale1;
-				}
-				else
-				{
-					lowscale = ds->scale1;
-					scale = ds->scale2;
-				}
-
-				if (scale < spr->sortscale ||
-					(lowscale < spr->sortscale &&
-					!R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
-				{
-					// seg is behind sprite
-					continue;
-				}
+			if (scale < spr->sortscale ||
+				(lowscale < spr->sortscale &&
+				!R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
+			{
+				// seg is behind sprite
+				continue;
 			}
 
 			r1 = ds->x1 < x1 ? x1 : ds->x1;
@@ -2699,14 +2699,14 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			{
 				// bottom sil
 				for (x = r1; x <= r2; x++)
-					if (spr->clipbot[x] == -2)
+					if (spr->clipbot[x] == CLIP_UNDEF)
 						spr->clipbot[x] = ds->sprbottomclip[x];
 			}
 			else if (silhouette == SIL_TOP)
 			{
 				// top sil
 				for (x = r1; x <= r2; x++)
-					if (spr->cliptop[x] == -2)
+					if (spr->cliptop[x] == CLIP_UNDEF)
 						spr->cliptop[x] = ds->sprtopclip[x];
 			}
 			else if (silhouette == (SIL_TOP|SIL_BOTTOM))
@@ -2714,9 +2714,9 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 				// both
 				for (x = r1; x <= r2; x++)
 				{
-					if (spr->clipbot[x] == -2)
+					if (spr->clipbot[x] == CLIP_UNDEF)
 						spr->clipbot[x] = ds->sprbottomclip[x];
-					if (spr->cliptop[x] == -2)
+					if (spr->cliptop[x] == CLIP_UNDEF)
 						spr->cliptop[x] = ds->sprtopclip[x];
 				}
 			}
@@ -2735,13 +2735,13 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			if (mh <= 0 || (phs != -1 && viewz > sectors[phs].floorheight))
 			{                          // clip bottom
 				for (x = x1; x <= x2; x++)
-					if (spr->clipbot[x] == -2 || h < spr->clipbot[x])
+					if (spr->clipbot[x] == CLIP_UNDEF || h < spr->clipbot[x])
 						spr->clipbot[x] = (INT16)h;
 			}
 			else						// clip top
 			{
 				for (x = x1; x <= x2; x++)
-					if (spr->cliptop[x] == -2 || h > spr->cliptop[x])
+					if (spr->cliptop[x] == CLIP_UNDEF || h > spr->cliptop[x])
 						spr->cliptop[x] = (INT16)h;
 			}
 		}
@@ -2753,13 +2753,13 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			if (phs != -1 && viewz >= sectors[phs].ceilingheight)
 			{                         // clip bottom
 				for (x = x1; x <= x2; x++)
-					if (spr->clipbot[x] == -2 || h < spr->clipbot[x])
+					if (spr->clipbot[x] == CLIP_UNDEF || h < spr->clipbot[x])
 						spr->clipbot[x] = (INT16)h;
 			}
 			else                       // clip top
 			{
 				for (x = x1; x <= x2; x++)
-					if (spr->cliptop[x] == -2 || h > spr->cliptop[x])
+					if (spr->cliptop[x] == CLIP_UNDEF || h > spr->cliptop[x])
 						spr->cliptop[x] = (INT16)h;
 			}
 		}
@@ -2769,10 +2769,10 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	{
 		for (x = x1; x <= x2; x++)
 		{
-			if (spr->cliptop[x] == -2 || spr->szt > spr->cliptop[x])
+			if (spr->cliptop[x] == CLIP_UNDEF || spr->szt > spr->cliptop[x])
 				spr->cliptop[x] = spr->szt;
 
-			if (spr->clipbot[x] == -2 || spr->sz < spr->clipbot[x])
+			if (spr->clipbot[x] == CLIP_UNDEF || spr->sz < spr->clipbot[x])
 				spr->clipbot[x] = spr->sz;
 		}
 	}
@@ -2780,7 +2780,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	{
 		for (x = x1; x <= x2; x++)
 		{
-			if (spr->cliptop[x] == -2 || spr->szt > spr->cliptop[x])
+			if (spr->cliptop[x] == CLIP_UNDEF || spr->szt > spr->cliptop[x])
 				spr->cliptop[x] = spr->szt;
 		}
 	}
@@ -2788,7 +2788,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	{
 		for (x = x1; x <= x2; x++)
 		{
-			if (spr->clipbot[x] == -2 || spr->sz < spr->clipbot[x])
+			if (spr->clipbot[x] == CLIP_UNDEF || spr->sz < spr->clipbot[x])
 				spr->clipbot[x] = spr->sz;
 		}
 	}
@@ -2798,19 +2798,11 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	// check for unclipped columns
 	for (x = x1; x <= x2; x++)
 	{
-		if (spr->clipbot[x] == -2)
+		if (spr->clipbot[x] == CLIP_UNDEF)
 			spr->clipbot[x] = (INT16)viewheight;
 
-		if (spr->cliptop[x] == -2)
+		if (spr->cliptop[x] == CLIP_UNDEF)
 			spr->cliptop[x] = -1;
-	}
-
-	// Check if it'll be visible
-	// Not done for floorsprites.
-	if (cv_spriteclip.value)
-	{
-		if (!R_CheckSpriteVisible(spr, x1, x2))
-			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 	}
 
 	if (portal)
@@ -2823,6 +2815,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			spr->clipbot[x] = -1;
 			spr->cliptop[x] = -1;
 		}
+
 		for (x = start_index; x <= end_index; x++)
 		{
 			if (spr->clipbot[x] > portal->floorclip[x - portal->start])
@@ -2830,11 +2823,20 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			if (spr->cliptop[x] < portal->ceilingclip[x - portal->start])
 				spr->cliptop[x] = portal->ceilingclip[x - portal->start];
 		}
+
 		for (x = end_index + 1; x <= x2; x++)
 		{
 			spr->clipbot[x] = -1;
 			spr->cliptop[x] = -1;
 		}
+	}
+
+	// Check if it'll be visible
+	// Not done for floorsprites.
+	if (cv_spriteclip.value)
+	{
+		if (!R_CheckSpriteVisible(spr, x1, x2))
+			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 	}
 }
 
@@ -2908,8 +2910,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	{
 		vissprite_t *spr = R_GetVisSprite(clippedvissprites);
 
-		if (cv_spriteclip.value
-		&& (spr->szt > vid.height || spr->sz < 0))
+		if (cv_spriteclip.value &&
+			(spr->szt > vid.height || spr->sz < 0) &&
+			!spr->scalestep)
 		{
 			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 			continue;
