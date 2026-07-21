@@ -1324,17 +1324,20 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 			// Now skip funny whitespace.
 			value += strspn(value, "\t ");
 
-			// remove trailing whitespaces
-
 			textline = value;
 
-// turn _ into spaces.
-#define ADDDEF(field)\
-	int err = 0;\
-	STRBUFCPY(def->field, textline);\
-	for (textline = def->field; *textline; textline++) {\
-		if (err == 0 && *textline == ' ') {err = 1; CONS_Alert(CONS_WARNING, "MUSICDEF: Erroneous whitespace detected in field '%s': '%s'.\n(file %s, line %d) Musicdef might not work correctly!\n", stoken, value, wadfiles[wadnum]->filename, line);}\
-		if (*textline == '_') *textline = ' ';\
+// turn _ into spaces while also removing trailing whitespaces.
+#define ADDDEF(field) \
+	int err = 0; \
+	STRBUFCPY(def->field, textline); \
+	size_t len = strlen(def->field); \
+	while (len > 0 && (def->field[len-1] == ' ')) { \
+		def->field[len-1] = 0; \
+		len--; \
+	} \
+	for (textline = def->field; *textline; textline++) { \
+		if (err == 0 && *textline == ' ') {err = 1; CONS_Alert(CONS_WARNING, "MUSICDEF: Erroneous whitespace detected in field '%s': '%s'.\n(file %s, line %d) Musicdef might not work correctly!\n", stoken, value, wadfiles[wadnum]->filename, line);} \
+		if (*textline == '_') *textline = ' '; \
 	}
 
 			if (fasticmp(stoken, "usage"))
@@ -1347,7 +1350,6 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 			}
 			else if (fasticmp(stoken, "title"))
 			{
-				def->use_info = true;
 				ADDDEF(title);
 			}
 			else if (fasticmp(stoken, "alttitle"))
