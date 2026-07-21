@@ -3089,6 +3089,8 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 
+	if (demo.playback) return 0;
+
 	pnum = P_GetLocalPlayerNumForPlayer(player);
 
 	// Not a local player
