@@ -4003,7 +4003,7 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 	}
 
 	// without this the server will remove itself and thus self destruct on dedicated
-	if (server && !playeringame[pnum])
+	if (server && (playernode[pnum] == UINT8_MAX || !playeringame[pnum]))
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Attempting to kick player %d which is not in game received from %s\n"), pnum, player_names[playernum]);
 		return;

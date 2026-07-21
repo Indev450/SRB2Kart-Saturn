@@ -2259,7 +2259,7 @@ static void HU_DrawSongCreditsBox(void)
 		y = -BOXCREDITHEIGHT*dup + (FixedMul(BOXCREDITHEIGHT*FRACUNIT, FixedDiv(t*FRACUNIT, TICRATE*FRACUNIT/2))*dup - interpoffset)/FRACUNIT;
 	}
 
-	bgt = (NUMTRANSMAPS/2) + (cursongcredit.trans/2) - 2; // arbitrary value
+	bgt = (NUMTRANSMAPS/2) + (cursongcredit.trans/2) - 2; // arbitrary value, looks a bit better
 
 	if (bgt < NUMTRANSMAPS)
 	{
