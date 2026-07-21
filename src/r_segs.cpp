@@ -1882,7 +1882,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 	// big room fix
 	if (longboi)
-		rw_distance = (fixed_t)R_CalcSegDist(curline,viewx,viewy);
+		rw_distance = (fixed_t)R_CalcSegDist(curline, viewx, viewy);
 
 	ds_p->x1 = rw_x = start;
 	ds_p->x2 = stop;
