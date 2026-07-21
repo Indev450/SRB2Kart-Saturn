@@ -5302,6 +5302,18 @@ static void P_RunLevelLoadExecutors(void)
 	}
 }
 
+static fixed_t P_GetSectorGravityFactor(sector_t *sec)
+{
+	return FixedDiv(*sec->gravity >> FRACBITS, 1000);
+}
+
+fixed_t P_GetSectorGravity(sector_t *sec)
+{
+	if (sec && sec->gravity)
+		return FixedMul(gravity, P_GetSectorGravityFactor(sec));
+	return gravity;
+}
+
 /** After the map has loaded, scans for specials that spawn 3Dfloors and
   * thinkers.
   *

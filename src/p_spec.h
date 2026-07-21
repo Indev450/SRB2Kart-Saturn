@@ -56,6 +56,8 @@ sector_t *P_PlayerTouchingSectorSpecial(player_t *player, INT32 section, INT32 n
 void P_PlayerInSpecialSector(player_t *player);
 void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *roversector);
 
+fixed_t P_GetSectorGravity(sector_t *sec);
+
 fixed_t P_FindLowestFloorSurrounding(sector_t *sec);
 fixed_t P_FindHighestFloorSurrounding(sector_t *sec);
 

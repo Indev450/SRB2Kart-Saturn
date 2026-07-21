@@ -9048,15 +9048,15 @@ static boolean M_QuitMultiPlayerMenu(void)
 	if (!fastcmp(setupm_name, setupm_cvname->string))
 	{
 		// remove trailing whitespaces
-		for (l = strlen(setupm_name)-1;
-		    (signed)l >= 0 && setupm_name[l] ==' '; l--)
-			setupm_name[l] =0;
-		COM_BufAddText(va("%s \"%s\"\n",setupm_cvname->name,setupm_name));
+		l = strlen(setupm_name)-1;
+		for (;(signed)l >= 0 && setupm_name[l] ==' '; l--)
+			setupm_name[l] = 0;
+		COM_BufAddText(va("%s \"%s\"\n", setupm_cvname->name, setupm_name));
 	}
 
 	// you know what? always putting these in the buffer won't hurt anything.
-	COM_BufAddText(va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
-	COM_BufAddText(va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));
+	COM_BufAddText(va("%s \"%s\"\n", setupm_cvskin->name, skins[setupm_fakeskin].name));
+	COM_BufAddText(va("%s %d\n", setupm_cvcolor->name, setupm_fakecolor));
 
 	return true;
 }
