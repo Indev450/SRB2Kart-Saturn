@@ -186,7 +186,6 @@ typedef struct musicdef_s
 	char title[256];
 	char alttitle[256];
 	char authors[256];
-	boolean use_info;
 	size_t num;
 } musicdef_t;
 
