@@ -326,7 +326,7 @@ void P_CameraLineOpening(line_t *linedef)
 		{
 			for (rover = front->ffloors; rover; rover = rover->next)
 			{
-				fixed_t topheight, bottomheight;
+				fixed_t topheight, bottomheight, midheight;
 
 				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 					continue;
@@ -334,8 +334,10 @@ void P_CameraLineOpening(line_t *linedef)
 				topheight = P_CameraGetFOFTopZ(mapcampointer, front, rover, tmx, tmy, linedef);
 				bottomheight = P_CameraGetFOFBottomZ(mapcampointer, front, rover, tmx, tmy, linedef);
 
-				delta1 = abs(mapcampointer->z - (bottomheight + ((topheight - bottomheight)/2)));
-				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
+				midheight = (bottomheight + ((topheight - bottomheight) / 2));
+
+				delta1 = abs(mapcampointer->z - midheight);
+				delta2 = abs(thingtop - midheight);
 
 				if (bottomheight < lowestceiling && delta1 >= delta2)
 					lowestceiling = bottomheight;
@@ -354,7 +356,7 @@ void P_CameraLineOpening(line_t *linedef)
 		{
 			for (rover = back->ffloors; rover; rover = rover->next)
 			{
-				fixed_t topheight, bottomheight;
+				fixed_t topheight, bottomheight, midheight;
 
 				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 					continue;
@@ -362,8 +364,10 @@ void P_CameraLineOpening(line_t *linedef)
 				topheight = P_CameraGetFOFTopZ(mapcampointer, back, rover, tmx, tmy, linedef);
 				bottomheight = P_CameraGetFOFBottomZ(mapcampointer, back, rover, tmx, tmy, linedef);
 
-				delta1 = abs(mapcampointer->z - (bottomheight + ((topheight - bottomheight)/2)));
-				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
+				midheight = (bottomheight + ((topheight - bottomheight) / 2));
+
+				delta1 = abs(mapcampointer->z - midheight);
+				delta2 = abs(thingtop - midheight);
 
 				if (bottomheight < lowestceiling && delta1 >= delta2)
 					lowestceiling = bottomheight;
@@ -524,7 +528,7 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 			// Check for frontsector's fake floors
 			for (rover = front->ffloors; rover; rover = rover->next)
 			{
-				fixed_t topheight, bottomheight;
+				fixed_t topheight, bottomheight, midheight;
 
 				if (!(rover->flags & FF_EXISTS))
 					continue;
@@ -538,8 +542,10 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 				topheight = P_GetFOFTopZ(mobj, front, rover, tmx, tmy, linedef);
 				bottomheight = P_GetFOFBottomZ(mobj, front, rover, tmx, tmy, linedef);
 
-				delta1 = abs(mobj->z - (bottomheight + ((topheight - bottomheight)/2)));
-				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
+				midheight = (bottomheight + ((topheight - bottomheight) / 2));
+
+				delta1 = abs(mobj->z - midheight);
+				delta2 = abs(thingtop - midheight);
 
 				if (delta1 >= delta2 && !(rover->flags & FF_PLATFORM)) // thing is below FOF
 				{
@@ -567,7 +573,7 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 			// Check for backsectors fake floors
 			for (rover = back->ffloors; rover; rover = rover->next)
 			{
-				fixed_t topheight, bottomheight;
+				fixed_t topheight, bottomheight, midheight;
 				if (!(rover->flags & FF_EXISTS))
 					continue;
 
@@ -580,8 +586,10 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 				topheight = P_GetFOFTopZ(mobj, back, rover, tmx, tmy, linedef);
 				bottomheight = P_GetFOFBottomZ(mobj, back, rover, tmx, tmy, linedef);
 
-				delta1 = abs(mobj->z - (bottomheight + ((topheight - bottomheight)/2)));
-				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
+				midheight = (bottomheight + ((topheight - bottomheight) / 2));
+
+				delta1 = abs(mobj->z - midheight);
+				delta2 = abs(thingtop - midheight);
 
 				if (delta1 >= delta2 && !(rover->flags & FF_PLATFORM)) // thing is below FOF
 				{
@@ -611,8 +619,10 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 			{
 				const sector_t *polysec = linedef->backsector;
 
-				delta1 = abs(mobj->z - (polysec->floorheight + ((polysec->ceilingheight - polysec->floorheight)/2)));
-				delta2 = abs(thingtop - (polysec->floorheight + ((polysec->ceilingheight - polysec->floorheight)/2)));
+				const fixed_t polymid = (polysec->floorheight + ((polysec->ceilingheight - polysec->floorheight) / 2));
+
+				delta1 = abs(mobj->z - polymid);
+				delta2 = abs(thingtop - polymid);
 
 				if (polysec->floorheight < lowestceiling && delta1 >= delta2)
 				{
@@ -620,7 +630,9 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 					ceilingslope = NULL;
 				}
 				else if (polysec->floorheight < highestceiling && delta1 >= delta2)
+				{
 					highestceiling = polysec->floorheight;
+				}
 
 				if (polysec->ceilingheight > highestfloor && delta1 < delta2)
 				{
@@ -628,7 +640,9 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 					floorslope = NULL;
 				}
 				else if (polysec->ceilingheight > lowestfloor && delta1 < delta2)
+				{
 					lowestfloor = polysec->ceilingheight;
+				}
 			}
 
 			if (highestceiling < highceiling)

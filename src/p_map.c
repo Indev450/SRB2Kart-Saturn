@@ -1828,14 +1828,14 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 			delta1 = abs(thing->z - midheight);
 			delta2 = abs(thingtop - midheight);
 
-			if (topheight > tmfloorz && delta1 < delta2
+			if ((topheight > tmfloorz) && (delta1 < delta2)
 				&& !(rover->flags & FF_REVERSEPLATFORM))
 			{
 				tmfloorz = tmdropoffz = topheight;
 				tmfloorslope = *rover->t_slope;
 			}
 
-			if (bottomheight < tmceilingz && delta1 >= delta2
+			if ((bottomheight < tmceilingz) && (delta1 >= delta2)
 				&& !(rover->flags & FF_PLATFORM)
 				&& !(thing->type == MT_SKIM && (rover->flags & FF_SWIMMABLE)))
 			{
@@ -1890,8 +1890,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 
 						po->validcount = validcount;
 
-						if (!P_BBoxInsidePolyobj(po, tmbbox)
-							|| !(po->flags & POF_SOLID))
+						if (!(po->flags & POF_SOLID) || !P_BBoxInsidePolyobj(po, tmbbox))
 						{
 							plink = (polymaplink_t *)(plink->link.next);
 							continue;
@@ -2136,7 +2135,7 @@ static boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 
 						po->validcount = validcount;
 
-						if (!P_PointInsidePolyobj(po, x, y) || !(po->flags & POF_SOLID))
+						if (!(po->flags & POF_SOLID) || !P_PointInsidePolyobj(po, x, y))
 						{
 							plink = (polymaplink_t *)(plink->link.next);
 							continue;
@@ -3768,7 +3767,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 				delta1 = abs(thing->z - midheight);
 				delta2 = abs(thingtop - midheight);
 
-				if (bottomheight <= thing->ceilingz && delta1 >= delta2)
+				if ((bottomheight <= thing->ceilingz) && (delta1 >= delta2))
 				{
 					if (thing->flags & MF_PUSHABLE)
 					{
@@ -4278,7 +4277,7 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 			delta1 = abs(z - midheight);
 			delta2 = abs(thingtop - midheight);
 
-			if (topheight > floorz && delta1 < delta2)
+			if ((topheight > floorz) && (delta1 < delta2))
 				floorz = topheight;
 		}
 	}
