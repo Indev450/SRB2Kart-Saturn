@@ -776,15 +776,15 @@ static int GLFramebuffer_CheckExt(void)
 	// gl versions from 2.1 may still support framebuffer objects
 
 	// maybe, just maybe, we support the standart extensions
-	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
 		return FBO_ARB;
 
 	// nope, try the older 2.1 extensions
-	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
 	{
 		// perhaps we may even support a stencil attachment
 		if (GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions))
@@ -885,7 +885,7 @@ void SetupGLFunc4(void)
 	{ \
 		GL_MSG_Warning("failed to get OpenGL FBO function: %s\n", #func); \
 		GL_DBG_Printf("\nFBO: No framebuffer object support\n"); \
-		supportFBO = false; \
+		supportFBO = FBO_NONE; \
 		return; \
 	} \
 
@@ -3247,7 +3247,7 @@ void GL_SetTransform(FTransform *stransform)
 #ifdef USE_FBO_OGL
 static void GL_Framebuffer_DeleteAttachments(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	// Unbind the framebuffer
@@ -3267,7 +3267,7 @@ static void GL_Framebuffer_DeleteAttachments(void)
 
 static void GL_Framebuffer_Generate(void)
 {
-	if (!supportFBO || framebufferobject.init || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || framebufferobject.init || !UseScreenFBO())
 		return;
 
 	// Generate the framebuffer
@@ -3287,10 +3287,10 @@ static void GL_Framebuffer_Generate(void)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
-		pglBindTexture(GL_TEXTURE_2D, 0);
 
 		// Attach the framebuffer texture to the framebuffer
 		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, framebufferobject.tex, 0);
+		pglBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	// Generate the renderbuffer
@@ -3332,7 +3332,7 @@ static void GL_Framebuffer_Generate(void)
 
 		// if this fails, dont retry it a gazillion times
 		// this wouldnt recover
-		supportFBO = false;
+		supportFBO = FBO_NONE;
 		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 		return;
 	}
@@ -3345,7 +3345,7 @@ static void GL_Framebuffer_Generate(void)
 
 void GL_Framebuffer_Unbind(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3354,13 +3354,13 @@ void GL_Framebuffer_Unbind(void)
 
 void GL_Framebuffer_Enable(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || !UseScreenFBO())
 		return;
 
 	GL_Framebuffer_Generate();
 
 	// failed
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
@@ -3369,7 +3369,7 @@ void GL_Framebuffer_Enable(void)
 
 void GL_Framebuffer_Disable(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
