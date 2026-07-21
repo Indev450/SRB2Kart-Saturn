@@ -340,14 +340,18 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		return;
 	}
 
-	out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
-	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
-	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
+	const boolean doreset = mobj->resetinterp && (mobj->type != MT_GHOST) && (mobj->type != MT_PLAYERRETICULE) && (mobj->type != MT_SHADOW);
+
+	out->x = doreset ? mobj->x : R_LerpFixed(mobj->old_x, mobj->x, frac);
+	out->y = doreset ? mobj->y : R_LerpFixed(mobj->old_y, mobj->y, frac);
+	out->z = doreset ? mobj->z : R_LerpFixed(mobj->old_z, mobj->z, frac);
+
+	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 	out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
 	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
 	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
 	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
-	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
+
 	//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 
 	if (mobj->player)
