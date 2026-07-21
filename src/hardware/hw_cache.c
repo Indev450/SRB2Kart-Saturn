@@ -998,7 +998,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 		const char *flatname = W_CheckNameForNum(flatlumpnum);
 
 		// hack for gba rainbow roads cyan floors
-		if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
+		if (UNLIKELY(flatname && memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
 		{
 			glMipmap->flags &= ~TF_CHROMAKEYED;
 		}
