@@ -1357,7 +1357,7 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 	int err = 0;\
 	STRBUFCPY(def->field, textline);\
 	for (textline = def->field; *textline; textline++) {\
-		if (err == 0 && *textline == ' ') {err = 1; CONS_Alert(CONS_WARNING, "MUSICDEF: Erroneous whitespace detected in field '%s': '%s'.\n(file %s, line %d) Musicdef might not work correctly!\n", stoken, def->field, wadfiles[wadnum]->filename, line);}\
+		if (err == 0 && *textline == ' ') {err = 1; CONS_Alert(CONS_WARNING, "MUSICDEF: Erroneous whitespace detected in field '%s': '%s'.\n(file %s, line %d) Musicdef might not work correctly!\n", stoken, value, wadfiles[wadnum]->filename, line);}\
 		if (*textline == '_') *textline = ' ';\
 	}
 
