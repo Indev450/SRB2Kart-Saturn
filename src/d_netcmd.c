@@ -47,6 +47,7 @@
 #include "z_zone.h"
 #include "lua_script.h"
 #include "lua_hook.h"
+#include "lua_profile.h"
 #include "m_cond.h"
 #include "m_anigif.h"
 #include "k_kart.h" // SRB2kart
@@ -506,6 +507,9 @@ static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+//consvar_t cv_lua_profile = {"lua_profile", "0").values(CV_Unsigned).onchange(lua_profile_OnChange).description("Show hook timings over an average of N tics");
+consvar_t cv_lua_profile = {"lua_profile", "0", CV_CALL, CV_Unsigned, lua_profile_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
 // only there to better keep track of it globally
 consvar_t cv_director = {"director", "Off", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -933,6 +937,8 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_palette);
 	CV_RegisterVar(&cv_palettenum);
+
+	CV_RegisterVar(&cv_lua_profile);
 
 	// m_menu.c
 	CV_RegisterVar(&cv_chatheight);

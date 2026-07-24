@@ -275,6 +275,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_hooklib.c
 		lua_hudlib.c
 		lua_hudlib_drawlist.c
+		lua_profile.cpp
 		lua_infolib.c
 		lua_maplib.c
 		lua_mathlib.c
@@ -290,6 +291,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_hook.h
 		lua_hud.h
 		lua_hudlib_drawlist.h
+		lua_profile.h
 		lua_libs.h
 		lua_script.h
 		lua_udatalib.h

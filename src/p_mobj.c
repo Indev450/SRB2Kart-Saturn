@@ -2573,7 +2573,7 @@ static void P_PlayerZMovement(mobj_t *mo)
 			P_SetPlayerMobjState(mo, S_KART_STND1);
 		}
 
-#if 0 // praying that removing this dupe wont cause any issues...
+#if 1 // praying that removing this dupe wont cause any issues...
 		if (!mo->standingslope && (mo->eflags & MFE_VERTICALFLIP ? tmceilingslope : tmfloorslope))
 		{
 			// Handle landing on slope during Z movement
@@ -9170,7 +9170,7 @@ void P_MobjThinker(mobj_t *mobj)
 		mobj->frame = (mobj->frame & ~FF_TRANSMASK) | (((NUMTRANSMAPS-1) - mobj->fuse / 2) << FF_TRANSSHIFT);
 
 	// Special thinker for scenery objects
-	if (mobj->flags & MF_SCENERY)
+	if (mobj->flags & MF_SCENERY && !mobj->player)
 	{
 		P_MobjSceneryThink(mobj);
 		return;
