@@ -3581,6 +3581,10 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 #endif
 
 	skin = K_GetMobjSkin(mo);
+
+	if (!skin)
+		return;
+
 	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
 
 	if (minimaphead == NULL)
@@ -3783,6 +3787,9 @@ static void K_drawKartMinimap(void)
 			continue; // this doesn't interest us
 
 		mobj_t *mobj = players[localplayers[i]].mo;
+
+		if (!mobj)
+			continue;
 
 		// dont draw for no contestants
 		boolean playertimedout = (mobj->health <= 0 && players[localplayers[i]].pflags & PF_TIMEOVER);
