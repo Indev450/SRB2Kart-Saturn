@@ -147,13 +147,13 @@ void LUA_RenderTimers(void)
 	float row_y = kRowHeight;
 
 	// pretty much what the whole srb2::Draw does lol
-	auto draw_row = [](float x, float y, INT32 flags, const std::string& str)
+	auto draw_row = [](float x, float y, INT32 flags, const char *str)
 	{
 		V_DrawSmallStringAtFixed(
 			FloatToFixed(x),
 			FloatToFixed(y),
 			V_MONOSPACE|V_ALLOWLOWERCASE|flags,
-			str.c_str()
+			str
 		);
 	};
 
