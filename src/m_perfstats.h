@@ -26,6 +26,16 @@ typedef struct
 	void *history;
 } ps_metric_t;
 
+typedef enum
+{
+	PS_OFF = 0,
+	PS_RENDER,
+	PS_LOGIC,
+	PS_THINKFRAME,
+	PS_PRETHINKFRAME,
+	PS_POSTTHINKFRAME
+} ps_types_t;
+
 typedef struct
 {
 	ps_metric_t time_taken;

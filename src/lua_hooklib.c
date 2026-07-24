@@ -760,7 +760,7 @@ static void hook_think_frame(int type)
 	const hook_t * map = &hookIds[type];
 	int k;
 
-	const boolean perfstats = (cv_perfstats.value >= 3);
+	const boolean perfstats = (cv_perfstats.value >= PS_THINKFRAME);
 
 	if (prepare_hook(&hook, 0, type))
 	{
