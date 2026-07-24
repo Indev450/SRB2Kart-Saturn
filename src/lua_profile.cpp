@@ -216,6 +216,7 @@ void LUA_RenderTimers(void)
 																		(g_avg_tic_time * (double)TICRATE)
 				));
 			}
+		}
 
 		row_y += kRowHeight * 4;
 	}
