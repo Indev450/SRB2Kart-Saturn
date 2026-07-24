@@ -307,7 +307,7 @@ opts+=$(WFLAGS) $(CFLAGS)
 cxxopts:=$(opts) $(CXXFLAGS)
 opts+=$(CWFLAGS) # warning flags that shouldnt be passed to c++ compiler
 
-libs+=$(LDFLAGS) -lstdc++ -lpthread -lfmt
+libs+=$(LDFLAGS) -lstdc++ -lpthread
 
 asflags:=$(ASFLAGS) -x assembler-with-cpp
 
