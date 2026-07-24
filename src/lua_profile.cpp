@@ -144,6 +144,7 @@ void LUA_ResetTicTimers(void)
 void LUA_RenderTimers(void)
 {
 	constexpr int kRowHeight = 4;
+	float row_y = kRowHeight;
 
 	// pretty much what the whole srb2::Draw does lol
 	auto draw_row = [](float x, float y, INT32 flags, const std::string& str)
@@ -156,13 +157,11 @@ void LUA_RenderTimers(void)
 		);
 	};
 
-	float row_y = kRowHeight - 60;
-	draw_row(0.f, row_y - kRowHeight, 0, va("-- AVERAGES PER TIC (over %d tics) --", cv_lua_profile.value));
+	draw_row(0.f, 0.f, 0, va("-- AVERAGES PER TIC (over %d tics) --", cv_lua_profile.value));
 
 	if (g_invalid)
 	{
-		row_y += kRowHeight;
-		draw_row(0.f, row_y - kRowHeight, V_GRAYMAP, "  <Data pending>");
+		draw_row(0.f, row_y, V_GRAYMAP, "  <Data pending>");
 		return;
 	}
 
@@ -217,9 +216,8 @@ void LUA_RenderTimers(void)
 																		(g_avg_tic_time * (double)TICRATE)
 				));
 			}
-		}
 
-		row_y += kRowHeight * 4; // row = row.y(kRowHeight * 4)
+		row_y += kRowHeight * 4;
 	}
 
 	std::sort(
@@ -246,7 +244,7 @@ void LUA_RenderTimers(void)
 			key.c_str()
 		));
 
-		row_y += kRowHeight; // row = row.y(kRowHeight)
+		row_y += kRowHeight;
 
 		// FIXME this is all ugly and sucks
 		if (row_y >= BASEVIDHEIGHT)
