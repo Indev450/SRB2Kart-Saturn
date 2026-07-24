@@ -16,9 +16,6 @@
 #include <string_view>
 #include <vector>
 
-#include <fmt/core.h>
-#include <fmt/format.h>
-
 extern "C" {
 #include "blua/lua.h"
 };
@@ -93,7 +90,8 @@ lua_timer_t* LUA_BeginFunctionTimer(lua_State* L, int fn_idx, const char* name)
 		return view;
 	};
 
-	auto [it, ins] = g_tic_timers.try_emplace(fmt::format("{}:{} ({})", label(), ar.linedefined, name));
+	// i sure hope this std::string mess is fine...
+	auto [it, ins] = g_tic_timers.try_emplace(std::string(va("%s:%d (%s)", std::string(label()).c_str(), ar.linedefined, name)));
 	auto& [key, timer] = *it;
 
 	g_time_reference = I_GetPreciseTime();
@@ -145,10 +143,7 @@ void LUA_ResetTicTimers(void)
 
 void LUA_RenderTimers(void)
 {
-	///using srb2::Draw;
-
 	constexpr int kRowHeight = 4;
-	//constexpr float kScale = 0.5f;
 
 	// pretty much what the whole srb2::Draw does lol
 	auto draw_row = [](float x, float y, INT32 flags, const std::string& str)
@@ -162,15 +157,11 @@ void LUA_RenderTimers(void)
 	};
 
 	float row_y = kRowHeight - 60;
-	draw_row(0.f, row_y - kRowHeight, 0, fmt::format("-- AVERAGES PER TIC (over {} tics) --", cv_lua_profile.value));
-
-	//Draw row = Draw(0, kRowHeight).font(Draw::Font::kConsole).align(Draw::Align::kLeft).scale(0.5).flags(V_MONOSPACE);
-	//row.y(-kRowHeight).text("-- AVERAGES PER TIC (over {} tics) --", cv_lua_profile.value);
+	draw_row(0.f, row_y - kRowHeight, 0, va("-- AVERAGES PER TIC (over %d tics) --", cv_lua_profile.value));
 
 	if (g_invalid)
 	{
 		row_y += kRowHeight;
-		//row.flags(V_GRAYMAP).text("  <Data pending>");
 		draw_row(0.f, row_y - kRowHeight, V_GRAYMAP, "  <Data pending>");
 		return;
 	}
@@ -209,36 +200,26 @@ void LUA_RenderTimers(void)
 			}
 		}
 
-		/*
-		Draw tally = row.flags(color_flag(cum * 1'000'000.0));
-
-		tally.text("{:8.2f} us - TOTAL", cum * 1'000'000.0);
-		tally.y(kRowHeight).text("{:8.2f} ms", cum * 1000.0);
-		tally.y(kRowHeight * 2).text(
-			"{:8.2f}% overhead ({:.2f} / {:.2f}) <-- not counting rendering time",
-			(cum / g_avg_tic_time) * 100.0,
-			cum * TICRATE,
-			g_avg_tic_time * TICRATE
-		);
-
-		row = row.y(kRowHeight * 4);
-		*/
-
 		{
 			const INT32 tally_flags = color_flag(cum * 1'000'000.0);
 
-			draw_row(0.f, row_y, tally_flags, fmt::format("{:8.2f} us - TOTAL", cum * 1'000'000.0));
-			draw_row(0.f, row_y + kRowHeight, tally_flags, fmt::format("{:8.2f} ms", cum * 1000.0));
-			draw_row(0.f, row_y + kRowHeight * 2, tally_flags, fmt::format(
-				"{:8.2f}% overhead ({:.2f} / {:.2f}) <-- not counting rendering time",
+			draw_row(0.f, row_y, tally_flags, va("%8.2f us - TOTAL", cum * 1'000'000.0));
+			draw_row(0.f, row_y + kRowHeight, tally_flags, va("%8.2f ms", cum * 1000.0));
+
+			// dont need to show this if we didnt capture over time
+			// this would just show nan or inf anyways
+			if (std::fpclassify(g_avg_tic_time) != FP_ZERO)
+			{
+				draw_row(0.f, row_y + kRowHeight * 2, tally_flags, va(
+				"%8.2f%% overhead (%.2f / %.2f) <-- not counting rendering time",
 																		(cum / g_avg_tic_time) * 100.0,
 																		(cum * (double)TICRATE),
 																		(g_avg_tic_time * (double)TICRATE)
-			));
+				));
+			}
 		}
 
 		row_y += kRowHeight * 4; // row = row.y(kRowHeight * 4)
-
 	}
 
 	std::sort(
@@ -258,22 +239,11 @@ void LUA_RenderTimers(void)
 
 		double t = timer.avg.time * 1'000'000.0;
 
-		/*
-		row.flags(color_flag(t)).text(
-			"{:>8.2f} us {:>8.2f} calls - {}",
+		draw_row(0.f, row_y, color_flag(t), va(
+			"%8.2f us %8.2f calls - %s",
 			t,
 			timer.avg.calls,
-			key
-		);
-
-		row = row.y(kRowHeight);
-		*/
-
-		draw_row(0.f, row_y, color_flag(t), fmt::format(
-			"{:>8.2f} us {:>8.2f} calls - {}",
-			t,
-			timer.avg.calls,
-			key
+			key.c_str()
 		));
 
 		row_y += kRowHeight; // row = row.y(kRowHeight)
