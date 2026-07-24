@@ -291,7 +291,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_hook.h
 		lua_hud.h
 		lua_hudlib_drawlist.h
-		lua_profile.ch
+		lua_profile.h
 		lua_libs.h
 		lua_script.h
 		lua_udatalib.h
