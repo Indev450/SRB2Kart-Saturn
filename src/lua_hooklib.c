@@ -25,6 +25,7 @@
 #include "lua_libs.h"
 #include "lua_hook.h"
 #include "lua_hud.h" // hud_running errors
+#include "lua_profile.h"
 
 /* =========================================================================
                                   ABSTRACTION
@@ -445,11 +446,54 @@ FUNCINLINE static ATTRINLINE void get_hook_from_table(Hook_State *hook, int n)
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
+static int pcall(Hook_State *hook)
+{
+	return lua_pcall(gL, hook->values, hook->results, EINDEX);
+}
+
+static const char *hook_name(Hook_State *hook)
+{
+	if (hud_running)
+	{
+		return hudHookNames[hook->hook_type];
+	}
+	else if (hook->string)
+	{
+		return stringHookNames[hook->hook_type];
+	}
+	//else if (hook->mobj_type > 0)
+	else if (hook->mobj_type != NONMOHOOK)
+	{
+		return mobjHookNames[hook->hook_type];
+	}
+	else
+	{
+		return hookNames[hook->hook_type];
+	}
+}
+
+static int pcall_timed_or_untimed(Hook_State *hook)
+{
+	if (!hud_running && cv_lua_profile.value > 0)
+	{
+		lua_timer_t *timer = LUA_BeginFunctionTimer(gL, -1 - hook->values, hook_name(hook));
+		int k = pcall(hook);
+		LUA_EndFunctionTimer(timer);
+
+		return k;
+	}
+	else
+	{
+		return pcall(hook);
+	}
+}
+
 static int call_single_hook_no_copy(Hook_State *hook)
 {
 	hook_important = hook->important;
 
-	if (lua_pcall(gL, hook->values, hook->results, EINDEX) == 0)
+	//if (lua_pcall(gL, hook->values, hook->results, EINDEX) == 0)
+	if (pcall_timed_or_untimed(hook) == 0)
 	{
 		if (hook->results > 0)
 		{

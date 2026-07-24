@@ -6873,7 +6873,10 @@ boolean TryRunTics(tic_t realtics)
 			DEBFILE(va("============ Running tic %d (local %d)\n", gametic, leveltime));
 
 			if (update_stats)
+			{
+				ps_prevtictime = ps_tictime;
 				PS_START_TIMING(ps_tictime);
+			}
 
 			G_Ticker((gametic % NEWTICRATERATIO) == 0);
 			ExtraDataTicker();

@@ -38,6 +38,8 @@
 #include "i_video.h" // rendermode
 #include "m_perfstats.h"
 
+#include "lua_profile.h"
+
 // Object place
 #include "m_cheat.h"
 
@@ -622,6 +624,8 @@ void P_Ticker(boolean run)
 			}
 		}
 
+		LUA_ResetTicTimers();
+
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
 
@@ -629,6 +633,7 @@ void P_Ticker(boolean run)
 		LUA_HookPreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
 
+		// OK! Now that we got all of that sorted, players can think!
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -675,6 +680,7 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
+	// Run shield positioning
 	P_RunOverlays();
 	P_RunShadows();
 
@@ -796,7 +802,7 @@ void P_Ticker(boolean run)
 				if (!player->mo)
 					continue;
 
-				const boolean skybox = (skyboxmo[0] && cv_skybox.value);
+				const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 				if (skyVisiblePerPlayer[i] && skybox)
 				{
