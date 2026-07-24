@@ -2604,7 +2604,7 @@ static void P_PlayerZMovement(mobj_t *mo)
 			P_SetPlayerMobjState(mo, S_KART_STND1);
 		}
 
-#if 0 // praying that removing this dupe wont cause any issues...
+#if 1 // praying that removing this dupe wont cause any issues...
 		if (!mo->standingslope && (mo->eflags & MFE_VERTICALFLIP ? tmceilingslope : tmfloorslope))
 		{
 			// Handle landing on slope during Z movement
