@@ -3553,7 +3553,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 			{
 				fixed_t topheight, bottomheight;
-				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
+				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || (rover->master->frontsector->flags & SF_NOCLIPCAMERA))
 					continue;
 
 				topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
@@ -3618,7 +3618,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 							// We're inside it! Yess...
 							polysec = po->lines[0]->backsector;
 
-							if (UNLIKELY(GETSECSPECIAL(polysec->special, 4) == 12))
+							if (polysec->flags & SF_NOCLIPCAMERA)
 							{ // Camera noclip polyobj.
 								plink = (polymaplink_t *)(plink->link.next);
 								continue;
@@ -3674,7 +3674,8 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 			{
 				fixed_t topheight, bottomheight;
-				if (UNLIKELY((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
+
+				if ((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && (rover->master->frontsector->flags & SF_NOCLIPCAMERA))
 				{
 					topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
 					bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
@@ -4254,7 +4255,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 
 static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
-	if (P_FindSpecialLineFromTag(13, sector->tag, -1) != -1)
+	if (sector->flags & SF_HEATWAVE)
 		return true;
 
 	if (sector->ffloors)
@@ -4272,7 +4273,7 @@ static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, 
 			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
 				continue;
 
-			if (P_FindSpecialLineFromTag(13, rover->master->frontsector->tag, -1) != -1)
+			if (rover->master->frontsector->flags & SF_HEATWAVE)
 				return true;
 		}
 	}

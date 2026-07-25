@@ -3403,7 +3403,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			break;
 		case 12: // SRB2kart: Invert Encore Remap
 			break;
-		case 15: // no idea but keep it dont want anything to break
+		case 15: // also Invert Encore Remap....
 			break;
 	}
 DoneSection2:
@@ -5377,6 +5377,11 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 11: // Custom global gravity!
 				gravity = sector->floorheight/1000;
 				break;
+
+			case 12: // SRB2kart: Invert Encore Remap
+			case 15: // NOTE: vanilla kart checks only for this for some reason!
+				sector->flags |= SF_INVERTENCORE;
+				break;
 		}
 
 		// Process Section 4
@@ -5385,6 +5390,10 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 10: // Circuit finish line
 				if (G_RaceGametype())
 					circuitmap = true;
+				break;
+
+			case 12: // Camera noclip
+				sector->flags |= SF_NOCLIPCAMERA;
 				break;
 		}
 	}
@@ -5470,11 +5479,11 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 					sectors[s].gravity = &sectors[sec].floorheight; // This allows it to change in realtime!
 
 					if (lines[i].flags & ML_NOCLIMB)
-						sectors[s].verticalflip = true;
+						sectors[s].flags |= SF_GRAVITYFLIP;
 					else
-						sectors[s].verticalflip = false;
+						sectors[s].flags &= ~SF_GRAVITYFLIP;
 
-					CheckForReverseGravity = sectors[s].verticalflip;
+					CheckForReverseGravity |= (sectors[s].flags & SF_GRAVITYFLIP);
 				}
 				break;
 
@@ -5565,6 +5574,11 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 10: // Vertical culling plane for sprites and FOFs
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
 					sectors[s].cullheight = &lines[i]; // This allows it to change in realtime!
+				break;
+
+			case 13: // Heat wave effect
+				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
+					sectors[s].flags |= SF_HEATWAVE;
 				break;
 
 			case 50: // Insta-Lower Sector

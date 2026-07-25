@@ -328,7 +328,7 @@ void P_CameraLineOpening(line_t *linedef)
 			{
 				fixed_t topheight, bottomheight, midheight;
 
-				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
+				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS) || (rover->master->frontsector->flags & SF_NOCLIPCAMERA))
 					continue;
 
 				topheight = P_CameraGetFOFTopZ(mapcampointer, front, rover, tmx, tmy, linedef);
@@ -358,7 +358,7 @@ void P_CameraLineOpening(line_t *linedef)
 			{
 				fixed_t topheight, bottomheight, midheight;
 
-				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
+				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS) || (rover->master->frontsector->flags & SF_NOCLIPCAMERA))
 					continue;
 
 				topheight = P_CameraGetFOFTopZ(mapcampointer, back, rover, tmx, tmy, linedef);

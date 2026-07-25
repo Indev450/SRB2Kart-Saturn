@@ -307,10 +307,19 @@ typedef struct pslope_s
 
 typedef enum
 {
-	SF_FLIPSPECIAL_FLOOR    =  1,
-	SF_FLIPSPECIAL_CEILING  =  2,
-	SF_FLIPSPECIAL_BOTH     =  3,
-	SF_TRIGGERSPECIAL_TOUCH =  4,
+	// flipspecial - planes with effect
+	SF_FLIPSPECIAL_FLOOR       =  1,
+	SF_FLIPSPECIAL_CEILING     =  1<<1,
+	SF_FLIPSPECIAL_BOTH        =  (SF_FLIPSPECIAL_FLOOR|SF_FLIPSPECIAL_CEILING),
+	// triggerspecial - conditions under which plane touch causes effect
+	SF_TRIGGERSPECIAL_TOUCH    =  1<<2,
+
+	SF_GRAVITYFLIP             =  1<<3,
+	SF_HEATWAVE                =  1<<4,
+	SF_NOCLIPCAMERA            =  1<<5,
+
+	// invert encore color remap status
+	SF_INVERTENCORE            =  1<<6,
 } sectorflags_t;
 
 //
@@ -400,7 +409,6 @@ typedef struct sector_s
 
 	// This points to the master's floorheight, so it can be changed in realtime!
 	fixed_t *gravity; // per-sector gravity
-	boolean verticalflip; // If gravity < 0, then allow flipped physics
 	sectorflags_t flags;
 
 	// Sprite culling feature

@@ -48,8 +48,7 @@ boolean g_walloffscreen = false;
 
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {
-	const INT32 invspecial = GETSECSPECIAL(sector->special, 2);
-	boolean invertencore = (invspecial == 12 || invspecial == 15); // keeping this incase its used
+	const boolean invertEncore = (sector->flags & SF_INVERTENCORE);
 
 #if 0 // perfect implementation
 	const INT32 sprnspecial = GETSECSPECIAL(sector->special, 3);
@@ -59,10 +58,10 @@ boolean R_NoEncore(sector_t *sector, boolean ceiling)
 #endif
 		&& GETSECSPECIAL(sector->special, 4) != 6) // sneaker panel
 	{
-		return invertencore;
+		return invertEncore;
 	}
 
-	if (invertencore)
+	if (invertEncore)
 	{
 		return false;
 	}

@@ -971,7 +971,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 
 			gravityadd = -P_GetSectorGravity(rover->master->frontsector);
 
-			if (rover->master->frontsector->verticalflip && gravityadd > 0)
+			if ((rover->master->frontsector->flags & SF_GRAVITYFLIP) && gravityadd > 0)
 				mo->eflags |= MFE_VERTICALFLIP;
 
 			no3dfloorgrav = false;
@@ -983,7 +983,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 	{
 		gravityadd = -P_GetSectorGravity(mo->subsector->sector);
 
-		if (mo->subsector->sector->verticalflip && gravityadd > 0)
+		if ((mo->subsector->sector->flags & SF_GRAVITYFLIP) && gravityadd > 0)
 			mo->eflags |= MFE_VERTICALFLIP;
 	}
 
@@ -3259,7 +3259,7 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	// see if we are in water
 	sector = thiscam->subsector->sector;
 
-	if (P_FindSpecialLineFromTag(13, sector->tag, -1) != -1)
+	if (sector->flags & SF_HEATWAVE)
 		return true;
 
 	if (sector->ffloors)
@@ -3278,7 +3278,7 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 			if (halfheight <= P_GetFFloorBottomZAt(rover, thiscam->x, thiscam->y))
 				continue;
 
-			if (P_FindSpecialLineFromTag(13, rover->master->frontsector->tag, -1) != -1)
+			if (rover->master->frontsector->flags & SF_HEATWAVE)
 				return true;
 		}
 	}
