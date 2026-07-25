@@ -540,24 +540,6 @@ static fixed_t HighestOnLine(fixed_t radius, fixed_t x, fixed_t y, line_t *line,
 	}
 }
 
-// save us buncha R_PointInSubsector calls
-// 0 is floor, 1 is ceiling
-static subsector_t *Zsubsectors[2];
-static fixed_t Zoldx[2];
-static fixed_t Zoldy[2];
-
-// make sure to reset that crap on levelload
-void Reset_Zsubsecs(void)
-{
-	for (int i = 0; i < 2; i++)
-	{
-		Zsubsectors[i] = NULL;
-		// theres a super unlikely chance you spawn at x = 2147483647 and y = 2147483647 on some map
-		// but prob a fuckton less likely than spawning at 0 0
-		Zoldx[i] = Zoldy[i] = INT32_MAX;
-	}
-}
-
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect)
 {
 	I_Assert(mobj != NULL);
@@ -588,14 +570,8 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 		testx += x;
 		testy += y;
 
-		if (Zsubsectors[0] == NULL || Zoldx[0] != testx || Zoldy[0] != testy)
-			Zsubsectors[0] = R_PointInSubsector(testx, testy);
-
-		Zoldx[0] = testx;
-		Zoldy[0] = testy;
-
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (Zsubsectors[0]->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetSlopeZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -683,14 +659,8 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 		testx += x;
 		testy += y;
 
-		if (Zsubsectors[1] == NULL || Zoldx[1] != testx || Zoldy[1] != testy)
-			Zsubsectors[1] = R_PointInSubsector(testx, testy);
-
-		Zoldx[1] = testx;
-		Zoldy[1] = testy;
-
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (Zsubsectors[1]->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetSlopeZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
