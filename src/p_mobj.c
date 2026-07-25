@@ -9150,15 +9150,17 @@ void P_MobjThinker(mobj_t *mobj)
 
 	tmfloorthing = tmhitthing = NULL;
 
-	const sector_t *sec1 = mobj->subsector ? mobj->subsector->sector : NULL;
-
-	// 970 allows ANY mobj to trigger a linedef exec
-	if (!mobj->islocal && sec1 && GETSECSPECIAL(sec1->special, 2) == 8) // BEWARE: islocal does not exist in vanilla
+	// do NOT trigger linedef executors for "local" mobjs
+	if (!mobj->islocal)
 	{
-		sector_t *sec2;
-		sec2 = P_ThingOnSpecial3DFloor(mobj);
-		if (sec2 && GETSECSPECIAL(sec2->special, 2) == 1)
-			P_LinedefExecute(sec2->tag, mobj, sec2);
+		// 970 allows ANY mobj to trigger a linedef exec
+		if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
+		{
+			sector_t *sec2;
+			sec2 = P_ThingOnSpecial3DFloor(mobj);
+			if (sec2 && GETSECSPECIAL(sec2->special, 2) == 1)
+				P_LinedefExecute(sec2->tag, mobj, sec2);
+		}
 	}
 
 	if (mobj->scale != mobj->destscale)
@@ -9358,24 +9360,28 @@ void P_PushableThinker(mobj_t *mobj)
 
 	I_Assert(!P_MobjWasRemoved(mobj));
 
-	if (P_MobjWasRemovedCompat(mobj))
-		return;
-
-	sec = mobj->subsector->sector;
-
-	if (mobj->z == sec->floorheight && GETSECSPECIAL(sec->special, 2) == 1)
-		P_LinedefExecute(sec->tag, mobj, sec);
+	// do NOT trigger linedef executors for "local" mobjs
+	if (!mobj->islocal)
 	{
-		sector_t *sec2;
+		sec = mobj->subsector->sector;
 
-		sec2 = P_ThingOnSpecial3DFloor(mobj);
-		if (sec2 && GETSECSPECIAL(sec2->special, 2) == 1)
-			P_LinedefExecute(sec2->tag, mobj, sec2);
+		if (mobj->z == sec->floorheight && GETSECSPECIAL(sec->special, 2) == 1)
+			P_LinedefExecute(sec->tag, mobj, sec);
+		{
+			sector_t *sec2;
+
+			sec2 = P_ThingOnSpecial3DFloor(mobj);
+			if (sec2 && GETSECSPECIAL(sec2->special, 2) == 1)
+				P_LinedefExecute(sec2->tag, mobj, sec2);
+		}
 	}
 
 	// it has to be pushable RIGHT NOW for this part to happen
 	if (mobj->flags & MF_PUSHABLE && !(mobj->momx || mobj->momy))
 		P_TryMove(mobj, mobj->x, mobj->y, true);
+
+	if (P_MobjWasRemovedCompat(mobj))
+		return;
 
 	if (mobj->fuse == 1) // it would explode in the MobjThinker code
 	{
@@ -9402,7 +9408,8 @@ void P_PushableThinker(mobj_t *mobj)
 				}
 
 				spawnmo = P_SpawnMobj(x, y, z, mobj->type);
-				if (spawnmo)
+
+				if (!P_MobjWasRemovedCompat(spawnmo))
 				{
 					spawnmo->spawnpoint = mobj->spawnpoint;
 					P_UnsetThingPosition(spawnmo);
