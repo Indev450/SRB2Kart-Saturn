@@ -9264,7 +9264,8 @@ void P_MobjThinker(mobj_t *mobj)
 		mobj->eflags &= ~MFE_JUSTHITFLOOR;
 	}
 
-	if (mobj->type == MT_FALLINGROCK
+	// Sliding physics for slidey mobjs!
+	if (   mobj->type == MT_FALLINGROCK
 		|| mobj->type == MT_LITTLETUMBLEWEED
 		|| mobj->type == MT_BIGTUMBLEWEED
 		|| mobj->type == MT_FLINGRING
@@ -9309,21 +9310,24 @@ void P_MobjThinker(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return;
 
-	if (P_WeaponOrPanel(mobj->type))
+	if ((mobj->health == 0) && // Fading tile
+		  (mobj->type == MT_BOUNCEPICKUP
+		|| mobj->type == MT_RAILPICKUP
+		|| mobj->type == MT_AUTOPICKUP
+		|| mobj->type == MT_EXPLODEPICKUP
+		|| mobj->type == MT_SCATTERPICKUP
+		|| mobj->type == MT_GRENADEPICKUP))
 	{
-		if (mobj->health == 0) // Fading tile
-		{
-			INT32 value = mobj->info->damage/10;
-			value = mobj->fuse/value;
-			value = 10-value;
-			value--;
+		INT32 value = mobj->info->damage/10;
+		value = mobj->fuse/value;
+		value = 10-value;
+		value--;
 
-			if (value <= 0)
-				value = 1;
+		if (value <= 0)
+			value = 1;
 
-			mobj->frame &= ~FF_TRANSMASK;
-			mobj->frame |= value << FF_TRANSSHIFT;
-		}
+		mobj->frame &= ~FF_TRANSMASK;
+		mobj->frame |= value << FF_TRANSSHIFT;
 	}
 }
 
