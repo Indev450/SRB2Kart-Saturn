@@ -584,7 +584,6 @@ FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype
 		|| hook->hook_type == MOBJ_HOOK(MobjCollide    )
 		|| hook->hook_type == MOBJ_HOOK(MobjMoveCollide)
 		|| hook->hook_type == MOBJ_HOOK(MobjFuse       )
-		|| hook->hook_type == MOBJ_HOOK(MobjThinker    )
 		|| hook->hook_type == MOBJ_HOOK(BossThinker    )
 	))
 	{
