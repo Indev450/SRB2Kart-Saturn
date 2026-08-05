@@ -3335,6 +3335,7 @@ static void Command_connect(void)
 		return;
 	}
 
+	// StarManiaKG: allow us to join servers from anywhere at any time //
 	if (Playing() || demo.title || demo.playback)
 	{
 		if (demo.title || demo.playback)
@@ -3353,7 +3354,9 @@ static void Command_connect(void)
 		D_StartTitle();
 	}
 	else
+	{
 		M_ClearMenus(true); // close the menus
+	}
 
 	// modified game check: no longer handled
 	// we don't request a restart unless the filelist differs
@@ -3369,37 +3372,52 @@ static void Command_connect(void)
 	}
 	else
 	{
-		// used in menu to connect to a server in the list
-		if (netgame && fasticmp(COM_Argv(1), "node"))
+		// Get the server node.
+		if (netgame)
 		{
-			servernode = (SINT8)atoi(COM_Argv(2));
-		}
-		else if (netgame)
-		{
-			CONS_Printf(M_GetText("You cannot connect while in a game. End this game first.\n"));
-			return;
-		}
-		else if (I_NetOpenSocket)
-		{
-			I_NetOpenSocket();
-			netgame = true;
-			multiplayer = true;
-
-			if (fasticmp(COM_Argv(1), "any"))
-				servernode = BROADCASTADDR;
-			else if (I_NetMakeNodewPort && COM_Argc() >= 3)
-				servernode = I_NetMakeNodewPort(COM_Argv(1), COM_Argv(2));
-			else if (I_NetMakeNodewPort)
-				servernode = I_NetMakeNode(COM_Argv(1));
+			// used in menu to connect to a server in the list
+			if (fasticmp(COM_Argv(1), "node"))
+			{
+				servernode = (SINT8)atoi(COM_Argv(2));
+			}
 			else
 			{
-				CONS_Alert(CONS_ERROR, M_GetText("There is no server identification with this network driver\n"));
-				D_CloseConnection();
-				return;
+				D_QuitNetGame();
+				CL_Reset();
+				D_StartTitle();
 			}
 		}
 		else
-			CONS_Alert(CONS_ERROR, M_GetText("There is no network driver\n"));
+		{
+			// Standard behaviour
+			if (I_NetOpenSocket)
+			{
+				I_NetOpenSocket();
+				netgame = true;
+				multiplayer = true;
+
+				if (fasticmp(COM_Argv(1), "any"))
+					servernode = BROADCASTADDR;
+				else if (I_NetMakeNodewPort)
+				{
+					if (COM_Argc() >= 3) // address AND port
+						servernode = I_NetMakeNodewPort(COM_Argv(1), COM_Argv(2));
+					else // address only, or address:port
+						servernode = I_NetMakeNode(COM_Argv(1));
+				}
+				else
+				{
+					CONS_Alert(CONS_ERROR, M_GetText("There is no server identification with this network driver\n"));
+					D_CloseConnection();
+					return;
+				}
+			}
+			else
+			{
+				CONS_Alert(CONS_ERROR, M_GetText("There is no network driver\n"));
+				return;
+			}
+		}
 
 		// invalid address
 		if (servernode == -1)
@@ -3446,6 +3464,7 @@ static void ResetNode(INT32 node);
 //
 void CL_ClearPlayer(INT32 playernum)
 {
+	// Handle mobj_t pointers.
 	if (players[playernum].mo)
 	{
 		// Don't leave a NiGHTS ghost!
@@ -3454,6 +3473,7 @@ void CL_ClearPlayer(INT32 playernum)
 		P_RemoveMobj(players[playernum].mo);
 	}
 
+	// Wipe the struct.
 	memset(&players[playernum], 0, sizeof(player_t));
 }
 
