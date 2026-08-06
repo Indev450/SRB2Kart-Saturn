@@ -1411,7 +1411,11 @@ void I_SleepDuration(precise_t duration)
 		duration -= slack;
 		struct timespec ts = {
 			.tv_sec = static_cast<__time_t>(duration / precision),
+#ifdef __BIONIC__
+			.tv_nsec = static_cast<long>(duration * 1000000000 / precision % 1000000000),
+#else
 			.tv_nsec = static_cast<__syscall_slong_t>(duration * 1000000000 / precision % 1000000000),
+#endif
 		};
 		int status;
 		do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
