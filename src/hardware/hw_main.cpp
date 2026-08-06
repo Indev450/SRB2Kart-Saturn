@@ -1275,8 +1275,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = std::clamp(bheight, realbot, top);
-		endbot = std::clamp(endbheight, endrealbot, endtop);
+		bot    = std::min(std::max(bheight, realbot), top);
+		endbot = std::min(std::max(endbheight, endrealbot), endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
 
