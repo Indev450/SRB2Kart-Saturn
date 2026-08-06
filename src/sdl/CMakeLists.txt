@@ -243,6 +243,10 @@ if(${SDL2_FOUND})
 		target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
 	endif()
 
+	if(NOT SRB2_CONFIG_MUMBLE)
+		target_compile_options(SRB2SDL2 PRIVATE -DNOMUMBLE)
+	endif()
+
 	## strip debug symbols into separate file when using gcc
 	# if(CMAKE_COMPILER_IS_GNUCC)
 	# 	if(${CMAKE_BUILD_TYPE} MATCHES Debug)
