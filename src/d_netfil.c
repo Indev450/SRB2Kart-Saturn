@@ -1616,8 +1616,7 @@ static void CURLGetFile(void)
 #endif
 }
 
-HTTP_login *
-CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
+HTTP_login *CURLGetLogin(const char *url, HTTP_login ***return_prev_next)
 {
 	HTTP_login  * login;
 	HTTP_login ** prev_next;
@@ -1627,7 +1626,7 @@ CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
 			( login = (*prev_next));
 			prev_next = &login->next
 	){
-		if (fastcmp(login->url, url) != 0)
+		if (fastcmp(login->url, url))
 		{
 			if (return_prev_next)
 				(*return_prev_next) = prev_next;
