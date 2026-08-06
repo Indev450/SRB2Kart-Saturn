@@ -248,6 +248,9 @@ set(SRB2_CONFIG_ASAN OFF CACHE BOOL
 set(SRB2_CONFIG_UBSAN OFF CACHE BOOL
 	"Compile with UndefinedBehaviorSanitizer (libubsan).")
 
+set(SRB2_CONFIG_MUMBLE ON CACHE BOOL
+	"Enable Mumble support")
+
 set(SRB2_CONFIG_SATURNPAK ON CACHE BOOL
 	"Enable Saturn specific special packet. Required for using the newer resynch system")
 set(SRB2_CONFIG_SATURNJOIN ON CACHE BOOL
