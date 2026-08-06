@@ -11,7 +11,7 @@
 
 #include "m_curl.h"
 #include "doomtype.h"
-#include "i_system.h" // I_OutputMsg
+#include "doomdef.h" // I_OutputMsg
 #include "m_argv.h" // M_CheckParm, M_GetNextParm
 
 static boolean curl_args_init = false;
