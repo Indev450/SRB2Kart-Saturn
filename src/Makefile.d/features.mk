@@ -86,7 +86,7 @@ ifdef VALGRIND
 VALGRIND_PKGCONFIG?=valgrind
 VALGRIND_LDFLAGS=
 $(eval $(call Use_pkg_config,VALGRIND))
-ZDEBUG=1
+#ZDEBUG=1 we enable this by default
 opts+=-DHAVE_VALGRIND
 endif
 
