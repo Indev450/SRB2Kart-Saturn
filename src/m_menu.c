@@ -5768,7 +5768,8 @@ static void M_DrawMusicTest(void)
 		x = 24;
 		y = 64;
 
-		if (renderisnewtic) st_musictime++;
+		if (renderisnewtic)
+			st_musictime++;
 
 		while (t <= b)
 		{
@@ -5776,12 +5777,13 @@ static void M_DrawMusicTest(void)
 				V_DrawFill(20, y-4, 280-1, 16, 237);
 
 			{
+
 				const musicdef_t *def = S_GetMusicCredit(t);
-				const size_t MAXLENGTH = 34;
 				const char *songname = def->title[0] ? def->title : def->source;
 
 				size_t namelength = strlen(songname);
 
+				static const size_t MAXLENGTH = 34;
 				char buf[MAXLENGTH+1];
 
 				if (t == st_sel && namelength > MAXLENGTH)
@@ -5790,11 +5792,13 @@ static void M_DrawMusicTest(void)
 					strlcpy(buf, songname, MAXLENGTH);
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
+
 				if (curplaying == def)
 				{
 					V_DrawFill(20+280-9, y-4, 8, 16, 230);
 				}
 			}
+
 			t++;
 			y += 16;
 		}

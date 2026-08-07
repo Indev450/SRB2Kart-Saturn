@@ -1261,7 +1261,7 @@ void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen,
 	const size_t amount = len - maxlen + 1;
 
 	// Note: anything above 17 will cause zero division
-	const size_t MAXSPEED = 6;
+	static const size_t MAXSPEED = 6;
 	const tic_t t = timer / (35/min(amount, MAXSPEED));
 
 	const size_t state = (t / amount) % 4;
@@ -1296,7 +1296,7 @@ void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen,
 	}
 
 	// Technically not necessary, since it gets set again after function call, but just in case
-	result[maxlen] = 0;
+	result[maxlen-1] = '\0';
 }
 
 void M_MinimapGenerate(void)
