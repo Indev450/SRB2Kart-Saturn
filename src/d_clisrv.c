@@ -1724,10 +1724,10 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	}
 	else
 	{
-		strncpy(serverinfo->maptitle, "Unknown", 33);
+		strncpy(serverinfo->maptitle, "Unknown", sizeof(serverinfo->maptitle)-1);
 	}
 
-	serverinfo->maptitle[32] = '\0';
+	serverinfo->maptitle[sizeof(serverinfo->maptitle)-1] = '\0';
 
 	serverinfo->actnum = 0; //mapheaderinfo[gamemap-1]->actnum
 
