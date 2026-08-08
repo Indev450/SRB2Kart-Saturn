@@ -457,7 +457,7 @@ consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, cechotoggle_t, NULL, 0,
 player_t *seenplayer = NULL; // player we're aiming at right now
 #endif
 
-// now automatically allocated in D_RegisterClientCommands
+// now automatically allocated in D_RegisterServerCommands
 // so that it doesn't have to be updated depending on the value of MAXPLAYERS
 char player_names[MAXPLAYERS][MAXPLAYERNAME+1];
 INT32 player_name_changes[MAXPLAYERS] = {};
