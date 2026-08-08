@@ -3533,6 +3533,18 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	if (!spr->mobj)
 		return;
 
+	// Ceiling scenery have no shadow.
+	if ((spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) == (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY))
+		return;
+
+	// Debris have no corona or shadow.
+	if (spr->mobj->flags2 & MF2_DEBRIS)
+		return;
+
+	// Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	if (spr->mobj->z < spr->mobj->floorz)
+		return;
+
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3793,10 +3805,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	hwrpatch = static_cast<GLPatch_t *>(gpatch->hardware);
 
 	// Draw shadow BEFORE sprite
-	if (UNLIKELY(cv_shadow.value // Shadows enabled
-		&& (sprmo->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(sprmo->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (sprmo->z >= sprmo->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	if (UNLIKELY(cv_shadow.value))
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -4122,10 +4131,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 
 	// Draw shadow BEFORE sprite
-	if (UNLIKELY(cv_shadow.value // Shadows enabled
-		&& (sprmo->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(sprmo->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (sprmo->z >= sprmo->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	if (UNLIKELY(cv_shadow.value))
 	{
 		////////////////////
 		// SHADOW SPRITE! //
