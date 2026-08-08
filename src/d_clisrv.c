@@ -1660,8 +1660,8 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	netbuffer->u.serverinfo.packetversion = PACKETVERSION;
 	netbuffer->u.serverinfo.version = VERSION;
 	netbuffer->u.serverinfo.subversion = SUBVERSION;
-	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
-			sizeof netbuffer->u.serverinfo.application);
+	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION, sizeof(netbuffer->u.serverinfo.application)-1);
+	netbuffer->u.serverinfo.application[sizeof(netbuffer->u.serverinfo.application)-1] = '\0';
 	// return back the time value so client can compute their ping
 	netbuffer->u.serverinfo.time = (tic_t)LONG(servertime);
 	netbuffer->u.serverinfo.leveltime = (tic_t)LONG(leveltime);
