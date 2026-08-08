@@ -1473,6 +1473,118 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 	return true;
 }
 
+/*
+static void HWR_DrawSkyWallForSec(FOutVector *wallVerts, FSurfaceInfo *Surf, int sky1, int sky2)
+{
+	FOutVector v[4];
+	angle_t angle;
+	float dimensionmultiply;
+	float aspectratio;
+	float angleturn;
+
+	side_t *sd;
+	line_t *ld = NULL;
+
+	INT32 sky = 0;
+
+	if (HWR_IsWireframeMode())
+		return;
+
+	if (sky1 & PL_SKYFLAT_LINE)
+	{
+		ld = &lines[sky1 & ~PL_SKYFLAT_LINE];
+	}
+	else if (sky2 & PL_SKYFLAT_LINE)
+	{
+		ld = &lines[sky2 & ~PL_SKYFLAT_LINE];
+	}
+
+	if (!ld)
+		return;
+
+	sd = *ld->sidenum + sides;
+	sky = texturetranslation[sd->toptexture];
+
+	HWR_GetTexture(sky, false);
+
+	aspectratio = (float)vid.width/(float)vid.height;
+
+	//Hurdler: the sky is the only texture who need 4.0f instead of 1.0
+	//         because it's called just after clearing the screen
+	//         and thus, the near clipping plane is set to 3.99
+	// Sryder: Just use the near clipping plane value then
+
+	//  3--2
+	//  | /|
+	//  |/ |
+	//  0--1
+	v[0].x = v[3].x = -ZCLIP_PLANE-1;
+	v[1].x = v[2].x =  ZCLIP_PLANE+1;
+	v[0].y = v[1].y = -ZCLIP_PLANE-1;
+	v[2].y = v[3].y =  ZCLIP_PLANE+1;
+
+	v[0].z = v[1].z = v[2].z = v[3].z = ZCLIP_PLANE+1;
+
+	// X
+
+	// NOTE: This doesn't work right with texture widths greater than 1024
+	// software doesn't draw any further than 1024 for skies anyway, but this doesn't overlap properly
+	// The only time this will probably be an issue is when a sky wider than 1024 is used as a sky AND a regular wall texture
+
+	angle = (viewangle + ANGLE_45);
+
+	dimensionmultiply = ((float)textures[sky]->width/256.0f);
+
+	v[0].s = v[3].s = (-1.0f * angle) / (((float)ANGLE_90-1.0f)*dimensionmultiply); // left
+	v[2].s = v[1].s = v[0].s + (1.0f/dimensionmultiply); // right (or left + 1.0f)
+	// use +angle and -1.0f above instead if you wanted old backwards behavior
+
+	// Y
+	angle = aimingangle;
+	dimensionmultiply = ((float)textures[sky]->height/(512.0f*aspectratio));
+
+	if (splitscreen == 1)
+	{
+		dimensionmultiply *= 2;
+		angle *= 2;
+	}
+
+	// Middle of the sky should always be at angle 0
+	// need to keep correct aspect ratio with X
+	if (atransform.fliptype == TRANSFORM_FLIP ||
+		atransform.fliptype == TRANSFORM_MIRRORFLIP)
+	{
+		// During vertical flip the sky should be flipped and it's y movement should also be flipped obviously
+		v[3].t = v[2].t = -(0.5f-(0.5f/dimensionmultiply)); // top
+		v[0].t = v[1].t = v[3].t - (1.0f/dimensionmultiply); // bottom (or top - 1.0f)
+	}
+	else
+	{
+		v[0].t = v[1].t = -(0.5f-(0.5f/dimensionmultiply)); // bottom
+		v[3].t = v[2].t = v[0].t - (1.0f/dimensionmultiply); // top (or bottom - 1.0f)
+	}
+
+	angleturn = (((float)ANGLE_45-1.0f)*aspectratio)*dimensionmultiply;
+
+	if (angle > ANGLE_180) // Do this because we don't want the sky to suddenly teleport when crossing over 0 to 360 and vice versa
+	{
+		angle = InvAngle(angle);
+		v[3].t = v[2].t += ((float) angle / angleturn);
+		v[0].t = v[1].t += ((float) angle / angleturn);
+	}
+	else
+	{
+		v[3].t = v[2].t -= ((float) angle / angleturn);
+		v[0].t = v[1].t -= ((float) angle / angleturn);
+	}
+
+	// since sky is drawn as a "flat quad" this way, we have to unset any view transformations for it to work
+	GL_SetTransform(NULL);
+	GL_UnSetShader();
+	GL_DrawPolygon(NULL, v, 4, 0);
+}
+*/
+
 //
 // HWR_ProcessSeg
 // A portion or all of a wall segment will be drawn, from startfrac to endfrac,
@@ -1579,6 +1691,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				wwallVerts[vert1].y = FixedToFloat(world);
 				wwallVerts[vert2].y = FixedToFloat(worldslope);
 				HWR_DrawSkyWall(wwallVerts, &sSurf);
+				//HWR_DrawSkyWallForSec(wwallVerts, &sSurf, gl_frontsector->sky, gl_backsector->sky);
 			};
 
 			if (gl_frontsector->ceilingpic == skyflatnum)
@@ -2014,6 +2127,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 			// When there's no midtexture, draw a skywall to prevent rendering behind it
 			HWR_DrawSkyWall(wallVerts, &Surf);
+			//HWR_DrawSkyWallForSec(wallVerts, &Surf, gl_frontsector->sky, 0);
 		}
 
 		if (!gl_curline->polyseg)
@@ -2025,6 +2139,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				wallVerts[1].y = FixedToFloat(worldtopslope);
 
 				HWR_DrawSkyWall(wallVerts, &Surf);
+				//HWR_DrawSkyWallForSec(wallVerts, &Surf, gl_frontsector->sky, 0);
 			}
 
 			if (gl_frontsector->floorpic == skyflatnum)
@@ -2034,6 +2149,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				wallVerts[0].y = wallVerts[1].y = FLOATMIN; // draw to bottom of map space
 
 				HWR_DrawSkyWall(wallVerts, &Surf);
+				//HWR_DrawSkyWallForSec(wallVerts, &Surf, gl_frontsector->sky, 0);
 			}
 		}
 	}
