@@ -604,6 +604,12 @@ void D_RegisterServerCommands(void)
 		Forceskin_cons_t[i].value = 0;
 		Forceskin_cons_t[i].strvalue = NULL;
 	}
+
+	// Set default player names
+	// Monster Iestyn (12/08/19): not sure where else I could have actually put this, but oh well
+	for (i = 0; i < MAXPLAYERS; i++)
+		sprintf(player_names[i], "Player %d", 1 + i);
+
 	RegisterNetXCmd(XD_NAMEANDCOLOR, Got_NameAndColor);
 	RegisterNetXCmd(XD_WEAPONPREF, Got_WeaponPref);
 	RegisterNetXCmd(XD_MAP, Got_Mapcmd);
@@ -814,11 +820,6 @@ void D_RegisterClientCommands(void)
 	}
 	Color_cons_t[MAXSKINCOLORS].value = 0;
 	Color_cons_t[MAXSKINCOLORS].strvalue = NULL;
-
-	// Set default player names
-	// Monster Iestyn (12/08/19): not sure where else I could have actually put this, but oh well
-	for (i = 0; i < MAXPLAYERS; i++)
-		sprintf(player_names[i], "Player %d", i);
 
 	if (dedicated)
 		return;
