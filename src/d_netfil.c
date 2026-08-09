@@ -299,10 +299,13 @@ boolean CL_CheckDownloadable(void)
 			{
 				INT32 j;
 				char md5tmp[33];
+
 				for (j = 0; j < 16; j++)
-					sprintf(&md5tmp[j*2], "%02x", fileneeded[i].md5sum[j]);
+					snprintf(&md5tmp[j*2], 3, "%02x", fileneeded[i].md5sum[j]);
+
 				CONS_Printf("%s", md5tmp);
 			}
+
 			CONS_Printf("\n");
 		}
 	}

@@ -577,7 +577,7 @@ void I_OutputMsg(const char *fmt, ...)
 		I_Error("I_OutputMsg: Out of memory!\n");
 
 	va_start(argptr, fmt);
-	vsprintf(txt, fmt, argptr);
+	vsnprintf(txt, len+1, fmt, argptr);
 	va_end(argptr);
 
 #ifdef HAVE_TTF
@@ -585,7 +585,7 @@ void I_OutputMsg(const char *fmt, ...)
 	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
 #endif
 
-	len = strlen(txt);
+	len = strnlen(txt, len+1);
 
 #ifdef LOGMESSAGES
 	if (logstream)
@@ -983,13 +983,13 @@ void I_InitJoystick(UINT8 index)
 
 	{
 		char dbpath[1024];
-		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb.txt", srb2path);
+		snprintf(dbpath, sizeof(dbpath), "%s" PATHSEP "gamecontrollerdb.txt", srb2path);
 		SDL_GameControllerAddMappingsFromFile(dbpath);
 	}
 
 	{
 		char dbpath[1024];
-		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb_user.txt", srb2home);
+		snprintf(dbpath, sizeof(dbpath), "%s" PATHSEP "gamecontrollerdb_user.txt", srb2home);
 		SDL_GameControllerAddMappingsFromFile(dbpath);
 	}
 
@@ -1151,8 +1151,7 @@ const char *I_GetJoyName(INT32 joyindex)
 
 		if (tempname)
 		{
-			memcpy(joyname, tempname, 255);
-			joyname[255] = '\0';
+			snprintf(joyname, sizeof(joyname), "%s", tempname);
 		}
 	}
 
@@ -1697,16 +1696,20 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	if (core_dumped)
 	{
 		if (sigmsg)
-			sprintf(signal_msg, "%s (core dumped)", sigmsg);
+		{
+			snprintf(signal_msg, 512, "%s (core dumped)", sigmsg);
+		}
 		else
+		{
 			strcat(signal_msg, " (core dumped)");
+		}
 	}
 	else
 	{
-		sprintf(signal_msg, "%s", sigmsg);
+		snprintf(signal_msg, 512, "%s", sigmsg);
 	}
 
-	sprintf(signal_name, "%s", signame);
+	snprintf(signal_name, 128, "%s", signame);
 }
 
 int I_OpenURL(const char *url)
@@ -2341,7 +2344,8 @@ char *I_GetUserName(void)
 				}
 			}
 		}
-		strncpy(username, p, MAXPLAYERNAME);
+
+		snprintf(username, sizeof(username), "%s", p);
 	}
 
 	if (!fastcmp(username, ""))
@@ -2386,13 +2390,15 @@ INT32 I_PutEnv(char *variable)
 INT32 I_ClipboardCopy(const char *data, size_t size)
 {
 	char storage[256];
+
 	if (size > 255)
 		size = 255;
-	memcpy(storage, data, size);
-	storage[size] = 0;
+
+	snprintf(storage, sizeof(storage), "%.*s", (int)size, data);
 
 	if (SDL_SetClipboardText(storage))
 		return 0;
+
 	return -1;
 }
 
@@ -2405,7 +2411,7 @@ const char *I_ClipboardPaste(void)
 		return NULL;
 
 	clipboard_contents = SDL_GetClipboardText();
-	strlcpy(clipboard_modified, clipboard_contents, 256);
+	snprintf(clipboard_modified, sizeof(clipboard_modified), "%s", clipboard_contents);
 	SDL_free(clipboard_contents);
 
 	while (*i)
@@ -2434,28 +2440,23 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = static_cast<char*>(malloc(256));
+	char wad3path[256];
 
-	if (!wad3path)
-		return false;
-
-	sprintf(wad3path, pandf, path, WADKEYWORD);
+	snprintf(wad3path, sizeof(wad3path), pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
-		free(wad3path);
 		return true;
 	}
 
-	free(wad3path);
 	return false;
 }
 
-static void pathonly(char *s)
+static void pathonly(char *s, size_t size)
 {
 	size_t j;
 
-	for (j = strlen(s); j != (size_t)-1; j--)
+	for (j = strnlen(s, size); j != (size_t)-1; j--)
 	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
@@ -2482,11 +2483,12 @@ static const char *searchWad(const char *searchDir)
 	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD);
+	snprintf(tempsw, sizeof(tempsw), "%s", WADKEYWORD);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
+
 	if (fstemp == FS_FOUND)
 	{
-		pathonly(tempsw);
+		pathonly(tempsw, sizeof(tempsw));
 		return tempsw;
 	}
 
@@ -2524,7 +2526,7 @@ static const char *locateWad(void)
 
 #ifndef NOCWD
 	// examine current dir
-	strcpy(returnWadPath, ".");
+	snprintf(returnWadPath, sizeof(returnWadPath), "%s", ".");
 	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
@@ -2536,7 +2538,7 @@ static const char *locateWad(void)
 	// examine user jart directory
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
-		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s" PATHSEP DEFAULTDIR, envstr);
 		CHECKWADPATH(returnWadPath);
 	}
 #endif
@@ -2550,7 +2552,7 @@ static const char *locateWad(void)
 	// examine default dirs
 	for (i = 0; wadDefaultPaths[i]; i++)
 	{
-		strcpy(returnWadPath, wadDefaultPaths[i]);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s", wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
 

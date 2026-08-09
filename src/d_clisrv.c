@@ -2097,7 +2097,7 @@ static void SV_SavedGame(void)
 	if (!cv_dumpconsistency.value)
 		return;
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	// first save it in a malloced buffer
 	save.p = save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
@@ -2135,7 +2135,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	length = FIL_ReadFile(tmpsave, &save.buffer);
 
@@ -2214,7 +2214,7 @@ static void CL_ReloadReceivedSavegame(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %d", i + 1);
+		snprintf(player_names[i], MAXPLAYERNAME+1, "Player %d", i + 1);
 	}
 
 	CL_LoadReceivedSavegame(true);
@@ -2950,7 +2950,7 @@ static void CL_ConnectToServer(void)
 	tic_t asksent;
 	char tmpsave[264];
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	filedownload.current = -1;
 	cl_mode = CL_SEARCHING;
@@ -3513,7 +3513,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	player_muted[playernum] = false;
 
 	// Reset the name
-	sprintf(player_names[playernum], "Player %d", playernum+1);
+	snprintf(player_names[playernum], MAXPLAYERNAME+1, "Player %d", playernum+1);
 
 	player_name_changes[playernum] = 0;
 
@@ -4475,7 +4475,7 @@ void SV_ResetServer(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %d", i + 1);
+		snprintf(player_names[i], MAXPLAYERNAME+1, "Player %d", i + 1);
 	}
 
 	memset(player_name_changes, 0, sizeof(player_name_changes));
@@ -5534,7 +5534,7 @@ static void PT_WillResendGamestate(void)
 
 	CONS_Printf(M_GetText("Reloading game state...\n"));
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	// Don't get a corrupt savegame error because tmpsave already exists
 	if (FIL_FileExists(tmpsave) && unlink(tmpsave) == -1)

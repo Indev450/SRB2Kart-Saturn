@@ -180,7 +180,7 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 	// don't use va() because the calling function probably uses it
 	char mapnum[10];
 
-	sprintf(mapnum, "%hd", gamemap);
+	snprintf(mapnum, sizeof(mapnum), "%hd", gamemap);
 	CON_LogMessage("Map ");
 	CON_LogMessage(mapnum);
 	CON_LogMessage(" is corrupt: ");
@@ -2205,7 +2205,7 @@ void P_SetupLevelSky(INT32 skynum, boolean global)
 {
 	char skytexname[12];
 
-	sprintf(skytexname, "SKY%d", skynum);
+	snprintf(skytexname, sizeof(skytexname), "SKY%d", skynum);
 	skytexture = R_TextureNumForName(skytexname);
 	levelskynum = skynum;
 
@@ -2450,23 +2450,26 @@ static void P_ForceCharacter(const char *forcecharskin)
 	if (netgame)
 	{
 		char skincmd[33];
+
 		if (splitscreen)
 		{
-			sprintf(skincmd, "skin2 %s\n", forcecharskin);
+			snprintf(skincmd, sizeof(skincmd), "skin2 %s\n", forcecharskin);
 			CV_Set(&cv_skin2, forcecharskin);
+
 			if (splitscreen > 1)
 			{
-				sprintf(skincmd, "skin3 %s\n", forcecharskin);
+				snprintf(skincmd, sizeof(skincmd), "skin3 %s\n", forcecharskin);
 				CV_Set(&cv_skin3, forcecharskin);
+
 				if (splitscreen > 2)
 				{
-					sprintf(skincmd, "skin4 %s\n", forcecharskin);
+					snprintf(skincmd, sizeof(skincmd), "skin4 %s\n", forcecharskin);
 					CV_Set(&cv_skin4, forcecharskin);
 				}
 			}
 		}
 
-		sprintf(skincmd, "skin %s\n", forcecharskin);
+		snprintf(skincmd, sizeof(skincmd), "skin %s\n", forcecharskin);
 		COM_BufAddText(skincmd);
 	}
 	else
@@ -2523,7 +2526,7 @@ static void P_LoadRecordGhosts(void)
 
 	const char *mapname = G_BuildMapName(gamemap);
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, mapname);
+	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, mapname);
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
@@ -2879,7 +2882,8 @@ static void P_SetupPlayer(void)
 	if (!demo.playback && multiplayer && D_NumPlayers())
 	{
 		static char buf[256];
-		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int)(time(NULL)), G_BuildMapName(gamemap));
+
+		snprintf(buf, sizeof(buf), "replay"PATHSEP"online"PATHSEP"%d-%s", (int)(time(NULL)), G_BuildMapName(gamemap));
 
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);

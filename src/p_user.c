@@ -625,15 +625,23 @@ boolean P_EndingMusic(player_t *player)
 	}
 
 	if (G_RaceGametype() && bestlocalpos == MAXPLAYERS+1)
-		sprintf(buffer, "k*fail"); // F-Zero death results theme
+	{
+		snprintf(buffer, sizeof(buffer), "k*fail"); // F-Zero death results theme
+	}
 	else
 	{
 		if (bestlocalpos == 1)
-			sprintf(buffer, "k*win");
+		{
+			snprintf(buffer, sizeof(buffer), "k*win");
+		}
 		else if (isPlayerLosing(bestlocalplayer))
-			sprintf(buffer, "k*lose");
+		{
+			snprintf(buffer, sizeof(buffer), "k*lose");
+		}
 		else
-			sprintf(buffer, "k*ok");
+		{
+			snprintf(buffer, sizeof(buffer), "k*ok");
+		}
 	}
 
 	S_SpeedMusic(1.0f);

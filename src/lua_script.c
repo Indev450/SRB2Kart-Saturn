@@ -289,8 +289,7 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump)
 		if (!name)
 			I_Error("LUA_LoadLump: Out of memory!\n");
 
-		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
-		name[len] = '\0';
+		snprintf(name, len + 1, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
 	}
 
 	LUA_LoadFile(&f, name); // actually load file!

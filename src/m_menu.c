@@ -616,7 +616,7 @@ void Nextmap_OnChange(void)
 		if (!gpath)
 			return;
 
-		sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
+		snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
 
 		CV_StealthSetValue(&cv_dummystaff, 0);
 
@@ -735,7 +735,7 @@ static void Dummystaff_OnChange(void)
 		while (*temp)
 			temp++;
 
-		sprintf(temp, " - %d", cv_dummystaff.value);
+		snprintf(temp, sizeof(dummystaffname) - (size_t)(temp - dummystaffname), " - %d", cv_dummystaff.value);
 	}
 }
 
@@ -825,7 +825,8 @@ static void M_ChangeCvar(INT32 choice)
 		float increment;
 
 		increment = FIXED_TO_FLOAT(cv->value)+(choice)*((currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5f : (1.0f/16.0f));
-		sprintf(s,"%ld%s",(long)increment,M_Ftrim(increment));
+		snprintf(s, sizeof(s), "%ld%s", (long)increment, M_Ftrim(increment));
+
 		CV_Set(cv, s);
 	}
 	else
@@ -4185,12 +4186,12 @@ static void PrepReplayList(boolean reset)
 		if (dirmenu[i][DIR_TYPE] == EXT_UP)
 		{
 			demolist_all[i].type = MD_SUBDIR;
-			sprintf(demolist_all[i].title, "UP");
+			snprintf(demolist_all[i].title, sizeof(demolist_all[i].title), "UP");
 		}
 		else if (dirmenu[i][DIR_TYPE] == EXT_FOLDER)
 		{
 			demolist_all[i].type = MD_SUBDIR;
-			strncpy(demolist_all[i].title, dirmenu[i] + DIR_STRING, 64);
+			snprintf(demolist_all[i].title, sizeof(demolist_all[i].title), "%s", dirmenu[i] + DIR_STRING);
 		}
 		else
 		{
@@ -4198,7 +4199,7 @@ static void PrepReplayList(boolean reset)
 			snprintf(demolist_all[i].filepath, sizeof(demolist_all[i].filepath),
 					 // 255 = UINT8 limit. dirmenu entries are restricted to this length (see DIR_LEN).
 					 "%s%.255s", menupath, dirmenu[i] + DIR_STRING);
-			sprintf(demolist_all[i].title, ".....");
+			snprintf(demolist_all[i].title, sizeof(demolist_all[i].title), ".....");
 		}
 	}
 
@@ -5983,7 +5984,8 @@ static void M_DrawStatsMaps(void)
 
 	V_DrawString(20, 42, highlightflags|MENUCAPS, "Combined time records:");
 
-	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
+	snprintf(beststr, sizeof(beststr), "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
+
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, (mapsunfinished ? warningflags : 0), beststr);
 
 	if (mapsunfinished)
@@ -7150,7 +7152,7 @@ static void M_CheckMODVersion(int id)
 
 	if (updatecheck)
 	{
-		sprintf(updatestring, UPDATE_ALERT_STRING, VERSIONSTRING, updatecheck);
+		snprintf(updatestring, sizeof(updatestring), UPDATE_ALERT_STRING, VERSIONSTRING, updatecheck);
 #ifdef HAVE_THREADS
 		I_lock_mutex(&m_menu_mutex);
 #endif
@@ -9602,11 +9604,13 @@ static void M_ChangecontrolResponse(event_t *ev)
 		menu_t *prev = currentMenu->prevMenu;
 
 		if (controltochange == gc_pause)
-			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"),
-				controltochangetext);
+		{
+			snprintf(tmp, sizeof(tmp), M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"), controltochangetext);
+		}
 		else
-			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"),
-				controltochangetext);
+		{
+			snprintf(tmp, sizeof(tmp), M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"), controltochangetext);
+		}
 
 		M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 		currentMenu->prevMenu = prev;
@@ -9627,8 +9631,7 @@ static void M_ChangeControl(INT32 choice)
 	static char tmp[68];
 
 	controltochange = currentMenu->menuitems[choice].alphaKey;
-	sprintf(tmp, M_GetText("Hit the new key for\n%s\nESC for Cancel"),
-		currentMenu->menuitems[choice].text);
+	snprintf(tmp, sizeof(tmp), M_GetText("Hit the new key for\n%s\nESC for Cancel"), currentMenu->menuitems[choice].text);
 	strlcpy(controltochangetext, currentMenu->menuitems[choice].text, 33);
 
 	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);

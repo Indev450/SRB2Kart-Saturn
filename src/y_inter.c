@@ -153,7 +153,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		;
 	else if ((data.rankingsmode = (boolean)rankingsmode))
 	{
-		sprintf(data.levelstring, "* Total Rankings *");
+		snprintf(data.levelstring, sizeof(data.levelstring), "* Total Rankings *");
 		data.encore = false;
 	}
 	else
@@ -162,32 +162,41 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		if (mapheaderinfo[prevmap]->levelflags & LF_NOZONE)
 		{
 			if (mapheaderinfo[prevmap]->actnum[0])
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, mapheaderinfo[prevmap]->actnum);
+			}
 			else
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s *",
 					mapheaderinfo[prevmap]->lvlttl);
+			}
 		}
 		else
 		{
 			const char *zonttl = (mapheaderinfo[prevmap]->zonttl[0] ? mapheaderinfo[prevmap]->zonttl : "Zone");
+
 			if (mapheaderinfo[prevmap]->actnum[0])
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl, mapheaderinfo[prevmap]->actnum);
+			}
 			else
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl);
+			}
 		}
 
-		data.levelstring[sizeof data.levelstring - 1] = '\0';
+		data.levelstring[sizeof(data.levelstring) - 1] = '\0';
 
 		data.encore = encoremode;
 
@@ -652,7 +661,8 @@ static void Y_UpdateRecordReplays(void)
 	if ((gpath = malloc(glen)) == NULL)
 		I_Error("Out of memory for replay filepath\n");
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+
 	snprintf(lastdemo, 255, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
 
 	if (FIL_FileExists(lastdemo))

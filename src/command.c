@@ -1596,7 +1596,9 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 	// send only changed cvars ...
 	// the client will reset all netvars to default before loading
 	WRITEUINT16(*p, 0x0000);
+
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
 		if (((cvar->flags & CV_NETVAR) && !CV_IsSetToDefault(cvar)) || (isdemorecording && cvar->netid == cv_numlaps.netid))
 		{
 			WRITEUINT16(*p, cvar->netid);
@@ -1614,7 +1616,7 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 				else
 				{
 					char buf[9];
-					sprintf(buf, "%d", mapheaderinfo[gamemap - 1]->numlaps);
+					snprintf(buf, sizeof(buf), "%d", mapheaderinfo[gamemap - 1]->numlaps);
 					WRITESTRING(*p, buf);
 				}
 			}
@@ -1626,6 +1628,8 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 			WRITEUINT8(*p, false);
 			++count;
 		}
+	}
+
 	WRITEUINT16(count_p, count);
 }
 
@@ -1782,8 +1786,7 @@ void CV_StealthSet(consvar_t *var, const char *value)
 void CV_StealthSetValue(consvar_t *var, INT32 value)
 {
 	char val[32];
-
-	sprintf(val, "%d", value);
+	snprintf(val, sizeof(val), "%d", value);
 	CV_SetCVar(var, val, true);
 }
 
@@ -1803,8 +1806,7 @@ void CV_Set(consvar_t *var, const char *value)
 void CV_SetValue(consvar_t *var, INT32 value)
 {
 	char val[32];
-
-	sprintf(val, "%d", value);
+	snprintf(val, sizeof(val), "%d", value);
 	CV_SetCVar(var, val, false);
 }
 
@@ -2202,6 +2204,7 @@ void CV_SaveVariables(FILE *f)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
 		if (cvar->flags & CV_SAVE)
 		{
 			char stringtowrite[MAXTEXTCMD+1];
@@ -2210,15 +2213,23 @@ void CV_SaveVariables(FILE *f)
 			if (fastcmp(cvar->string, "MAX") || fastcmp(cvar->string, "MIN"))
 			{
 				if (cvar->flags & CV_FLOAT)
-					sprintf(stringtowrite, "%f", FixedToFloat(cvar->value));
+				{
+					snprintf(stringtowrite, sizeof(stringtowrite), "%f", FixedToFloat(cvar->value));
+				}
 				else
-					sprintf(stringtowrite, "%d", cvar->value);
+				{
+					snprintf(stringtowrite, sizeof(stringtowrite), "%d", cvar->value);
+				}
 			}
 			else
-				strcpy(stringtowrite, cvar->string);
+			{
+				strncpy(stringtowrite, cvar->string, sizeof(stringtowrite)-1);
+				stringtowrite[sizeof(stringtowrite)-1] = '\0';
+			}
 
 			fprintf(f, "%s \"%s\"\n", cvar->name, stringtowrite);
 		}
+	}
 }
 
 //============================================================================

@@ -183,13 +183,17 @@ void I_TTFDrawText(TTF_Font *font, TextQuality quality, INT32 fgR, INT32 fgG, IN
 				TTFRect.x = TTFRectCheck.x;
 				TTFRect.y = TTFRectCheck.y;
 			}
+
 			// Copy the character to the text buffer.
-			sprintf(textbuffer, "%s%c", textbuffer, c);
+			snprintf(textbuffer, sizeof(textbuffer), "%s%c", textbuffer, c);
+
 			// Hack to allow TTF_SizeText to work properly.
-			sprintf(linebuffer, "%c", c);
+			snprintf(linebuffer, sizeof(linebuffer), "%c", c);
+
 			// If we have reached the end of the screen, move to the next available line.
 			TTF_SizeText(currentfont, linebuffer, &w, &h);
 			TTFRectCheck.x += w;
+
 			if (TTFRectCheck.x >= res.width)
 			{
 				// Render cached text to the SDL surface.
@@ -204,8 +208,10 @@ void I_TTFDrawText(TTF_Font *font, TextQuality quality, INT32 fgR, INT32 fgG, IN
 				TTFRect.y = TTFRectCheck.y;
 			}
 		}
+
 		// Add 1 to the pointer reference for the character to process.
 		textmsg++;
+
 		// Copy contents of the now-old buffer to somewhere else, so it can be referenced in next loop.
 		prevc = c;
 	}

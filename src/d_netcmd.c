@@ -608,7 +608,7 @@ void D_RegisterServerCommands(void)
 	// Set default player names
 	// Monster Iestyn (12/08/19): not sure where else I could have actually put this, but oh well
 	for (i = 0; i < MAXPLAYERS; i++)
-		sprintf(player_names[i], "Player %d", 1 + i);
+		snprintf(player_names[i], sizeof(player_names[i]), "Player %d", 1 + i);
 
 	RegisterNetXCmd(XD_NAMEANDCOLOR, Got_NameAndColor);
 	RegisterNetXCmd(XD_WEAPONPREF, Got_WeaponPref);
@@ -1288,7 +1288,8 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 			else if (len == 1) // Agh!
 			{
 				// Last ditch effort...
-				sprintf(name, "%d", M_RandomKey(10));
+				snprintf(name, MAXPLAYERNAME+1, "%d", M_RandomKey(10));
+
 				if (!EnsurePlayerNameIsGood(name, playernum))
 					return false;
 			}
@@ -2342,11 +2343,12 @@ static char *ConcatCommandArgv(int start, int end)
 	if (!p)
 		I_Error("ConcatCommandArgv: Out of memory!\n");
 
-	--end;/* handle the final argument separately */
+	--end; /* handle the final argument separately */
 
 	for (i = start; i < end; ++i)
 	{
-		p += sprintf(p, "%s ", COM_Argv(i));
+		if (size - (p - final) > 0)
+			p += snprintf(p, size - (p - final), "%s ", COM_Argv(i));
 	}
 
 	/* at this point "end" is actually the last argument's position */
@@ -4361,13 +4363,13 @@ static void Got_RequestAddfilecmd(const UINT8 **cp, INT32 playernum)
 		char message[275];
 
 		if (toomany)
-			sprintf(message, M_GetText("Too many files loaded to add %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Too many files loaded to add %s\n"), filename);
 		else if (ncs == FS_NOTFOUND)
-			sprintf(message, M_GetText("The server doesn't have %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("The server doesn't have %s\n"), filename);
 		else if (ncs == FS_MD5SUMBAD)
-			sprintf(message, M_GetText("Checksum mismatch on %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Checksum mismatch on %s\n"), filename);
 		else
-			sprintf(message, M_GetText("Unknown error finding wad file (%s)\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Unknown error finding wad file (%s)\n"), filename);
 
 		CONS_Printf("%s",message);
 
@@ -5201,8 +5203,10 @@ static void Command_Mapmd5_f(void)
 	{
 		INT32 i;
 		char md5tmp[33];
+
 		for (i = 0; i < 16; ++i)
-			sprintf(&md5tmp[i*2], "%02x", mapmd5[i]);
+			snprintf(&md5tmp[i*2], 3, "%02x", mapmd5[i]);
+
 		CONS_Printf("%s: %s\n", G_BuildMapName(gamemap), md5tmp);
 	}
 	else

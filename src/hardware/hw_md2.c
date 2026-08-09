@@ -1247,7 +1247,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		if (!md2->model)
 		{
 			CONS_Debug(DBG_RENDER, "Loading model... (%s, %s)", sprnames[spr->mobj->sprite], md2->filename);
-			sprintf(filename, "mdls/%s", md2->filename);
+			snprintf(filename, sizeof(filename), "mdls/%s", md2->filename);
 			md2->model = md2_readModel(filename);
 
 			if (md2->model)
@@ -1483,7 +1483,7 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 	{
 		char filename[64];
 		CONS_Debug(DBG_RENDER, "Loading model... (%s)\n", md2->filename);
-		sprintf(filename, "mdls/%s", md2->filename);
+		snprintf(filename, sizeof(filename), "mdls/%s", md2->filename);
 		md2->model = md2_readModel(filename);
 
 		if (md2->model)
