@@ -1974,7 +1974,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 							goto bademblem;
 						}
 
-						snprintf(targettext, 9, "%i'%02i\"%02i",
+						snprintf(targettext, sizeof(targettext), "%i'%02i\"%02i",
 							G_TicsToMinutes(timetoreach, false),
 							G_TicsToSeconds(timetoreach),
 							G_TicsToCentiseconds(timetoreach));

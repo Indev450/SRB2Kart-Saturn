@@ -277,14 +277,14 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump)
 
 	if (wadfiles[wad]->type == RET_LUA)
 	{
-		name = malloc(len+1);
-		strcpy(name, wadfiles[wad]->filename);
+		name = malloc(len + 1);
+		snprintf(name, len + 1, "%s", wadfiles[wad]->filename);
 	}
 	else // If it's not a .lua file, copy the lump name in too.
 	{
 		lumpinfo_t *lump_p = &wadfiles[wad]->lumpinfo[lump];
 		len += 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-		name = malloc(len+1);
+		name = malloc(len + 1);
 
 		if (!name)
 			I_Error("LUA_LoadLump: Out of memory!\n");

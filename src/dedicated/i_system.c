@@ -1354,7 +1354,7 @@ FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 {
 	char text[128];
 
-	snprintf(text, sizeof text,
+	snprintf(text, sizeof(text),
 			"Error while setting up signal reporting: %s: %s",
 			pr,
 			strerror(errno)
@@ -1540,7 +1540,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 		if (errorcount > 20)
 		{
 			va_start(argptr, error);
-			vsnprintf(buffer, 8192, error, argptr);
+			vsnprintf(buffer, sizeof(buffer), error, argptr);
 			va_end(argptr);
 
 			I_OutputMsg("SRB2Kart %s Recursive Error", buffer);
@@ -1553,7 +1553,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 	// Display error message in the console before we start shutting it down
 	va_start(argptr, error);
-	vsnprintf(buffer, 8192, error, argptr);
+	vsnprintf(buffer, sizeof(buffer), error, argptr);
 	va_end(argptr);
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 

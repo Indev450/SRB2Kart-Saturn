@@ -369,9 +369,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				if (standings->increase[pnum] != UINT8_MAX)
 				{
 					if (standings->increase[pnum] > 9)
-						snprintf(strtime, sizeof strtime, "(+%02d)", standings->increase[pnum]);
+						snprintf(strtime, sizeof(strtime), "(+%02d)", standings->increase[pnum]);
 					else
-						snprintf(strtime, sizeof strtime, "(+  %d)", standings->increase[pnum]);
+						snprintf(strtime, sizeof(strtime), "(+  %d)", standings->increase[pnum]);
 
 					if (standings->numplayers > NUMFORNEWCOLUMN)
 						V_DrawRightAlignedThinString(x+135+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -379,7 +379,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 						V_DrawRightAlignedString(x+120+gutter, y, 0, strtime);
 				}
 
-				snprintf(strtime, sizeof strtime, "%d", standings->val[i]);
+				snprintf(strtime, sizeof(strtime), "%d", standings->val[i]);
 
 				if (standings->numplayers > NUMFORNEWCOLUMN)
 					V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -394,9 +394,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				{
 					if (intertype == int_race)
 					{
-						snprintf(strtime, sizeof strtime, "%i'%02i\"%02i", G_TicsToMinutes(standings->val[i], true),
+						snprintf(strtime, sizeof(strtime), "%i'%02i\"%02i", G_TicsToMinutes(standings->val[i], true),
 						G_TicsToSeconds(standings->val[i]), G_TicsToCentiseconds(standings->val[i]));
-						strtime[sizeof strtime - 1] = '\0';
+						strtime[sizeof(strtime) - 1] = '\0';
 
 						if (standings->numplayers > NUMFORNEWCOLUMN)
 							V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -663,14 +663,14 @@ static void Y_UpdateRecordReplays(void)
 
 	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
 
-	snprintf(lastdemo, 255, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
+	snprintf(lastdemo, sizeof(lastdemo), "%s-%s-last.lmp", gpath, cv_chooseskin.string);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		snprintf(bestdemo, 255, "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo), "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -679,7 +679,7 @@ static void Y_UpdateRecordReplays(void)
 			CONS_Printf("\x83%s\x80 %s '%s'\n", M_GetText("NEW RECORD TIME!"), M_GetText("Saved replay as"), bestdemo);
 		}
 
-		snprintf(bestdemo, 255, "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo), "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 		{ // Better lap time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -1509,12 +1509,12 @@ void Y_StartVote(void)
 		{
 			if (mapheaderinfo[votelevels[i][0]]->actnum[0])
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->actnum);
 			else
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl);
 		}
@@ -1522,12 +1522,12 @@ void Y_StartVote(void)
 		{
 			if (mapheaderinfo[votelevels[i][0]]->actnum[0])
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->zonttl, mapheaderinfo[votelevels[i][0]]->actnum);
 			else
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->zonttl);
 		}

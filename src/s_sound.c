@@ -2288,7 +2288,7 @@ static void Command_Tunes_f(void)
 		track = (UINT16)atoi(COM_Argv(2))-1;
 
 	if (tunenum)
-		snprintf(mapmusic.name, 7, "%sM", G_BuildMapName(tunenum));
+		snprintf(mapmusic.name, sizeof(mapmusic.name), "%sM", G_BuildMapName(tunenum));
 	else
 		strlcpy(mapmusic.name, tunearg, sizeof(mapmusic.name));
 
