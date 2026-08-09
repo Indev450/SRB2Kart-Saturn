@@ -87,6 +87,8 @@ static drawseg_xrange_item_t *drawsegs_xrange;
 static size_t drawsegs_xrange_size = 0;
 static INT32 drawsegs_xrange_count = 0;
 
+#define CLIP_UNDEF -2
+
 //
 // Sprite rotation 0 is facing the viewer,
 //  rotation 1 is one angle turn CLOCKWISE around the axis.
@@ -182,14 +184,13 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 		UINT8 rightfactor = ((rotation == ROT_R) ? 4 : 0);
 
 		// the lump should be used for half of all rotations
-		if (sprtemp[frame].rotate == SRF_SINGLE)
+		if (sprtemp[frame].rotate == SRF_NONE)
+			sprtemp[frame].rotate = SRF_SINGLE;
+		else if (sprtemp[frame].rotate == SRF_SINGLE)
 			CONS_Debug(DBG_SETUP, "R_InitSprites: Sprite %s frame %c has L/R rotations and a rot = 0 lump\n", spritename, cn);
 		else if (sprtemp[frame].rotate == SRF_3D)
 			CONS_Debug(DBG_SETUP, "R_InitSprites: Sprite %s frame %c has both L/R and 1-8 rotations\n", spritename, cn);
 		// Let's not complain about multiple L/R rotations. It's not worth the effort.
-
-		if (sprtemp[frame].rotate == SRF_NONE)
-			sprtemp[frame].rotate = SRF_SINGLE;
 
 		sprtemp[frame].rotate |= ((rotation == ROT_R) ? SRF_RIGHT : SRF_LEFT);
 
@@ -233,6 +234,7 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 	// when using sprites in pwad : the lumppat points the new graphics
 	sprtemp[frame].lumppat[rotation] = lumppat;
 	sprtemp[frame].lumpid[rotation] = lumpid;
+
 	if (flipped)
 		sprtemp[frame].flip |= (1<<rotation);
 	else
@@ -261,8 +263,10 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	softwarepatch_t patch;
 	UINT8 numadded = 0;
 
-	memset(sprtemp,0xFF, sizeof (sprtemp));
+	memset(sprtemp, 0xFF, sizeof(sprtemp));
 	maxframe = (size_t)-1;
+
+	spritename = sprname;
 
 	// are we 'patching' a sprite already loaded ?
 	// if so, it might patch only certain frames, not all
@@ -289,7 +293,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 		if (frame >= 64 || !(R_ValidSpriteAngle(rotation))) // Give an actual NAME error -_-...
 		{
-			CONS_Alert(CONS_WARNING, M_GetText("Bad sprite name: %s\n"), W_CheckNameForNumPwad(wadnum,l));
+			CONS_Alert(CONS_WARNING, M_GetText("Bad sprite name: %s\n"), W_CheckNameForNumPwad(wadnum, l));
 			continue;
 		}
 
@@ -315,6 +319,15 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		{
 			frame = R_Char2Frame(lumpinfo[l].name[6]);
 			rotation = (UINT8)(lumpinfo[l].name[7] - '0');
+
+			/*
+			if (frame >= 64 || !(R_ValidSpriteAngle(rotation))) // Give an actual NAME error -_-...
+			{
+				CONS_Alert(CONS_WARNING, M_GetText("Bad sprite name: %s\n"), W_CheckNameForNumPwad(wadnum, l));
+				continue;
+			}
+			*/
+
 			R_InstallSpriteLump(wadnum, l, numspritelumps, frame, rotation, 1);
 		}
 
@@ -363,30 +376,32 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		switch (sprtemp[frame].rotate)
 		{
 			case SRF_NONE:
-			// no rotations were found for that frame at all
-			I_Error("R_AddSingleSpriteDef: No patches found for %.4s frame %c", sprname, R_Frame2Char(frame));
-			break;
+				// no rotations were found for that frame at all
+				I_Error("R_AddSingleSpriteDef: No patches found for %.4s frame %c", sprname, R_Frame2Char(frame));
+				break;
 
 			case SRF_SINGLE:
-			// only the first rotation is needed
-			break;
+				// only the first rotation is needed
+				break;
 
 			case SRF_2D: // both Left and Right rotations
 				// we test to see whether the left and right slots are present
 				if ((sprtemp[frame].lumppat[2] == LUMPERROR) || (sprtemp[frame].lumppat[6] == LUMPERROR))
 					I_Error("R_AddSingleSpriteDef: Sprite %s frame %c is missing rotations",
 					        sprname, R_Frame2Char(frame));
-			break;
+				break;
 
 			default:
-			// must have all 8 frames
-			for (rotation = 0; rotation < 8; rotation++)
-				// we test the patch lump, or the id lump whatever
-				// if it was not loaded the two are LUMPERROR
-				if (sprtemp[frame].lumppat[rotation] == LUMPERROR)
-					I_Error("R_AddSingleSpriteDef: Sprite %.4s frame %c is missing rotations",
-					        sprname, R_Frame2Char(frame));
-			break;
+				// must have all 8 frames
+				for (rotation = 0; rotation < 8; rotation++)
+				{
+					// we test the patch lump, or the id lump whatever
+					// if it was not loaded the two are LUMPERROR
+					if (sprtemp[frame].lumppat[rotation] == LUMPERROR)
+						I_Error("R_AddSingleSpriteDef: Sprite %.4s frame %c is missing rotations",
+								sprname, R_Frame2Char(frame));
+				}
+				break;
 		}
 	}
 
@@ -394,7 +409,6 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	if (spritedef->numframes &&             // has been allocated
 		spritedef->numframes < maxframe)    // more frames are defined ?
 	{
-
 		Z_Free(spritedef->spriteframes);
 		spritedef->spriteframes = NULL;
 	}
@@ -451,12 +465,10 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	//
 	for (i = 0; i < numsprites; i++)
 	{
-		spritename = sprnames[i];
-
-		if (spritename[4] && wadnum >= (UINT16)spritename[4])
+		if (sprnames[i][4] && wadnum >= (UINT16)sprnames[i][4])
 			continue;
 
-		if (R_AddSingleSpriteDef(spritename, &sprites[i], wadnum, start, end))
+		if (R_AddSingleSpriteDef(sprnames[i], &sprites[i], wadnum, start, end))
 		{
 #ifdef HWRENDER
 			if (rendermode == render_opengl)
@@ -464,9 +476,7 @@ void R_AddSpriteDefs(UINT16 wadnum)
 #endif
 			// if a new sprite was added (not just replaced)
 			addsprites++;
-#ifndef ZDEBUG
-			CONS_Debug(DBG_SETUP, "sprite %s set in pwad %d\n", spritename, wadnum);
-#endif
+			CONS_Debug(DBG_SETUP, "sprite %s set in pwad %d\n", sprnames[i], wadnum);
 		}
 	}
 
@@ -773,6 +783,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 	R_SetColumnFunc(BASEDRAWFUNC); // hack: this isn't resetting properly somewhere.
 	dc.colormap = vis->colormap;
+
 	if ((vis->mobj->flags & MF_BOSS) && (vis->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
 	{
 		R_SetColumnFunc(COLDRAWFUNC_TRANS); // translate certain pixels to white
@@ -825,6 +836,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		else
 			dc.colormap = &vis->extra_colormap->colormap[dc.colormap - colormaps];
 	}
+
 	if (!dc.colormap)
 		dc.colormap = colormaps;
 
@@ -849,6 +861,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			vis->xiscale = FixedDiv(vis->xiscale, this_scale);
 			vis->isScaled = true;
 		}
+
 		dc.texturemid = FixedDiv(dc.texturemid, this_scale);
 	}
 
@@ -1230,9 +1243,9 @@ static void R_ProjectSprite(mobj_t *thing)
 		return;
 
 	const boolean mirrored = thing->mirrored;
-	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
-	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+	const boolean vflip    = R_ThingVerticallyFlipped(thing);
+	const boolean hflip    = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
+	const boolean papersprite = R_ThingIsPaperSprite(thing);
 
 	// transform the origin point
 	tr_x = interp.x - viewx;
@@ -1265,7 +1278,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
 	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
+	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || thing->temprollangle || sliprollrotate);
 #endif
 
 	sprskin = K_GetMobjSkin(thing);
@@ -1365,16 +1378,18 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	if (shouldrotate)
 	{
+		const fixed_t thingrollangle = (thing->rollangle - thing->temprollangle);
+
 		if (papersprite)
 		{
 			if (ang >= ANGLE_180)
 			{
 				// Makes Software act much more sane like OpenGL
-				rollangle = InvAngle(thing->rollangle);
+				rollangle = InvAngle(thingrollangle);
 			}
 			else
 			{
-				rollangle = thing->rollangle;
+				rollangle = thingrollangle;
 			}
 		}
 		else
@@ -1382,7 +1397,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			// this is very messy, but it on-the-fly calculates rotations for all the
 			// pitch and roll variables
 			pitchnroll = R_RotationAngle(ang, camang, &interp);
-			rollangle = thing->rollangle;
+			rollangle = thingrollangle;
 		}
 
 		if (rollangle || pitchnroll || sliprollrotate)
@@ -2208,6 +2223,7 @@ static void R_SortVisSprites(vissprite_t* vsprsortedhead, UINT32 start, UINT32 e
 				best = ds;
 			}
 		}
+
 		if (best)
 		{
 			best->next->prev = best->prev;
@@ -2616,7 +2632,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 
 	for (x = x1; x <= x2; x++)
 	{
-		spr->clipbot[x] = spr->cliptop[x] = -2;
+		spr->clipbot[x] = spr->cliptop[x] = CLIP_UNDEF;
 	}
 
 	// Scan drawsegs from end to start for obscuring segs.
@@ -2645,29 +2661,26 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 
 			ds = curr->user;
 
-			if (ds->portalpass != 66) // unused?
+			if (ds->portalpass > 0 && ds->portalpass <= portalrender)
+				continue; // is a portal
+
+			if (ds->scale1 > ds->scale2)
 			{
-				if (ds->portalpass > 0 && ds->portalpass <= portalrender)
-					continue; // is a portal
+				lowscale = ds->scale2;
+				scale = ds->scale1;
+			}
+			else
+			{
+				lowscale = ds->scale1;
+				scale = ds->scale2;
+			}
 
-				if (ds->scale1 > ds->scale2)
-				{
-					lowscale = ds->scale2;
-					scale = ds->scale1;
-				}
-				else
-				{
-					lowscale = ds->scale1;
-					scale = ds->scale2;
-				}
-
-				if (scale < spr->sortscale ||
-					(lowscale < spr->sortscale &&
-					!R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
-				{
-					// seg is behind sprite
-					continue;
-				}
+			if (scale < spr->sortscale ||
+				(lowscale < spr->sortscale &&
+				!R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
+			{
+				// seg is behind sprite
+				continue;
 			}
 
 			r1 = ds->x1 < x1 ? x1 : ds->x1;
@@ -2686,14 +2699,14 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			{
 				// bottom sil
 				for (x = r1; x <= r2; x++)
-					if (spr->clipbot[x] == -2)
+					if (spr->clipbot[x] == CLIP_UNDEF)
 						spr->clipbot[x] = ds->sprbottomclip[x];
 			}
 			else if (silhouette == SIL_TOP)
 			{
 				// top sil
 				for (x = r1; x <= r2; x++)
-					if (spr->cliptop[x] == -2)
+					if (spr->cliptop[x] == CLIP_UNDEF)
 						spr->cliptop[x] = ds->sprtopclip[x];
 			}
 			else if (silhouette == (SIL_TOP|SIL_BOTTOM))
@@ -2701,9 +2714,9 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 				// both
 				for (x = r1; x <= r2; x++)
 				{
-					if (spr->clipbot[x] == -2)
+					if (spr->clipbot[x] == CLIP_UNDEF)
 						spr->clipbot[x] = ds->sprbottomclip[x];
-					if (spr->cliptop[x] == -2)
+					if (spr->cliptop[x] == CLIP_UNDEF)
 						spr->cliptop[x] = ds->sprtopclip[x];
 				}
 			}
@@ -2722,13 +2735,13 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			if (mh <= 0 || (phs != -1 && viewz > sectors[phs].floorheight))
 			{                          // clip bottom
 				for (x = x1; x <= x2; x++)
-					if (spr->clipbot[x] == -2 || h < spr->clipbot[x])
+					if (spr->clipbot[x] == CLIP_UNDEF || h < spr->clipbot[x])
 						spr->clipbot[x] = (INT16)h;
 			}
 			else						// clip top
 			{
 				for (x = x1; x <= x2; x++)
-					if (spr->cliptop[x] == -2 || h > spr->cliptop[x])
+					if (spr->cliptop[x] == CLIP_UNDEF || h > spr->cliptop[x])
 						spr->cliptop[x] = (INT16)h;
 			}
 		}
@@ -2740,13 +2753,13 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			if (phs != -1 && viewz >= sectors[phs].ceilingheight)
 			{                         // clip bottom
 				for (x = x1; x <= x2; x++)
-					if (spr->clipbot[x] == -2 || h < spr->clipbot[x])
+					if (spr->clipbot[x] == CLIP_UNDEF || h < spr->clipbot[x])
 						spr->clipbot[x] = (INT16)h;
 			}
 			else                       // clip top
 			{
 				for (x = x1; x <= x2; x++)
-					if (spr->cliptop[x] == -2 || h > spr->cliptop[x])
+					if (spr->cliptop[x] == CLIP_UNDEF || h > spr->cliptop[x])
 						spr->cliptop[x] = (INT16)h;
 			}
 		}
@@ -2756,10 +2769,10 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	{
 		for (x = x1; x <= x2; x++)
 		{
-			if (spr->cliptop[x] == -2 || spr->szt > spr->cliptop[x])
+			if (spr->cliptop[x] == CLIP_UNDEF || spr->szt > spr->cliptop[x])
 				spr->cliptop[x] = spr->szt;
 
-			if (spr->clipbot[x] == -2 || spr->sz < spr->clipbot[x])
+			if (spr->clipbot[x] == CLIP_UNDEF || spr->sz < spr->clipbot[x])
 				spr->clipbot[x] = spr->sz;
 		}
 	}
@@ -2767,7 +2780,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	{
 		for (x = x1; x <= x2; x++)
 		{
-			if (spr->cliptop[x] == -2 || spr->szt > spr->cliptop[x])
+			if (spr->cliptop[x] == CLIP_UNDEF || spr->szt > spr->cliptop[x])
 				spr->cliptop[x] = spr->szt;
 		}
 	}
@@ -2775,7 +2788,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	{
 		for (x = x1; x <= x2; x++)
 		{
-			if (spr->clipbot[x] == -2 || spr->sz < spr->clipbot[x])
+			if (spr->clipbot[x] == CLIP_UNDEF || spr->sz < spr->clipbot[x])
 				spr->clipbot[x] = spr->sz;
 		}
 	}
@@ -2785,19 +2798,11 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	// check for unclipped columns
 	for (x = x1; x <= x2; x++)
 	{
-		if (spr->clipbot[x] == -2)
+		if (spr->clipbot[x] == CLIP_UNDEF)
 			spr->clipbot[x] = (INT16)viewheight;
 
-		if (spr->cliptop[x] == -2)
+		if (spr->cliptop[x] == CLIP_UNDEF)
 			spr->cliptop[x] = -1;
-	}
-
-	// Check if it'll be visible
-	// Not done for floorsprites.
-	if (cv_spriteclip.value)
-	{
-		if (!R_CheckSpriteVisible(spr, x1, x2))
-			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 	}
 
 	if (portal)
@@ -2810,6 +2815,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			spr->clipbot[x] = -1;
 			spr->cliptop[x] = -1;
 		}
+
 		for (x = start_index; x <= end_index; x++)
 		{
 			if (spr->clipbot[x] > portal->floorclip[x - portal->start])
@@ -2817,11 +2823,20 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 			if (spr->cliptop[x] < portal->ceilingclip[x - portal->start])
 				spr->cliptop[x] = portal->ceilingclip[x - portal->start];
 		}
+
 		for (x = end_index + 1; x <= x2; x++)
 		{
 			spr->clipbot[x] = -1;
 			spr->cliptop[x] = -1;
 		}
+	}
+
+	// Check if it'll be visible
+	// Not done for floorsprites.
+	if (cv_spriteclip.value)
+	{
+		if (!R_CheckSpriteVisible(spr, x1, x2))
+			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 	}
 }
 
@@ -2895,8 +2910,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	{
 		vissprite_t *spr = R_GetVisSprite(clippedvissprites);
 
-		if (cv_spriteclip.value
-		&& (spr->szt > vid.height || spr->sz < 0))
+		if (cv_spriteclip.value &&
+			(spr->szt > vid.height || spr->sz < 0) &&
+			!spr->scalestep)
 		{
 			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 			continue;
@@ -2928,16 +2944,16 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 /* Check if thing may be drawn from our current view. */
 boolean R_ThingVisible(mobj_t *thing)
 {
-	if (UNLIKELY((thing->sprite == SPR_NULL) || (thing->flags2 & MF2_DONTDRAW)))
+	if ((thing->sprite == SPR_NULL) || (thing->flags2 & MF2_DONTDRAW))
 		return false;
 
-	if (UNLIKELY(splitscreen))
+	if (splitscreen)
 	{
-		if    ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
-			|| (viewssnum == 1 && (thing->eflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 2 && (thing->eflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 3 && (thing->eflags & MFE_DRAWONLYFORP4)))
-			return true;
+		if    (((thing->eflags & MFE_DRAWONLYFORP1) && viewssnum != 0)
+			|| ((thing->eflags & MFE_DRAWONLYFORP2) && viewssnum != 1)
+			|| ((thing->eflags & MFE_DRAWONLYFORP3) && viewssnum != 2)
+			|| ((thing->eflags & MFE_DRAWONLYFORP4) && viewssnum != 3))
+			return false;
 	}
 
 	return true;
@@ -3009,9 +3025,35 @@ boolean R_CheckMobjInterpDist(mobj_t *thing)
 	return R_CheckInterpDist(thing);
 }
 
-boolean R_ThingIsFullBright(mobj_t *thing)
+boolean R_ThingHorizontallyFlipped(mobj_t *thing)
+{
+	return (thing->frame & FF_HORIZONTALFLIP);
+}
+
+boolean R_ThingVerticallyFlipped(mobj_t *thing)
+{
+	return (thing->eflags & MFE_VERTICALFLIP); //(thing->frame & FF_VERTICALFLIP);
+}
+
+boolean R_ThingIsPaperSprite(mobj_t *thing)
+{
+	return (thing->frame & FF_PAPERSPRITE);
+}
+
+template<typename T>
+static boolean R_ThingIsFullBrightT(T *thing)
 {
 	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
+}
+
+boolean R_PrecipThingIsFullBright(precipmobj_t *thing)
+{
+	return R_ThingIsFullBrightT(thing);
+}
+
+boolean R_ThingIsFullBright(mobj_t *thing)
+{
+	return R_ThingIsFullBrightT(thing);
 }
 
 boolean R_ThingIsSemiBright(mobj_t *thing)

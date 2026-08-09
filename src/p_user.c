@@ -74,7 +74,7 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx += FixedMul(move, FINECOSINE(angle));
 
-	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
+	if (!twodmo(mo))
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
@@ -90,7 +90,7 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx = FixedMul(move, FINECOSINE(angle));
 
-	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
+	if (!twodmo(mo))
 		mo->momy = FixedMul(move,FINESINE(angle));
 }
 
@@ -475,7 +475,7 @@ void P_PlayLivesJingle(player_t *player)
 
 	if (UNLIKELY(use1upSound))
 		S_StartSound(NULL, sfx_oneup);
-	else if (UNLIKELY(mariomode))
+	else if (mariomode)
 		S_StartSound(NULL, sfx_marioa);
 	else
 	{
@@ -503,7 +503,7 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 			S_StartSound(NULL, sfx);
 		}
 		else
-			S_StartSound(source, UNLIKELY(mariomode) ? sfx_mario8 : sfx_khurt1 + key);
+			S_StartSound(source, mariomode ? sfx_mario8 : sfx_khurt1 + key);
 	}
 	else
 		S_StartSound(source, sfx_slip);
@@ -1122,22 +1122,26 @@ void P_SpawnShieldOrb(player_t *player)
 		P_SetTarget(&ov->target, shieldobj);
 		P_SetMobjState(ov, shieldobj->info->seestate);
 	}
+
 	if (shieldobj->info->meleestate)
 	{
 		ov = P_SpawnMobj(shieldobj->x, shieldobj->y, shieldobj->z, MT_OVERLAY);
 		P_SetTarget(&ov->target, shieldobj);
 		P_SetMobjState(ov, shieldobj->info->meleestate);
 	}
+
 	if (shieldobj->info->missilestate)
 	{
 		ov = P_SpawnMobj(shieldobj->x, shieldobj->y, shieldobj->z, MT_OVERLAY);
 		P_SetTarget(&ov->target, shieldobj);
 		P_SetMobjState(ov, shieldobj->info->missilestate);
 	}
+
 	if (player->powers[pw_shield] & SH_FORCE)
 	{
 		//Copy and pasted from P_ShieldLook in p_mobj.c
 		shieldobj->movecount = (player->powers[pw_shield] & 0xFF);
+
 		if (shieldobj->movecount < 1)
 		{
 			if (shieldobj->info->painstate)
@@ -1202,6 +1206,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->pitch = mobj->pitch;
 	ghost->roll = mobj->roll;
 	ghost->rollangle = mobj->rollangle;
+	ghost->temprollangle = mobj->temprollangle;
 	ghost->sloperoll = mobj->sloperoll;
 	ghost->slopepitch = mobj->slopepitch;
 
@@ -1569,10 +1574,12 @@ static void P_CheckBouncySectors(player_t *player)
 								newmom = -8*FRACUNIT;
 						}
 
-						if (newmom > P_GetPlayerHeight(player)/2)
-							newmom = P_GetPlayerHeight(player)/2;
-						else if (newmom < -P_GetPlayerHeight(player)/2)
-							newmom = -P_GetPlayerHeight(player)/2;
+						const fixed_t halfpheight = P_GetPlayerHeight(player)/2;
+
+						if (newmom > halfpheight)
+							newmom = halfpheight;
+						else if (newmom < -halfpheight)
+							newmom = -halfpheight;
 
 						momentum.z = newmom*2;
 
@@ -1718,7 +1725,7 @@ static void P_DoBubbleBreath(player_t *player)
 	else
 		zh = player->mo->z + FixedDiv(player->mo->height,5*(FRACUNIT/4));
 
-	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL && !(player->pflags & PF_NIGHTSMODE)))
+	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL && !nightsplayer(player)))
 		return;
 
 	if (P_RandomChance(FRACUNIT/16))
@@ -1835,6 +1842,9 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 		if (!((mo2->flags & MF_SHOOTABLE && mo2->flags & MF_ENEMY) || mo2->type == MT_EGGGUARD || mo2->player))
 			continue;
 
+		if (mo2->health <= 0)
+			continue;
+
 		dist = P_AproxDistance(P_AproxDistance(player->mo->x-mo2->x, player->mo->y-mo2->y), player->mo->z-mo2->z);
 
 		if (range < dist)
@@ -1843,15 +1853,12 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 		if (!P_CheckSight(player->mo, mo2))
 			continue; // if your psychic powers can't "see" it don't bother
 
-		if (mo2->health > 0)
-		{
-			an = R_PointToAngle2(player->mo->x, player->mo->y, mo2->x, mo2->y);
+		an = R_PointToAngle2(player->mo->x, player->mo->y, mo2->x, mo2->y);
 
-			P_Thrust(mo2, an, thrust);
+		P_Thrust(mo2, an, thrust);
 
-			if (mo2->type == MT_GOLDBUZZ || mo2->type == MT_REDBUZZ)
-				mo2->tics += 8;
-		}
+		if (mo2->type == MT_GOLDBUZZ || mo2->type == MT_REDBUZZ)
+			mo2->tics += 8;
 	}
 
 	//P_SpawnThokMobj(player);
@@ -2291,7 +2298,7 @@ static void P_MovePlayer(player_t *player)
 		P_3dMovement(player);
 	}
 
-	if (UNLIKELY(maptol & TOL_2D)) // psure this doesent even work at all
+	if (twodlevel) // psure this doesent even work at all
 		runspd = FixedMul(runspd, 2*FRACUNIT/3);
 
 	/////////////////////////
@@ -2355,7 +2362,7 @@ static void P_MovePlayer(player_t *player)
 	if (onground && leveltime % 50 == 0 && player->kartstuff[k_drift] != 0)
 		S_StartSound(player->mo, sfx_drift);
 	// Leveltime being 50 might take a while at times. We'll start it up once, isntantly.
-	else if (onground && !S_SoundPlaying(player->mo, sfx_drift) && player->kartstuff[k_drift] != 0)
+	else if (onground && player->kartstuff[k_drift] != 0 && !S_SoundPlaying(player->mo, sfx_drift))
 		S_StartSound(player->mo, sfx_drift);
 	// Ok, we'll stop now.
 	else if (player->kartstuff[k_drift] == 0 || !onground)
@@ -2736,16 +2743,16 @@ boolean P_LookForEnemies(player_t *player)
 		|| ((mo->z+mo->height < player->mo->z+player->mo->height-FixedMul(MAXSTEPMOVE, mapobjectscale)) && (player->mo->eflags & MFE_VERTICALFLIP))) // Reverse gravity check - Flame.
 			continue; // Don't home upwards!
 
-		if (P_AproxDistance(P_AproxDistance(player->mo->x-mo->x, player->mo->y-mo->y),
-			player->mo->z-mo->z) > FixedMul(RING_DIST, player->mo->scale))
+		const fixed_t modist = P_AproxDistance(P_AproxDistance(player->mo->x-mo->x, player->mo->y-mo->y), player->mo->z-mo->z);
+
+		if (modist > FixedMul(RING_DIST, player->mo->scale))
 			continue; // out of range
 
-		if (UNLIKELY((twodlevel || player->mo->flags2 & MF2_TWOD)
-		&& abs(player->mo->y-mo->y) > player->mo->radius))
+
+		if (twodmo(player->mo) && abs(player->mo->y-mo->y) > player->mo->radius)
 			continue; // not in your 2d plane
 
-		if (closestmo && P_AproxDistance(P_AproxDistance(player->mo->x-mo->x, player->mo->y-mo->y),
-			player->mo->z-mo->z) > P_AproxDistance(P_AproxDistance(player->mo->x-closestmo->x,
+		if (closestmo && modist > P_AproxDistance(P_AproxDistance(player->mo->x-closestmo->x,
 			player->mo->y-closestmo->y), player->mo->z-closestmo->z))
 			continue;
 
@@ -3149,8 +3156,8 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 	cmd->aiming = G_ClipAimingPitch(&laim);
 
-	const boolean analogjoystickmove = cv_usejoystick[num].value && !Joystick[num].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[num].value && Joystick[num].bGamepadStyle;
+	const boolean analogjoystickmove  = cv_usejoystick[num].value && !DigitalGamepadStyle(num);
+	const boolean gamepadjoystickmove = cv_usejoystick[num].value && DigitalGamepadStyle(num);
 
 	usejoystick = (analogjoystickmove || gamepadjoystickmove);
 
@@ -3501,7 +3508,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 	boolean cameranoclip;
 	mobj_t *mo = player->mo;
 
-	cameranoclip = ((player->pflags & (PF_NOCLIP|PF_NIGHTSMODE))
+	cameranoclip = (nightsplayer(player)
 	|| (mo->flags & (MF_NOCLIP|MF_NOCLIPHEIGHT)) // Noclipping player camera noclips too!!
 	|| (leveltime < introtime)); // Kart intro cam
 
@@ -3733,7 +3740,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	fixed_t f1, f2;
 
 	// We probably shouldn't move the camera if there is no player or player mobj somehow
-	if (!player || !player->mo)
+	if (!player || P_MobjWasRemoved(player->mo))
 		return true;
 
 	// This can happen when joining
@@ -4090,7 +4097,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			angle -= (angle - thiscam->pitch)/2;
 	}
 
-	if (player->playerstate != PST_DEAD && LIKELY(!((player->pflags & PF_NIGHTSMODE) && player->exiting)))
+	if (player->playerstate != PST_DEAD && !(nightsplayer(player) && player->exiting))
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
 
 	if (!camstill && !timeover) // Keep the view still...
@@ -4167,7 +4174,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Team changing in Team Match and CTF
 	// Pressing fire assigns you to a team that needs players if allowed.
 	// Partial code reproduction from p_tick.c autobalance code.
-	else if (UNLIKELY(G_GametypeHasTeams()))
+	else if (G_GametypeHasTeams())
 	{
 		INT32 changeto = 0;
 		INT32 z, numplayersred = 0, numplayersblue = 0;
@@ -4580,6 +4587,7 @@ void P_PlayerThink(player_t *player)
 			{
 				short int i;
 				mo->flags |= MF_NOCLIPHEIGHT;
+
 				for (i = 0; i < 32; i++)
 				{
 					// Debug drawing
@@ -4863,7 +4871,7 @@ void P_PlayerThink(player_t *player)
 
 	// Even if not NiGHTS, pull in nearby objects when walking around as John Q. Elliot.
 	if (UNLIKELY(!objectplacing && !((netgame || multiplayer) && player->spectator)
-	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper])))
+	&& nightsmode && (!nightsplayer(player) || player->powers[pw_nights_helper])))
 	{
 		thinker_t *th;
 		mobj_t *mo2;
@@ -4965,7 +4973,7 @@ void P_PlayerThink(player_t *player)
 #endif
 
 	// check for use
-	if (LIKELY(!(player->pflags & PF_NIGHTSMODE)))
+	if (!nightsplayer(player))
 	{
 		if (cmd->buttons & BT_BRAKE)
 			player->pflags |= PF_USEDOWN;
@@ -5082,6 +5090,11 @@ void P_PlayerThink(player_t *player)
 		player->squishdance.time = 0;
 	}
 
+	if (player->stairjank > 0)
+	{
+		player->stairjank--;
+	}
+
 	// Flash player after being hit.
 	if (!(player->kartstuff[k_hyudorotimer] // SRB2kart - fixes Hyudoro not flashing when it should.
 		|| player->kartstuff[k_growshrinktimer] > 0 // Grow doesn't flash either.
@@ -5151,7 +5164,7 @@ void P_PlayerAfterThink(player_t *player)
 		}
 	}
 
-	if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
+	if (nightsplayer(player))
 	{
 		player->powers[pw_gravityboots] = 0;
 	}

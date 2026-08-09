@@ -35,6 +35,7 @@ extern mapthing_t *deathmatchstarts[MAX_DM_STARTS];
 extern INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
 
 extern boolean levelloading;
+extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
@@ -113,6 +114,9 @@ boolean P_SectorUsesDirectionalLighting(const sector_t *sector);
 size_t P_PrecacheLevelFlats(void);
 
 void P_AllocMapHeader(INT16 i);
+
+void P_PrintCorruptMapWarnings(void);
+void P_FreeCorruptMapWarnings(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -664,8 +664,10 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 	for (i = 0; i < 3; i++)
 	{
 		mt = ret->vertices[i];
+
 		if (!mt) // If a vertex wasn't found, it's game over. There's nothing you can do to recover (except maybe try and kill the slope instead - TODO?)
 			I_Error("P_NewVertexSlope: Slope vertex %s (for linedef tag %d) not found!", sizeu1(i), tag1);
+
 		if (mt->extrainfo)
 			mt->z = mt->options;
 		else
@@ -899,6 +901,11 @@ void P_SlopeLaunch(mobj_t *mo)
 
 	//CONS_Printf("Launched off of slope.\n");
 	mo->standingslope = NULL;
+
+	if (mo->player)
+	{
+		mo->player->stairjank = 0; // fuck you
+	}
 }
 
 // Function to help handle landing on slopes

@@ -530,6 +530,6 @@ void SCR_DisplayLocalPing(void)
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
-		HU_drawPlayerPing(308, dispy, consoleplayer, pingflags); // consoleplayer's ping is everyone's ping in a splitnetgame :P
+		HU_drawLocalPlayerPing(308, dispy, pingflags); // consoleplayer's ping is everyone's ping in a splitnetgame :P
 	}
 }

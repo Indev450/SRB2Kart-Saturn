@@ -25,6 +25,7 @@
 #include "d_netcmd.h"
 #include "d_clisrv.h"
 #include "i_net.h"
+#include "i_system.h"
 #include "console.h"
 #include "r_fps.h"
 #include "r_local.h"
@@ -151,8 +152,6 @@ const char *quitmsg[NUM_QUITMESSAGES] = {};
 
 INT32 mapwads[NUMMAPS] = {};
 
-boolean browselocalskins = false;
-
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
@@ -214,12 +213,19 @@ static INT32       setupm_fakeskin;
 static INT32       setupm_fakecolor;
 static UINT8 	   setupm_pselect = 1;
 
-//variables used for other skin select menus
+// variables used for other skin select menus
 static UINT8 setupm_skinypos;
 static INT32 setupm_skinselect;
 static boolean setupm_skinlockedselect;
 
-static UINT8 setupm_playernum; //brap
+static UINT8 setupm_playernum; // brap
+
+// Addons Menu: Local mode
+static void M_LocalAddons(INT32 choice);
+static boolean addons_localmode = false;
+
+#define LOCALMODE_KEY (KEY_RALT)
+#define AUTOLOAD_KEY (KEY_END)
 
 //
 // PROTOTYPES
@@ -270,6 +276,8 @@ static void M_ConfirmTeamScramble(INT32 choice);
 static void M_ConfirmTeamChange(INT32 choice);
 static void M_ConfirmSpectateChange(INT32 choice);
 static void M_QuitSRB2(INT32 choice);
+
+static void M_SaturnReportIssue(INT32 choice);
 
 // Single Player
 static void M_TimeAttack(INT32 choice);
@@ -325,7 +333,6 @@ static void M_EraseData(INT32 choice);
 
 static void M_AddonsInternal();
 static void M_Addons(INT32 choice);
-static void M_LocalSkins(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
 #define addonmenusize 9 // number of items actually displayed in the addons menu view, formerly (2*numaddonsshown + 1)
 #define numaddonsshown 4 // number of items to each side of the currently selected item, unless at top/bottom ends of directory
@@ -409,6 +416,7 @@ static INT32 M_GetFirstLevelInList(void);
 
 // crap to force hud to show when in saturns hud options
 boolean forceshowhud = false;
+boolean forceshowchat = false;
 
 // smol text indicating if game is modified
 // so ppl dont wonder where their ra times went and stuff
@@ -447,13 +455,13 @@ consvar_t cv_showallmaps = {"showallmaps", "No", CV_SAVE, CV_YesNo, NULL, 0, NUL
 consvar_t cv_showmusicfilename = {"showmusicfilename", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t serversort_cons_t[] = {
-	{0,"Ping"},
-	{1,"Modified State"},
-	{2,"Most Players"},
-	{3,"Least Players"},
-	{4,"Max Player Slots"},
-	{5,"Gametype"},
-	{0,NULL}
+	{0, "Ping"},
+	{1, "Modified State"},
+	{2, "Most Players"},
+	{3, "Least Players"},
+	{4, "Max Player Slots"},
+	{5, "Gametype"},
+	{0, NULL}
 };
 consvar_t cv_serversort = {"serversort", "Ping", CV_CALL, serversort_cons_t, M_SortServerList, 0, NULL, NULL, 0, 0, NULL};
 
@@ -702,7 +710,7 @@ static void Dummystaff_OnChange(void)
 
 	dummystaffname[0] = '\0';
 
-	if ((l = W_CheckNumForName(va("%sS01",G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
+	if ((l = W_CheckNumForName(va("%sS01", G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
 	{
 		CV_StealthSetValue(&cv_dummystaff, 0);
 		return;
@@ -711,7 +719,7 @@ static void Dummystaff_OnChange(void)
 	{
 		char *temp = dummystaffname;
 		UINT8 numstaff = 1;
-		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),numstaff+1))) != LUMPERROR)
+		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u", G_BuildMapName(cv_nextmap.value), numstaff+1))) != LUMPERROR)
 			numstaff++;
 
 		if (cv_dummystaff.value < 1)
@@ -719,7 +727,7 @@ static void Dummystaff_OnChange(void)
 		else if (cv_dummystaff.value > numstaff)
 			CV_StealthSetValue(&cv_dummystaff, 1);
 
-		if ((l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
+		if ((l = W_CheckNumForName(va("%sS%02u", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
 			return; // shouldn't happen but might as well check...
 
 		G_UpdateStaffGhostName(l);
@@ -804,7 +812,8 @@ static void M_ChangeCvar(INT32 choice)
 				CV_SetValue(cv,skins[skinno].prefcolor);
 			return;
 		}
-		CV_Set(cv,cv->defaultvalue);
+
+		CV_Set(cv, cv->defaultvalue);
 		return;
 	}
 
@@ -953,6 +962,7 @@ static void Command_Manual_f(void)
 {
 	if (modeattacking)
 		return;
+
 	M_StartControlPanel();
 	M_Manual(INT32_MAX);
 	itemOn = 0;
@@ -1014,6 +1024,24 @@ boolean M_Responder(event_t *ev)
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
 				break;
+			//Local Addon Mode
+			case LOCALMODE_KEY:
+				{
+					if (!(server || IsPlayerAdmin(consoleplayer)))
+						break;
+
+					if (!addons_localmode)
+					{
+						S_StartSound(NULL, sfx_ding);
+						addons_localmode = true;
+					}
+					else
+					{
+						S_StartSound(NULL, sfx_jshard);
+						addons_localmode = false;
+					}
+				}
+				break;
 		}
 	}
 	else if (menuactive)
@@ -1025,11 +1053,12 @@ boolean M_Responder(event_t *ev)
 			const INT32 jxdeadzone = ((JOYAXISRANGE-1) * max(cv_xdeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
 			const INT32 jydeadzone = ((JOYAXISRANGE-1) * max(cv_ydeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
 			INT32 accelaxis = abs(cv_moveaxis[0].value);
+
 			if (ev->data1 == 0)
 			{
 				if (ev->data3 != INT32_MAX)
 				{
-					if (Joystick[0].bGamepadStyle || abs(ev->data3) > jydeadzone)
+					if (DigitalGamepadStyle(0) || abs(ev->data3) > jydeadzone)
 					{
 						if (joywaity < thistime
 							&& (pjoyy == 0 || (ev->data3 < 0) != (pjoyy < 0))) // no previous direction OR change direction
@@ -1045,7 +1074,7 @@ boolean M_Responder(event_t *ev)
 
 				if (ev->data2 != INT32_MAX && joywaitx < thistime)
 				{
-					if (Joystick[0].bGamepadStyle || abs(ev->data2) > jxdeadzone)
+					if (DigitalGamepadStyle(0) || abs(ev->data2) > jxdeadzone)
 					{
 						if (joywaitx < thistime
 							&& (pjoyx == 0 || (ev->data2 < 0) != (pjoyx < 0))) // no previous direction OR change direction
@@ -1064,19 +1093,22 @@ boolean M_Responder(event_t *ev)
 				// The following borrows heavily from Joy1Axis.
 				const boolean xmode = (accelaxis%2);
 				INT32 retaxis = 0;
+
 				if (!xmode)
 					accelaxis--;
 				accelaxis /= 2;
+
 				if (ev->data1 == accelaxis)
 				{
 					const INT32 jacceldeadzone = xmode ? jxdeadzone : jydeadzone;
 					retaxis = xmode ? ev->data2 : ev->data3;
+
 					if (retaxis != INT32_MAX)
 					{
 						if (cv_moveaxis[0].value < 0)
 							retaxis = -retaxis;
 
-						if (Joystick[0].bGamepadStyle || retaxis > jacceldeadzone)
+						if (DigitalGamepadStyle(0) || retaxis > jacceldeadzone)
 						{
 							if (joywaitaccel < thistime && retaxis > pjoyaccel) // only on upwards event
 							{
@@ -1575,11 +1607,16 @@ static boolean ShouldDrawMenuBG(void)
 	if (forceshowhud)
 		return false;
 
+	if (forceshowchat)
+		return false;
+
 	// camera options stuff, only do when in level
 	if (gamestate == GS_LEVEL &&
-	   (currentMenu == &OP_CamOptionsDef || currentMenu == &OP_Player1CamOptionsDef
-	 || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef
-	 || currentMenu == &OP_Player4CamOptionsDef))
+	   (currentMenu == &OP_CamOptionsDef ||
+		currentMenu == &OP_Player1CamOptionsDef ||
+		currentMenu == &OP_Player2CamOptionsDef ||
+		currentMenu == &OP_Player3CamOptionsDef ||
+		currentMenu == &OP_Player4CamOptionsDef))
 		return false;
 
 	return true;
@@ -1595,7 +1632,9 @@ void M_Drawer(void)
 	if (currentMenu == &MessageDef)
 		menuactive = true;
 
+	// pain and suffering
 	forceshowhud = (gamestate == GS_LEVEL && menuactive && (currentMenu == &OP_SaturnHudDef || currentMenu == &OP_HudOffsetDef || currentMenu == &OP_NametagDef || currentMenu == &OP_DriftGaugeDef)); // holy fuick
+	forceshowchat = (gamestate == GS_LEVEL && menuactive && currentMenu == &OP_ChatOptionsDef && (!OLDCHAT) && (itemOn == op_chat_boxwidth || itemOn == op_chat_boxheight || itemOn == op_chat_xoffs || itemOn == op_chat_yoffs || itemOn == op_chat_charlmt)); // man i dont gaf anymore lmao
 
 	if (menuactive)
 	{
@@ -1714,19 +1753,16 @@ void M_StartControlPanel(void)
 		MPauseMenu[mpause_switchteam].status = IT_DISABLED;
 		MPauseMenu[mpause_switchspectate].status = IT_DISABLED;
 		MPauseMenu[mpause_psetup].status = IT_DISABLED;
+		MPauseMenu[mpause_localaddons].status = IT_STRING | IT_CALL;
+
 		MISC_ChangeTeamMenu[0].status = IT_DISABLED;
 		MISC_ChangeSpectateMenu[0].status = IT_DISABLED;
 
-		MPauseMenu[mpause_addlocalskins].status = IT_STRING | IT_CALL;
 		MPauseMenu[mpause_localskin].status = IT_STRING | IT_CALL;
 
 		// Reset these in case splitscreen messes things up
 		MPauseMenu[mpause_addons].alphaKey = 8;
-
-		if (IsPlayerAdmin(consoleplayer))
-			MPauseMenu[mpause_addlocalskins].alphaKey = 16;
-		else
-			MPauseMenu[mpause_addlocalskins].alphaKey = 24;
+		MPauseMenu[mpause_localaddons].alphaKey = 24;
 
 		MPauseMenu[mpause_scramble].alphaKey = 8;
 		MPauseMenu[mpause_switchmap].alphaKey = 24;
@@ -1744,21 +1780,19 @@ void M_StartControlPanel(void)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
-
+			MPauseMenu[mpause_localaddons].status = IT_DISABLED;
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
 
 		if (server || (!cv_showlocalskinmenus.value))
 		{
-			MPauseMenu[mpause_addlocalskins].status = IT_DISABLED;
 			MPauseMenu[mpause_localskin].status = IT_DISABLED;
 
 			MPauseMenu[mpause_options].alphaKey = 64;
 			MPauseMenu[mpause_title].alphaKey = 80;
 			MPauseMenu[mpause_quit].alphaKey = 88;
 		}
-
 
 		if (splitscreen)
 		{
@@ -3304,14 +3338,14 @@ static void M_AddonsInternal(void)
 static void M_Addons(INT32 choice)
 {
 	(void)choice;
-	browselocalskins = false;
+	addons_localmode = false;
 	M_AddonsInternal();
 }
 
-static void M_LocalSkins(INT32 choice)
+static void M_LocalAddons(INT32 choice)
 {
 	(void)choice;
-	browselocalskins = true;
+	addons_localmode = true;
 	M_AddonsInternal();
 }
 
@@ -3480,8 +3514,8 @@ static void M_DrawAddons(void)
 
 	if (Playing())
 	{
-		if (browselocalskins)
-			V_DrawCenteredString(BASEVIDWIDTH/2, 5, V_ALLOWLOWERCASE, "Load \x83local skins\x80 from addons!");
+		if (addons_localmode) // Draw notice that you're adding locally
+			V_DrawCenteredString(BASEVIDWIDTH/2, 5, V_ALLOWLOWERCASE, "Load addons or \x83local skins\x80 locally!");
 		else
 			V_DrawCenteredString(BASEVIDWIDTH/2, 5, warningflags, "Adding files mid-game may cause problems.");
 	}
@@ -3644,7 +3678,10 @@ static void M_DrawAddons(void)
 	//m = numwadfiles-(mainwads+2+1);
 	//V_DrawCenteredString(BASEVIDWIDTH/2, y+24, (majormods ? highlightflags : V_TRANSLUCENT), va("%d ADD-ON%s LOADED", (int)m, (m == 1) ? "" : "S")); //+2 for music, sounds, +1 for main.kart
 
-	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("END Key - Add addon to autoload"));
+	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s Key - Add addon to autoload", G_KeynumToString(AUTOLOAD_KEY)));
+
+	if (Playing() && (server || IsPlayerAdmin(consoleplayer)))
+		V_DrawThinString(0, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s Key - Switch to local addon mode", G_KeynumToString(LOCALMODE_KEY)));
 }
 
 static void M_AddonExec(INT32 ch)
@@ -3666,7 +3703,7 @@ static void M_AddonAutoLoad(INT32 ch)
 	FILE *autoloadconfigfile;
 
 	// check our controls //
-	if (ch != 'y' && ch != KEY_ENTER && ch != KEY_END)
+	if (ch != 'y' && ch != KEY_ENTER && ch != AUTOLOAD_KEY)
 	{
 		S_StartSound(NULL, sfx_s26d);
 		return;
@@ -3680,7 +3717,7 @@ static void M_AddonAutoLoad(INT32 ch)
 	switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
 	{
 	    case EXT_FOLDER:
-	        M_StartMessage(va("%c%s\x80\nAutoloading folders is not supported as of yet. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+	        M_StartMessage(va("%c%s\x80\nAutoloading folders is not supported as of yet. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), NULL, MM_NOTHING);
             break;
 		case EXT_TXT:
 		case EXT_CFG:
@@ -3821,7 +3858,7 @@ static void M_HandleAddons(INT32 choice)
 							}
 							break;
 						case EXT_TXT:
-							M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),M_AddonExec,MM_YESNO);
+							M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), M_AddonExec, MM_YESNO);
 							break;
 						case EXT_CFG:
 							M_AddonExec(KEY_ENTER);
@@ -3834,30 +3871,40 @@ static void M_HandleAddons(INT32 choice)
 						case EXT_KART:
 #endif
 						case EXT_PK3:
-							if (browselocalskins)
 							{
-								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
-									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
-									COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+								const char *addonname = dirmenu[dir_on[menudepthleft]]+DIR_STRING;
+
+								if (addons_localmode)
+								{
+									if (DumbStartsWith("KC_", addonname) || DumbStartsWith("kc_", addonname))
+									{
+										M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), addonname), NULL, MM_NOTHING);
+									}
+									else if (DumbStartsWith("KCL_", addonname) || DumbStartsWith("kcl_", addonname)) // skins with lua
+									{
+										M_StartMessage(va("%c%s\x80\nYou are loading a local skin with lua.\nBeware that this may cause issues like crashes or desyncs in some cases!\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), addonname), NULL, MM_NOTHING);
+									}
+									// no need to account for KRC cases
+
+									COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, addonname));
 								}
 								else
-									S_StartSound(NULL, sfx_s26d);
-							}
-							else
-							{
-								COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+								{
+									COM_BufAddText(va("addfile \"%s%s\"", menupath, addonname));
+								}
 							}
 							break;
 						default:
 							S_StartSound(NULL, sfx_s26d);
 					}
 				}
+
 				if (refresh)
 					refreshdirmenu |= REFRESHDIR_NORMAL;
 			}
 			break;
 
-		case KEY_END:
+		case AUTOLOAD_KEY:
 			{
 				boolean refresh = true;
 				if (!dirmenu[dir_on[menudepthleft]])
@@ -3924,6 +3971,8 @@ static void M_HandleAddons(INT32 choice)
 			M_SetupNextMenu(currentMenu->prevMenu);
 		else
 			M_ClearMenus(true);
+
+		addons_localmode = false; //Exiting this menu, disable addons_localmode already.
 	}
 }
 
@@ -4200,6 +4249,14 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 	// Yea gonna copy buffer and check if it changed, thats better than checking for specific keys i think
 	char tmp[MAXREPLAYQUERY+1];
 	memcpy(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1);
+
+	Lock_search_state();
+	if (!replaynamesloaded)
+	{
+		Unlock_search_state();
+		return false;
+	}
+	Unlock_search_state();
 
 	if (M_TextInputHandle(&replayqueryinput, choice))
 	{
@@ -5709,7 +5766,8 @@ static void M_DrawMusicTest(void)
 		x = 24;
 		y = 64;
 
-		if (renderisnewtic) st_musictime++;
+		if (renderisnewtic)
+			st_musictime++;
 
 		while (t <= b)
 		{
@@ -5717,12 +5775,13 @@ static void M_DrawMusicTest(void)
 				V_DrawFill(20, y-4, 280-1, 16, 237);
 
 			{
+
 				const musicdef_t *def = S_GetMusicCredit(t);
-				const size_t MAXLENGTH = 34;
 				const char *songname = def->title[0] ? def->title : def->source;
 
 				size_t namelength = strlen(songname);
 
+				static const size_t MAXLENGTH = 34;
 				char buf[MAXLENGTH+1];
 
 				if (t == st_sel && namelength > MAXLENGTH)
@@ -5731,11 +5790,13 @@ static void M_DrawMusicTest(void)
 					strlcpy(buf, songname, MAXLENGTH);
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
+
 				if (curplaying == def)
 				{
 					V_DrawFill(20+280-9, y-4, 8, 16, 230);
 				}
 			}
+
 			t++;
 			y += 16;
 		}
@@ -7604,7 +7665,11 @@ Update the maxplayers label...
 
 	// draw name string
 	if (itemOn != 9)
-		V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
+	{
+		char buf[28];
+		strlcpy(buf, setupm_ip, sizeof(buf));
+		V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, buf);
+	}
 	else
 		M_DrawTextInputScroll(x+8, y+12, &setupm_input_ip, 0, SETUPM_IP_MAXSIZE);
 
@@ -7736,7 +7801,7 @@ static void M_SetupMultiHandler(INT32 choice)
 	if (exitmenu)
 	{
 		if (currentMenu->prevMenu)
-			M_SetupNextMenu (currentMenu->prevMenu);
+			M_SetupNextMenu(currentMenu->prevMenu);
 		else
 			M_ClearMenus(true);
 	}
@@ -8987,15 +9052,15 @@ static boolean M_QuitMultiPlayerMenu(void)
 	if (!fastcmp(setupm_name, setupm_cvname->string))
 	{
 		// remove trailing whitespaces
-		for (l = strlen(setupm_name)-1;
-		    (signed)l >= 0 && setupm_name[l] ==' '; l--)
-			setupm_name[l] =0;
-		COM_BufAddText(va("%s \"%s\"\n",setupm_cvname->name,setupm_name));
+		l = strlen(setupm_name)-1;
+		for (;(signed)l >= 0 && setupm_name[l] ==' '; l--)
+			setupm_name[l] = 0;
+		COM_BufAddText(va("%s \"%s\"\n", setupm_cvname->name, setupm_name));
 	}
 
 	// you know what? always putting these in the buffer won't hurt anything.
-	COM_BufAddText(va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
-	COM_BufAddText(va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));
+	COM_BufAddText(va("%s \"%s\"\n", setupm_cvskin->name, skins[setupm_fakeskin].name));
+	COM_BufAddText(va("%s %d\n", setupm_cvcolor->name, setupm_fakecolor));
 
 	return true;
 }
@@ -10529,6 +10594,20 @@ static void M_QuitSRB2(INT32 choice)
 	// between 1 and maximum number.
 	(void)choice;
 	M_StartMessage(quitmsg[M_RandomKey(NUM_QUITMESSAGES)], M_QuitResponse, MM_YESNO);
+}
+
+// ===========
+// SATURN MENU
+// ===========
+
+static void M_SaturnReportIssue(INT32 choice)
+{
+	(void)choice;
+	int url = I_OpenURL(SATURNISSUEPAGE);
+
+	// SDL_OpenURL unsupported or failed
+	if (url == -1)
+		M_StartMessage(M_GetText("Failed to Open Web Page.\nPlease open the following page in your web browser:\n\n" SATURNISSUEPAGE "\n\n(Press a key)\n"), NULL, MM_NOTHING);
 }
 
 #ifdef HAVE_DISCORDRPC

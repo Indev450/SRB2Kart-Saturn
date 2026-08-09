@@ -581,13 +581,19 @@ const char *GetPalette(void)
 
 	if (user && user[0])
 	{
-		if (W_CheckNumForName(user) == LUMPERROR)
+		const lumpnum_t palnum = W_CheckNumForName(user);
+
+		if (palnum == LUMPERROR)
 		{
 			CONS_Alert(CONS_WARNING, "cv_palette %s lump does not exist\n", user);
 		}
+		else if (W_LumpLength(palnum) % (256 * 3) != 0) // not divisable by 768, so most def not a valid palette, idk if theres a better way to check this
+		{
+			CONS_Alert(CONS_WARNING, "cv_palette %s is not a valid palette lump\n", user);
+		}
 		else
 		{
-			return cv_palette.string;
+			return user;
 		}
 	}
 
@@ -609,15 +615,16 @@ void V_ReloadPalette(void)
 void V_SetPalette(INT32 palettenum)
 {
 	RGBA_t *pal = NULL;
+
 	if (!pLocalPalette)
 		V_ReloadPalette();
 
-#ifdef HWRENDER
-	if (rendermode == render_soft ||
-	   (rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
-#endif
+	if (palettenum == 0)
 	{
-		if (palettenum == 0)
+#ifdef HWRENDER
+		if (rendermode == render_soft ||
+			(rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
+#endif
 		{
 			palettenum = cv_palettenum.value;
 		}
@@ -676,6 +683,7 @@ static void CV_palette_OnChange(void)
 {
 	if (!loaded_config)
 		return;
+
 	// reload palette
 	// recalculate Color Cube
 	V_ReloadPalette();
@@ -1563,8 +1571,8 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	{ // mpc 12-04-2018
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
 #define clip(x,y) (x>y) ? y : x
-		w = clip(w,vid.width);
-		h = clip(h,vid.height);
+		w = clip(w, vid.width);
+		h = clip(h, vid.height);
 #undef clip
 		for (v = 0; v < h; v++, dest += vid.width)
 		{
@@ -2203,6 +2211,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2213,6 +2222,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2247,6 +2257,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2304,6 +2315,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2314,6 +2326,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2348,6 +2361,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2422,6 +2436,7 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2432,6 +2447,7 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2540,6 +2556,7 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2550,6 +2567,7 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2708,6 +2726,7 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
 	INT32 spacewidth = 2, charwidth = 0;
+
 	INT32 lowercase = (option & V_ALLOWLOWERCASE);
 	option &= ~V_FLIP; // which is also shared with V_ALLOWLOWERCASE...
 
@@ -2728,6 +2747,7 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 		scrwidth *= vid.dup;
 
 	charflags = (option & V_CHARCOLORMASK);
+	colormap = V_GetStringColormap(charflags);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2752,7 +2772,11 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 		{
 			// manually set flags override color codes
 			if (!(option & V_CHARCOLORMASK))
+			{
 				charflags = ((*ch & 0x7f) << V_CHARCOLORSHIFT) & V_CHARCOLORMASK;
+				colormap = V_GetStringColormap(charflags);
+			}
+
 			continue;
 		}
 
@@ -2796,7 +2820,6 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 			continue;
 		}
 
-		colormap = V_GetStringColormap(charflags);
 		V_DrawFixedPatch(cx + (center<<FRACBITS), cy, FRACUNIT/2, option, hu_font[c], colormap);
 		cx += w<<FRACBITS;
 	}
@@ -2808,6 +2831,13 @@ void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const 
 	V_DrawSmallStringAtFixed(x, y, option, string);
 }
 
+void V_DrawRightAlignedSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
+{
+	x -= V_SmallStringWidth(string, option)<<FRACBITS;
+	V_DrawSmallStringAtFixed(x, y, option, string);
+}
+
+// Draws a thin string at a fixed_t location.
 void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
 	fixed_t cx = x, cy = y;

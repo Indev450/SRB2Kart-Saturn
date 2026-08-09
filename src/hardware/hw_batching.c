@@ -183,6 +183,7 @@ static int comparePolygons(const void *p1, const void *p2)
 
 	UINT32 downloaded1 = poly1->texture ? poly1->texture->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
 	UINT32 downloaded2 = poly2->texture ? poly2->texture->downloaded : 0;
+
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
 

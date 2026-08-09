@@ -36,6 +36,7 @@ static menu_t SP_TimeAttackDef, SP_ReplayDef, SP_GuestReplayDef, SP_GhostDef;
 menu_t OP_ControlsDef, OP_AllControlsDef;
 menu_t OP_MouseOptionsDef;
 menu_t OP_Joystick1Def, OP_Joystick2Def, OP_Joystick3Def, OP_Joystick4Def;
+menu_t OP_Joystick1RumbleDef, OP_Joystick2RumbleDef, OP_Joystick3RumbleDef, OP_Joystick4RumbleDef;
 
 // Custom cvar menu
 menu_t OP_CustomCvarMenuDef;
@@ -208,7 +209,7 @@ typedef enum
 static menuitem_t MPauseMenu[] =
 {
 	{IT_STRING | IT_CALL,     NULL, "Addons...",          M_Addons,               8},
-	{IT_STRING | IT_CALL,     NULL, "Add local skins...", M_LocalSkins,           16},
+	{IT_STRING | IT_CALL,     NULL, "Local Add-ons...",   M_LocalAddons,          8},
 	{IT_STRING | IT_SUBMENU,  NULL, "Scramble Teams...", &MISC_ScrambleTeamDef,  24},
 	{IT_STRING | IT_CALL,     NULL, "Switch Map..."    , M_MapChange,            32},
 
@@ -238,7 +239,7 @@ static menuitem_t MPauseMenu[] =
 typedef enum
 {
 	mpause_addons = 0,
-	mpause_addlocalskins,
+	mpause_localaddons,
 	mpause_scramble,
 	mpause_switchmap,
 #ifdef HAVE_DISCORDRPC
@@ -446,25 +447,25 @@ enum
 
 static menuitem_t SP_ReplayMenu[] =
 {
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Time",  M_ReplayTimeAttack,  90},
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Lap",   M_ReplayTimeAttack,  98},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Time",  M_ReplayTimeAttack,   90},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Best Lap",   M_ReplayTimeAttack,   98},
 
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Last",       M_ReplayTimeAttack, 106},
-	{IT_WHITESTRING|IT_CALL, NULL, "Replay Guest",      M_ReplayTimeAttack, 114},
-	{IT_WHITESTRING|IT_KEYHANDLER, NULL, "Replay Staff",M_HandleStaffReplay,122},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Last",       M_ReplayTimeAttack,  106},
+	{IT_WHITESTRING|IT_CALL, NULL, "Replay Guest",      M_ReplayTimeAttack,  114},
+	{IT_WHITESTRING|IT_KEYHANDLER, NULL, "Replay Staff",M_HandleStaffReplay, 122},
 
-	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",           &SP_TimeAttackDef,  130}
+	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",           &SP_TimeAttackDef,   130}
 };
 
 static menuitem_t SP_GuestReplayMenu[] =
 {
-	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Time as Guest",  M_SetGuestReplay, 94},
-	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Lap as Guest",   M_SetGuestReplay,102},
-	{IT_WHITESTRING|IT_CALL, NULL, "Save Last as Guest",       M_SetGuestReplay,110},
+	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Time as Guest",  M_SetGuestReplay,  94},
+	{IT_WHITESTRING|IT_CALL, NULL, "Save Best Lap as Guest",   M_SetGuestReplay, 102},
+	{IT_WHITESTRING|IT_CALL, NULL, "Save Last as Guest",       M_SetGuestReplay, 110},
 
-	{IT_WHITESTRING|IT_CALL, NULL, "Delete Guest Replay",      M_SetGuestReplay,120},
+	{IT_WHITESTRING|IT_CALL, NULL, "Delete Guest Replay",      M_SetGuestReplay, 120},
 
-	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",                &SP_TimeAttackDef, 130}
+	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",                &SP_TimeAttackDef,  130}
 };
 
 static menuitem_t SP_GhostMenu[] =
@@ -555,10 +556,10 @@ static menuitem_t MP_PlayerSetupMenu[] =
 
 static menuitem_t MP_ConnectMenu[] =
 {
-	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,      0},
-	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage,  8},
-	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          16},
-	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch,25},
+	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,        0},
+	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage,    8},
+	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,            16},
+	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch, 25},
 
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          48},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          60},
@@ -725,29 +726,36 @@ static const char* OP_AllControlsTooltips[sizeof(OP_AllControlsMenu)/sizeof(OP_A
 	// The rest is null, for now
 };
 
-#define OP_JOYMENU(pnum) \
-	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},                                        \
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"           , &cv_aimaxis[pnum]       ,  15}, \
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_turnaxis[pnum]      ,  20}, \
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"                 , &cv_moveaxis[pnum]      ,  25}, \
-	{IT_STRING | IT_CVAR,  NULL, "Brake"                      , &cv_brakeaxis[pnum]     ,  30}, \
-	{IT_STRING | IT_CVAR,  NULL, "Drift"                      , &cv_driftaxis[pnum]     ,  35}, \
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"                   , &cv_fireaxis[pnum]      ,  40}, \
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"              , &cv_lookbackaxis[pnum]  ,  45}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"            , &cv_custom1axis[pnum]   ,  50}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"            , &cv_custom2axis[pnum]   ,  55}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"            , &cv_custom3axis[pnum]   ,  60}, \
-	{IT_HEADER, NULL, "Camera Controls", NULL, 67}, \
-	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"               , &cv_lookaxis[pnum]      ,  75}, \
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_camturnaxis[pnum]   ,  80}, \
-	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"          , &cv_camstrafeaxis[pnum] ,  85}, \
-	{IT_HEADER, NULL, "Deadzones", NULL, 92}, \
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"                 , &cv_xdeadzone[pnum]     , 100}, \
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"                 , &cv_ydeadzone[pnum]     , 105}, \
-	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},                                          \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]        , 120}, \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumblestrength[pnum]        , 125}, \
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]    , 130},
+// i really do not feel like messing with setup routines
+// and macro preprocessor cannot eval maths for string shit like this :chaosleep:
+#define RUMBDEF_0 OP_Joystick1RumbleDef
+#define RUMBDEF_1 OP_Joystick2RumbleDef
+#define RUMBDEF_2 OP_Joystick3RumbleDef
+#define RUMBDEF_3 OP_Joystick4RumbleDef
+#define RUMBDEF(x) RUMBDEF_##x
+
+#define OP_JOYMENU(pnum)                                                                         \
+	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},                                             \
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"           , &cv_aimaxis[pnum]        ,  15}, \
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_turnaxis[pnum]       ,  20}, \
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"                 , &cv_moveaxis[pnum]       ,  25}, \
+	{IT_STRING | IT_CVAR,  NULL, "Brake"                      , &cv_brakeaxis[pnum]      ,  30}, \
+	{IT_STRING | IT_CVAR,  NULL, "Drift"                      , &cv_driftaxis[pnum]      ,  35}, \
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"                   , &cv_fireaxis[pnum]       ,  40}, \
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"              , &cv_lookbackaxis[pnum]   ,  45}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"            , &cv_custom1axis[pnum]    ,  50}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"            , &cv_custom2axis[pnum]    ,  55}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"            , &cv_custom3axis[pnum]    ,  60}, \
+	{IT_HEADER, NULL, "Camera Controls", NULL, 67},                                              \
+	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"               , &cv_lookaxis[pnum]       ,  75}, \
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_camturnaxis[pnum]    ,  80}, \
+	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"          , &cv_camstrafeaxis[pnum]  ,  85}, \
+	{IT_HEADER, NULL, "Deadzones", NULL, 92},                                                    \
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"                 , &cv_xdeadzone[pnum]      , 100}, \
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"                 , &cv_ydeadzone[pnum]      , 105}, \
+	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},                                               \
+	{IT_SUBMENU|IT_STRING, NULL, "Rumble Options..."          , &RUMBDEF(pnum)           , 120}, \
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]     , 125},
 
 static menuitem_t OP_Joystick1Menu[] =
 {
@@ -773,6 +781,46 @@ static menuitem_t OP_Joystick4Menu[] =
 	OP_JOYMENU(3)
 };
 
+#undef RUMBDEF
+#undef RUMBDEF_0
+#undef RUMBDEF_1
+#undef RUMBDEF_2
+#undef RUMBDEF_3
+
+// FIXME: stair jank rumble should be greyed out if its disabled, but menus suck butt!
+#define OP_JOYRUMBLEMENU(pnum)                                                                       \
+	{IT_HEADER, NULL, "Global", NULL, 7},                                                            \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]              , 15}, \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumble_strength[pnum]     , 20}, \
+	{IT_HEADER, NULL, "Rumble Types", NULL, 27},                                                     \
+	{IT_STRING | IT_CVAR,  NULL, "Spinout"                    , &cv_rumble_spinout[pnum]      , 35}, \
+	{IT_STRING | IT_CVAR,  NULL, "Sneaker Boost"              , &cv_rumble_sneakerboost[pnum] , 40}, \
+	{IT_STRING | IT_CVAR,  NULL, "Offroad"                    , &cv_rumble_offroad[pnum]      , 45}, \
+	{IT_STRING | IT_CVAR,  NULL, "Banana Dragging"            , &cv_rumble_bananadrag[pnum]   , 50}, \
+	{IT_STRING | IT_CVAR,  NULL, "Stair Jank"                 , &cv_rumble_stairjank[pnum]    , 55}, \
+	{IT_STRING | IT_CVAR,  NULL, "Brake Drift"                , &cv_rumble_brakedrift[pnum]   , 60}, \
+	{IT_STRING | IT_CVAR,  NULL, "Drift Charge"               , &cv_rumble_driftcharge[pnum]  , 65}, \
+
+static menuitem_t OP_Joystick1RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(0)
+};
+
+static menuitem_t OP_Joystick2RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(1)
+};
+
+static menuitem_t OP_Joystick3RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(2)
+};
+
+static menuitem_t OP_Joystick4RumbleMenu[] =
+{
+	OP_JOYRUMBLEMENU(3)
+};
+
 static menuitem_t OP_JoystickSetMenu[] =
 {
 	{IT_CALL | IT_NOTHING, "None", NULL, M_AssignJoystick,  LINEHEIGHT+5},
@@ -789,10 +837,9 @@ static menuitem_t OP_JoystickSetMenu[] =
 static menuitem_t OP_MouseOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR,                NULL, "Use Mouse",      &cv_usemouse,     10},
-
 	{IT_STRING | IT_CVAR,                NULL, "Mouse Turning",  &cv_mouseturn,    20},
 	{IT_STRING | IT_CVAR,                NULL, "Invert Mouse",   &cv_invertmouse,  30},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousexsens,    40},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousexsens,   40},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse Y Speed",  &cv_mouseysens,   50},
 };
 
@@ -860,7 +907,6 @@ static const char* OP_VideoTooltips[] =
 #endif
 	"Advanced graphical options.",
 };
-
 
 enum
 {
@@ -945,24 +991,25 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	//{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 45}, // should this ever come back
 
 	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 40},
+	{IT_STRING | IT_CVAR,	NULL, "Skydome",						&cv_skydome,				 45},
 
-	{IT_STRING | IT_CVAR,	NULL, "Precache Level Textures",		&cv_precachetextures,		 50},
+	{IT_STRING | IT_CVAR,	NULL, "Precache Level Textures",		&cv_precachetextures,		 55},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 60},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 65},
 
-	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 70},
+	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 75},
 
-	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 80},
+	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 85},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 90},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 95},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 95},
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		105},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		115}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			100},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		110},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		120}, // dummy text
 #else
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		100},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		110}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		110},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		120}, // dummy text
 #endif
 #endif
 };
@@ -975,12 +1022,13 @@ static const char* OP_ExpTooltips[] =
 	"Sets minimum sector brightness, useful for dark areas.",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
+	"Toggle skydome.", // idk man someone give a better description of this
 	"Preload all level textures on level load.\nMassively reduces texture related stuttering during gameplay\nat the cost of longer level loading times.\nDisable this if you experience timeouts during level switches.",
 	"Change the FPS counter sampling method\nInaccurate updates slower\nand might miss sudden framerate changes and drops,\nproviding a more averaged result.\nAccurate updates faster, but might be less readable.", // how to ingles??
 	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
-	"Disabling Screen Textures may result in a performance boost\nbut will break certain effects.\nScreen textures are required at resolutions lower than your desktop resolution!"
+	"Disabling Screen Textures may result in a performance boost\nbut will break certain effects.\nScreen textures are required at resolutions lower than your desktop resolution!",
 #ifdef USE_FBO_OGL
 	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nRequires a GPU with atleast OpenGL 2.1 support.",
 #endif
@@ -996,6 +1044,7 @@ enum
 	op_exp_secbright,
 	//op_exp_dirlight,
 	op_exp_skybox,
+	op_exp_skydome,
 	op_exp_texcache,
 	op_exp_accuratefps,
 	op_exp_frameskip,
@@ -1008,7 +1057,6 @@ enum
 	op_exp_paldepth,
 #endif
 };
-
 
 #ifdef HWRENDER
 static menuitem_t OP_OpenGLOptionsMenu[] =
@@ -1066,7 +1114,6 @@ enum
 	op_gl_shearing,
 	op_gl_renderdist,
 };
-
 #endif
 
 static menuitem_t OP_SoundOptionsMenu[] =
@@ -1077,8 +1124,7 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR|IT_CV_NOPRINT,			NULL, "Music",							&cv_gamedigimusic,		 	30},
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,			NULL, "Music Volume",					&cv_digmusicvolume,		 	38},
 
-//#ifndef NO_MIDI
-#if 0
+#if 0 //#ifndef NO_MIDI
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER, 			NULL, "MIDI Volume",					&cv_midimusicvolume,	 	46},
 
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
@@ -1113,8 +1159,7 @@ static const char* OP_SoundTooltips[] =
 	"Volume of Sound effects.",
 	"Turn Music on or off.",
 	"Volume of Music.",
-//#ifndef NO_MIDI
-#if 0
+#if 0 //#ifndef NO_MIDI
 	"Volume of Midi Music.",
 #endif
 	"Reverse left and right channels of audio.",
@@ -1174,7 +1219,7 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"Should the Grow music be on or off?",
 	"Should the Invulnerability music be on or off?",
 	"Should music be kept when restarting the map?",
-	"Should the Intro fanfare be skipped\nand map music be played on map start?",
+	"Should the Intro fanfare be skipped\nand map music be played on map start?\nNote that this WILL skip sounds played by the map before round start as well!",
 	"Controls Sound effects caching.\nKeep will retain previously played sound effects in cache." // man idk how to describe this in a non awful way lmao
 	"\nOn will preload all sound effects.\nEliminates sound-related lag and stutters but increases memory usage.",
 	"Size of the Audio Buffer\nreducing it will result in less sound latency\nbut may cause issues such as crackling or distorted Sound.",
@@ -1408,42 +1453,68 @@ static const char* OP_PlayerCamOptionsTooltips[] =
 static menuitem_t OP_ChatOptionsMenu[] =
 {
 	// will ANYONE who doesn't know how to use the console want to touch this one?
-	{IT_STRING | IT_CVAR, NULL, "Chat Mode",				&cv_consolechat,		5}, // nonetheless...
+	{IT_STRING | IT_CVAR, NULL, "Chat Mode",                     &cv_consolechat,          5}, // nonetheless...
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Width",			&cv_chatwidth,			20},
+	                      NULL, "Chat Box Width",                &cv_chatwidth,           10},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Height",			&cv_chatheight,			30},
-	{IT_STRING | IT_CVAR, NULL, "Center Text in Chat",		&cv_chatcentertext,		40},
+	                      NULL, "Chat Box Height",               &cv_chatheight,          15},
+	{IT_STRING | IT_CVAR, NULL, "Chat Horizontal Offset",        &cv_chat_xoffset,        20},
+	{IT_STRING | IT_CVAR, NULL, "Chat Vertical Offset",          &cv_chat_yoffset,        25},
 
-	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",		&cv_chatbacktint,		55},
-	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",		&cv_chattime,			65},
-	{IT_STRING | IT_CVAR, NULL, "Spam Protection",			&cv_chatspamprotection,	75},
-	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		85},
+	{IT_STRING | IT_CVAR, NULL, "Center Text in Chat",           &cv_chatcentertext,      35},
+	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",          &cv_chatbacktint,        40},
+	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",          &cv_chattime,            45},
+	{IT_STRING | IT_CVAR, NULL, "Spam Protection",               &cv_chatspamprotection,  50},
+	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",             &cv_chatlogsize,         55},
+	{IT_STRING | IT_CVAR, NULL, "Display Character Limit",       &cv_chat_showlimit,      60},
 
-	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			105},	// shows ping above the framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Ping display style",		&cv_pingstyle,			115},
-	{IT_STRING | IT_CVAR, NULL, "Ping measurement",			&cv_pingmeasurement,	125},
-	{IT_STRING | IT_CVAR, NULL, "Ping icon",				&cv_pingicon,			135},
+	{IT_STRING | IT_CVAR, NULL, "Local ping display",            &cv_showping,            70}, // shows ping above the framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping display style",            &cv_pingstyle,           75},
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",              &cv_pingmeasurement,     80},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",                     &cv_pingicon,            85},
 
-	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist",		&cv_shownodeip,	145},
+	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist", &cv_shownodeip,          90},
 };
 
 static const char* OP_ChatOptionsTooltips[] =
 {
 	"Chat mode used for in-game chat.",
-	"Width of chat box.",
-	"Height of chat box.",
+	"Width of the chat box.",
+	"Height of the chat box.",
+	"Horizontal Offset of the chat box.",
+	"Vertical Offset of the chat box.",
 	"Center text in the chat message pop ups.",
-	"Chatbox background.",
+	"Background for the chat message pop ups.",
 	"Fadeout time for new chat message.",
 	"Spam protection for in-game chat.",
 	"Maxiumum amount of chat messages to look back at.",
+	"Show how many characters you have left to type in the chat.",
 	"Show player ping.",
-	"Choose the looks of the ping display.", // this is ass idk english lmao
+	"Choose the style of the ping display.",
 	"Measurement used for ping.",
 	"Visibility of ping icon.",
 	"Should Player IP addresses be printed when using\nthe nodes or listplayers command?",
+};
+
+enum
+{
+	op_chat_mode,
+	op_chat_boxwidth,
+	op_chat_boxheight,
+	op_chat_yoffs,
+	op_chat_xoffs,
+	op_chat_centertxt,
+	op_chat_bgtint,
+	op_chat_fadetime,
+	op_chat_spamprotect,
+	op_chat_maxmsg,
+	op_chat_charlmt,
+	op_chat_showping,
+	op_chat_pingstyle,
+	op_chat_pingmeasr,
+	op_chat_pingico,
+	op_chat_nodeip,
 };
 
 static menuitem_t OP_GameOptionsMenu[] =
@@ -1631,7 +1702,7 @@ static menuitem_t OP_AccessibilityMenu[] =
 	{IT_SUBMENU|IT_STRING,             NULL,   "Video Color Settings...",        &OP_ColorOptionsDef,    30},
 
 	{IT_STRING|IT_CVAR,                NULL,   "Reduce Effects",                 &cv_reducevfx,          35},
-	{IT_STRING|IT_CVAR,                NULL,   "Midnight Channel Flicker",       &cv_lessflicker,        40}, // obsolete now? or still better be a seperate toggle?
+	{IT_STRING|IT_CVAR,                NULL,   "Less Midnight Channel Flicker",  &cv_lessflicker,        40}, // obsolete now? or still better be a seperate toggle?
 
 	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          45},
 
@@ -1713,6 +1784,7 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	140},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	145},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	150}, // uwu
+	{IT_STRING|IT_CALL,     NULL,   "Report an Issue",                   M_SaturnReportIssue,       155}
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -1736,6 +1808,7 @@ static const char* OP_SaturnTooltips[] =
 	"Options for Saturn specific HUD things.",
 	"Options for sprite distortion effects.",
 	"See the people who helped make this project possible!",
+	"Noticed a bug, have a Suggestion or other Feedback?\nFeel free to tell us!",
 };
 
 enum
@@ -1757,6 +1830,7 @@ enum
 	sm_hud,
 	sm_distortionmenu,
 	sm_credits,
+	sm_issue,
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =
@@ -1767,20 +1841,23 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR, 				 NULL, "Slope Rotation Distance",		 &cv_sloperolldist,  	15},
 
 	{IT_STRING | IT_CVAR,				 NULL, "Rotate Players when Sliptiding", &cv_sliptideroll,	 	25},
-	{IT_STRING | IT_CVAR,				 NULL, "Rotate Sparks and Boost Trails", &cv_sparkroll,		 	30},
-	{IT_STRING | IT_CVAR,				 NULL, "Rotate Bananas on Throw",		 &cv_bananthrowroll, 	35},
+	{IT_STRING | IT_CVAR,				 NULL, "Stair Janking Effect",           &cv_stairjank,	 	    30},
+	{IT_STRING | IT_CVAR,				 NULL, "Stair Janking Sound Effect",     &cv_stairjanksfx,	 	35}, // idk if that should be here but i dont care atm
 
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Player Stretch Factor",			 &cv_gravstretch,	 	45},
-	{IT_STRING | IT_CVAR,				 NULL, "Squish Sound Effect",			 &cv_slamsound,		 	50},
+	{IT_STRING | IT_CVAR,				 NULL, "Rotate Sparks and Boost Trails", &cv_sparkroll,		 	40},
+	{IT_STRING | IT_CVAR,				 NULL, "Rotate Bananas on Throw",		 &cv_bananthrowroll, 	45},
 
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop",						 &cv_saltyhop,		 	60},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saltyhop Height",				 &cv_saltyheight,	 	65},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Sound Effect",			 &cv_saltyhopsfx,		70},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Squish",				 &cv_saltysquish,	 	75},
-	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Roll",				 	 &cv_saltyroll,	 	 	80},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Player Stretch Factor",			 &cv_gravstretch,	 	55},
+	{IT_STRING | IT_CVAR,				 NULL, "Squish Sound Effect",			 &cv_slamsound,		 	60},
 
-	{IT_STRING | IT_CVAR,				 NULL, "Squishdance",				 	 &cv_squishdance,	 	90},
-	{IT_STRING | IT_CVAR,				 NULL, "Squishdance Speed",				 &cv_squishdancespeed,	96},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop",						 &cv_saltyhop,		 	70},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saltyhop Height",				 &cv_saltyheight,	 	75},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Sound Effect",			 &cv_saltyhopsfx,		80},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Squish",				 &cv_saltysquish,	 	85},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Roll",				 	 &cv_saltyroll,	 	 	90},
+
+	{IT_STRING | IT_CVAR,				 NULL, "Squishdance",				 	 &cv_squishdance,	   100},
+	{IT_STRING | IT_CVAR,				 NULL, "Squishdance Speed",				 &cv_squishdancespeed, 106}, // why is this offset by 6? idk cant remember lulul
 };
 
 static const char* OP_PlayerDistortTooltips[] =
@@ -1789,6 +1866,8 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Sprite rotation on slopes. Can either be just players or all objects.",
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
+	"Slightly tilt the player when driving over stairs or small bumps.",
+	"Sound effect when driving over stairs or small bumps.",
 	"Rotation of a player's boost trails and drift sparks.",
 	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?",
 	"Player squash and stretch.",
@@ -1799,7 +1878,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Player hop squash and stretch.",
 	"Should the player rotation be kept during player hop.",
 	"Do a funny squishy dance when holding CUSTOM 3.",
-	"Speed of the Squishy dance in BPM.",
+	"Speed of the Squishy dance in SPM (Squishes Per Minute).",
 };
 
 enum
@@ -1808,6 +1887,8 @@ enum
 	sloperotate,
 	slrotatedist,
 	sliptide,
+	stairjank,
+	stairjanksfx,
 	sparkrotate,
 	bananrotat,
 	stretchyplayer,
@@ -1848,26 +1929,28 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,       110},
 	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,       115},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,       125},
-	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,         130},
+	{IT_STRING|IT_CVAR,    NULL, "Item Roulette Color",         &cv_roulettecolor,       120},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames,    140},
-	{IT_STRING|IT_CVAR,    NULL, "Show Finished on Minimap",    &cv_showminimapfinished, 145},
-	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,            150},
-	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,         155},
-	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle,    160},
+	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,       130},
+	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,         135},
 
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,         170},
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits,    175},
+	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames,    145},
+	{IT_STRING|IT_CVAR,    NULL, "Show Finished on Minimap",    &cv_showminimapfinished, 150},
+	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,            155},
+	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,         160},
+	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle,    165},
 
-	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,     185},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,         175},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits,    180},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,     195},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,     190},
 
-	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,          205},
-	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,       210},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,     200},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,        220},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,          210},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,       215},
+
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,        225},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -1888,6 +1971,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Use extra graphics for multiple sneakers, bananas and jawz.",
 	"Change when the item amount is to be displayed.\nMultiple will always display the number.\nWhen you have multiple of the same Item.\nAlways will always display the number regardless of Item amount.",
 	"Enables an animation while the roulette is active.",
+	"Changes the way items are colorized in roulette.",
 	"Show the big 'LAP' text on a lap change.",
 	"Show the big Cecho Messages.",
 	"Show player names on the minimap.",
@@ -2497,6 +2581,11 @@ menu_t OP_Joystick2Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP
 menu_t OP_Joystick3Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36, NULL);
 menu_t OP_Joystick4Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 30, 36, NULL);
 
+menu_t OP_Joystick1RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1RumbleMenu, &OP_Joystick1Def, 30, 36, NULL);
+menu_t OP_Joystick2RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2RumbleMenu, &OP_Joystick2Def, 30, 36, NULL);
+menu_t OP_Joystick3RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3RumbleMenu, &OP_Joystick3Def, 30, 36, NULL);
+menu_t OP_Joystick4RumbleDef    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4RumbleMenu, &OP_Joystick4Def, 30, 36, NULL);
+
 menu_t OP_JoystickSetDef  =
 {
 	"M_CONTRO",
@@ -2588,7 +2677,7 @@ menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player2CamOptionsMenu
 menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
 menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
 
-menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30, OP_ChatOptionsTooltips);
+menu_t OP_ChatOptionsDef = DEFAULTSCROLLSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 25, OP_ChatOptionsTooltips);
 
 menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30, OP_SoundAdvancedTooltips);
 
@@ -2712,6 +2801,15 @@ void PDistort_menu_Onchange(void)
 	{
 		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
 		OP_PlayerDistortMenu[saltroll].status = IT_GRAYEDOUT;
+	}
+
+	if (cv_stairjank.value)
+	{
+		OP_PlayerDistortMenu[stairjanksfx].status = IT_STRING | IT_CVAR;
+	}
+	else
+	{
+		OP_PlayerDistortMenu[stairjanksfx].status = IT_GRAYEDOUT;
 	}
 }
 

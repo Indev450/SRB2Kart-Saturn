@@ -118,10 +118,11 @@ extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptideroll;
+extern consvar_t cv_stairjank;
+extern consvar_t cv_stairjanksfx;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
 extern consvar_t cv_sparkroll;
-extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_squishdance, cv_squishdancespeed;
 
@@ -227,10 +228,11 @@ void G_SaveGameData(boolean force);
 
 void G_SaveGame(UINT32 slot);
 
-#define G_GametypeHasTeams() (G_IsGameType(GT_TEAMMATCH) || G_IsGameType(GT_CTF))
+#define G_RaceGametype()   (G_IsGameType(GT_RACE))
 #define G_BattleGametype() (G_IsGameType(GT_MATCH))
-#define G_RaceGametype() (G_IsGameType(GT_RACE))
-#define G_TagGametype() (G_IsGameType(GT_TAG) || G_IsGameType(GT_HIDEANDSEEK))
+
+#define G_GametypeHasTeams() (UNLIKELY(G_IsGameType(GT_TEAMMATCH) || G_IsGameType(GT_CTF)))
+#define G_TagGametype()      (UNLIKELY(G_IsGameType(GT_TAG) || G_IsGameType(GT_HIDEANDSEEK)))
 
 FUNCINLINE static ATTRINLINE boolean G_IsGameType(int type)
 {

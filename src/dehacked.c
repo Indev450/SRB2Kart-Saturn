@@ -337,12 +337,14 @@ static void readfreeslots(MYFILE *f)
 				{
 					if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
 					{
-						if (!sprnames[i][4] && memcmp(sprnames[i],word,4)==0)
+						if (!sprnames[i][4] && memcmp(sprnames[i], word, 4) == 0)
 							sprnames[i][4] = (char)f->wad;
+
 						continue; // Already allocated, next.
 					}
+
 					// Found a free slot!
-					strncpy(sprnames[i],word,4);
+					strncpy(sprnames[i], word, 4);
 					//sprnames[i][4] = 0;
 					CONS_Printf("Sprite SPR_%s allocated.\n",word);
 
@@ -351,22 +353,26 @@ static void readfreeslots(MYFILE *f)
 					used_spr[(i-SPR_FIRSTFREESLOT)/8] |= 1<<(i%8); // Okay, this sprite slot has been named now.
 					break;
 				}
+
 				if (i > SPR_LASTFREESLOT)
 					I_Error("Out of Sprite Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 			}
 			else if (fastcmp(type, "S"))
 			{
 				for (i = 0; i < NUMSTATEFREESLOTS; i++)
-					if (!FREE_STATES[i]) {
-						CONS_Printf("State S_%s allocated.\n",word);
+				{
+					if (!FREE_STATES[i])
+					{
+						CONS_Printf("State S_%s allocated.\n", word);
 
 						LUA_InvalidateMathlibCache(va("S_%s", word));
 
 						FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_STATES[i],word);
+						strcpy(FREE_STATES[i], word);
 						freeslotusage[0][0]++;
 						break;
 					}
+				}
 
 				if (i == NUMSTATEFREESLOTS)
 					I_Error("Out of State Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
@@ -374,16 +380,19 @@ static void readfreeslots(MYFILE *f)
 			else if (fastcmp(type, "MT"))
 			{
 				for (i = 0; i < NUMMOBJFREESLOTS; i++)
-					if (!FREE_MOBJS[i]) {
-						CONS_Printf("MobjType MT_%s allocated.\n",word);
+				{
+					if (!FREE_MOBJS[i])
+					{
+						CONS_Printf("MobjType MT_%s allocated.\n", word);
 
 						LUA_InvalidateMathlibCache(va("MT_%s", word));
 
 						FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_MOBJS[i],word);
+						strcpy(FREE_MOBJS[i], word);
 						freeslotusage[1][0]++;
 						break;
 					}
+				}
 
 				if (i == NUMMOBJFREESLOTS)
 					I_Error("Out of Mobj Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
@@ -426,8 +435,11 @@ static void readthing(MYFILE *f, INT32 num)
 				strupr(word2);
 			else
 				break;
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
+
+			const size_t word2len = strlen(word2);
+
+			if (word2[word2len-1] == '\n')
+				word2[word2len-1] = '\0';
 
 			if (fastcmp(word, "MAPTHINGNUM") || fastcmp(word, "DOOMEDNUM"))
 			{
@@ -734,14 +746,20 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 				{
 					UINT16 tol = 0;
 					tmp = strtok(word2,",");
+
 					do {
 						for (i = 0; TYPEOFLEVEL[i].name; i++)
+						{
 							if (fastcmp(tmp, TYPEOFLEVEL[i].name))
 								break;
+						}
+
 						if (!TYPEOFLEVEL[i].name)
 							deh_warning("Level header %d: unknown typeoflevel flag %s\n", num, tmp);
+
 						tol |= TYPEOFLEVEL[i].flag;
 					} while((tmp = strtok(NULL,",")) != NULL);
+
 					mapheaderinfo[num-1]->typeoflevel = tol;
 				}
 			}
@@ -1037,8 +1055,11 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			else
 				break;
 
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
+			const size_t word2len = strlen(word2);
+
+			if (word2[word2len-1] == '\n')
+				word2[word2len-1] = '\0';
+
 			i = atoi(word2);
 			usi = (UINT16)i;
 
@@ -1088,12 +1109,14 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			else if (fastcmp(word, "MUSICSLOT"))
 			{
 				i = get_mus(word2, true);
+
 				if (i && i <= 1035)
 					snprintf(cutscenes[num]->scene[scenenum].musswitch, 7, "%sM", G_BuildMapName(i));
 				else if (i && i <= 1050)
 					strncpy(cutscenes[num]->scene[scenenum].musswitch, compat_special_music_slots[i - 1036], 7);
 				else
 					cutscenes[num]->scene[scenenum].musswitch[0] = 0; // becomes empty string
+
 				cutscenes[num]->scene[scenenum].musswitch[6] = 0;
 			}
 #endif
@@ -1498,8 +1521,11 @@ static void readframe(MYFILE *f, INT32 num)
 				strupr(word2);
 			else
 				break;
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
+
+			const size_t word2len = strlen(word2);
+
+			if (word2[word2len-1] == '\n')
+				word2[word2len-1] = '\0';
 
 			if (fastcmp(word1, "SPRITENUMBER") || fastcmp(word1, "SPRITENAME"))
 			{
@@ -1828,13 +1854,19 @@ static void readextraemblemdata(MYFILE *f, INT32 num)
 			value = atoi(word2); // used for numerical settings
 
 			if (fastcmp(word, "NAME"))
+			{
 				deh_strlcpy(extraemblems[num-1].name, word2,
-					sizeof (extraemblems[num-1].name), va("Extra emblem %d: name", num));
+							sizeof (extraemblems[num-1].name), va("Extra emblem %d: name", num));
+			}
 			else if (fastcmp(word, "OBJECTIVE"))
+			{
 				deh_strlcpy(extraemblems[num-1].description, word2,
-					sizeof (extraemblems[num-1].description), va("Extra emblem %d: objective", num));
+							sizeof (extraemblems[num-1].description), va("Extra emblem %d: objective", num));
+			}
 			else if (fastcmp(word, "CONDITIONSET"))
+			{
 				extraemblems[num-1].conditionset = (UINT8)value;
+			}
 			else if (fastcmp(word, "SPRITE"))
 			{
 				if (word2[0] >= 'A' && word2[0] <= 'Z')
@@ -1906,11 +1938,15 @@ static void readunlockable(MYFILE *f, INT32 num)
 			i = atoi(word2); // used for numerical settings
 
 			if (fastcmp(word, "NAME"))
+			{
 				deh_strlcpy(unlockables[num].name, word2,
-					sizeof (unlockables[num].name), va("Unlockable %d: name", num));
+							sizeof (unlockables[num].name), va("Unlockable %d: name", num));
+			}
 			else if (fastcmp(word, "OBJECTIVE"))
+			{
 				deh_strlcpy(unlockables[num].objective, word2,
-					sizeof (unlockables[num].objective), va("Unlockable %d: objective", num));
+							sizeof (unlockables[num].objective), va("Unlockable %d: objective", num));
+			}
 			else if (fastcmp(word, "SHOWCONDITIONSET"))
 				unlockables[num].showconditionset = (UINT8)i;
 			else if (fastcmp(word, "CONDITIONSET"))
@@ -8102,7 +8138,7 @@ static mobjtype_t get_mobjtype(const char *word)
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
 
-	if (fastncmp("MT_",word,3))
+	if (fastncmp("MT_", word, 3))
 		word += 3; // take off the MT_
 
 	for (i = 0; i < NUMMOBJFREESLOTS; i++)
@@ -8128,7 +8164,7 @@ static statenum_t get_state(const char *word)
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
 
-	if (fastncmp("S_",word,2))
+	if (fastncmp("S_", word, 2))
 		word += 2; // take off the S_
 
 	for (i = 0; i < NUMSTATEFREESLOTS; i++)
@@ -8155,11 +8191,11 @@ static spritenum_t get_sprite(const char *word)
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
 
-	if (fastncmp("SPR_",word,4))
+	if (fastncmp("SPR_", word, 4))
 		word += 4; // take off the SPR_
 
 	for (i = 0; i < NUMSPRITES; i++)
-		if (!sprnames[i][4] && memcmp(word,sprnames[i],4) == 0)
+		if (!sprnames[i][4] && memcmp(word, sprnames[i], 4) == 0)
 			return i;
 
 	deh_warning("Couldn't find sprite named 'SPR_%s'",word);
@@ -8200,14 +8236,15 @@ static UINT16 get_mus(const char *word, UINT8 dehacked_mode)
 	if (!word[2] && toupper(word[0]) >= 'A' && toupper(word[0]) <= 'Z')
 		return (UINT16)M_MapNumber(word[0], word[1]);
 
-	if (fastncmp("MUS_",word,4))
+	if (fastncmp("MUS_", word, 4))
 		word += 4; // take off the MUS_
-	else if (fastncmp("O_",word,2) || fastncmp("D_",word,2))
+	else if (fastncmp("O_", word, 2) || fastncmp("D_", word, 2))
 		word += 2; // take off the O_ or D_
 
 	strncpy(lumptmp, word, 4);
 	lumptmp[3] = 0;
-	if (fasticmp("MAP",lumptmp))
+
+	if (fasticmp("MAP", lumptmp))
 	{
 		word += 3;
 		if (toupper(word[0]) >= 'A' && toupper(word[0]) <= 'Z')
@@ -8320,7 +8357,7 @@ static inline int lib_freeslot(lua_State *L)
 		{
 			sfxenum_t sfx;
 			strlwr(word);
-			CONS_Printf("Sound sfx_%s allocated.\n",word);
+			CONS_Printf("Sound sfx_%s allocated.\n", word);
 			sfx = S_AddSoundFx(word, false, 0, false);
 
 			if (sfx != sfx_None)
@@ -8344,8 +8381,10 @@ static inline int lib_freeslot(lua_State *L)
 				{
 					if (!sprnames[j][4] && memcmp(sprnames[j], word, 4) == 0)
 						sprnames[j][4] = wad;
+
 					continue; // Already allocated, next.
 				}
+
 				// Found a free slot!
 				CONS_Printf("Sprite SPR_%s allocated.\n",word);
 
@@ -8353,7 +8392,7 @@ static inline int lib_freeslot(lua_State *L)
 				lua_pushfstring(L, "SPR_%s", word);
 				lua_call(L, 1, 0);
 
-				strncpy(sprnames[j],word,4);
+				strncpy(sprnames[j], word, 4);
 				//sprnames[j][4] = 0;
 				used_spr[(j-SPR_FIRSTFREESLOT)/8] |= 1<<(j%8); // Okay, this sprite slot has been named now.
 				lua_pushinteger(L, j);
@@ -8371,7 +8410,7 @@ static inline int lib_freeslot(lua_State *L)
 			{
 				if (!FREE_STATES[i])
 				{
-					CONS_Printf("State S_%s allocated.\n",word);
+					CONS_Printf("State S_%s allocated.\n", word);
 
 					lua_pushcfunction(L, lua_glib_invalidate_cache);
 					lua_pushfstring(L, "S_%s", word);
@@ -8396,14 +8435,14 @@ static inline int lib_freeslot(lua_State *L)
 			{
 				if (!FREE_MOBJS[i])
 				{
-					CONS_Printf("MobjType MT_%s allocated.\n",word);
+					CONS_Printf("MobjType MT_%s allocated.\n", word);
 
 					lua_pushcfunction(L, lua_glib_invalidate_cache);
 					lua_pushfstring(L, "MT_%s", word);
 					lua_call(L, 1, 0);
 
 					FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_MOBJS[i],word);
+					strcpy(FREE_MOBJS[i], word);
 					freeslotusage[1][0]++;
 					lua_pushinteger(L, i);
 					r++;
@@ -8590,6 +8629,7 @@ static int lua_enumlib_mobjtype_get(lua_State *L)
 	{
 		if (!FREE_MOBJS[i])
 			break;
+
 		if (fastcmp(s+3, FREE_MOBJS[i]))
 		{
 			lua_pushinteger(L, MT_FIRSTFREESLOT+i);
@@ -8678,30 +8718,29 @@ static int lua_enumlib_sfx_get_ds(lua_State *L)
 }
 
 #ifdef MUSICSLOT_COMPATIBILITY
+static int lua_enumlib_mus_get(lua_State *L)
+{
+	const char *name = strchr(lua_tostring(L, 1), '_') + 1;
+	int mus = get_mus(name, false);
 
-	static int lua_enumlib_mus_get(lua_State *L)
-	{
-		const char *name = strchr(lua_tostring(L, 1), '_') + 1;
-		int mus = get_mus(name, false);
+	if (mus == 0)
+		return 0;
 
-		if (mus == 0)
-			return 0;
+	lua_pushinteger(L, mus);
+	return 1;
+}
 
-		lua_pushinteger(L, mus);
-		return 1;
-	}
+static int lua_enumlib_mus_get_mathlib(lua_State *L)
+{
+	const char *name = strchr(lua_tostring(L, 1), '_') + 1;
+	int mus = get_mus(name, false);
 
-	static int lua_enumlib_mus_get_mathlib(lua_State *L)
-	{
-		const char *name = strchr(lua_tostring(L, 1), '_') + 1;
-		int mus = get_mus(name, false);
+	if (mus == 0)
+		return luaL_error(L, "music '%s' could not be found.\n", lua_tostring(L, 1));
 
-		if (mus == 0)
-			return luaL_error(L, "music '%s' could not be found.\n", lua_tostring(L, 1));
-
-		lua_pushinteger(L, mus);
-		return 1;
-	}
+	lua_pushinteger(L, mus);
+	return 1;
+}
 #endif
 
 static int lua_enumlib_power_get(lua_State *L)

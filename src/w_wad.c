@@ -123,6 +123,9 @@ static const char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
 UINT16 numwadfiles = 0; // number of active wadfiles
 wadfile_t *wadfiles[MAX_WADFILES] = {}; // 0 to numwadfiles-1 are valid
 
+// use strnlen as some lump names may not be null terminated
+#define CHECKMAPMARKER(name) (memcmp(name, "MAP", 3) == 0 && strnlen(name, 8) == 5)
+
 // W_Shutdown
 // Closes all of the WAD files before quitting
 // If not done on a Mac then open wad files
@@ -2392,7 +2395,7 @@ static int W_NameStartsWith(const char *name, lumpchecklist_t *checklist)
 }
 
 // Checks if file contains at least one lump which name starts with one of strings in checklist
-static int W_CheckWADContains(FILE *fp, lumpchecklist_t *checklist)
+static int W_CheckWADContainsEx(FILE *fp, lumpchecklist_t *checklist, boolean checkmap)
 {
 	size_t i, j;
 	// if we're here it's a WAD file
@@ -2433,13 +2436,29 @@ static int W_CheckWADContains(FILE *fp, lumpchecklist_t *checklist)
 			if (!strncmp(lumpinfo.name, sprnames[j], 4)) // Sprites
 				continue;
 
-		if (W_NameStartsWith(lumpinfo.name, checklist))
+		if (checkmap)
+		{
+			if (CHECKMAPMARKER(lumpinfo.name))
+				return true;
+		}
+		else if (W_NameStartsWith(lumpinfo.name, checklist))
 			return true;
 	}
+
 	return false;
 }
 
-static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
+static int W_CheckWADContains(FILE *fp, lumpchecklist_t *checklist)
+{
+	return W_CheckWADContainsEx(fp, checklist, false);
+}
+
+static int W_CheckWADContainsMap(FILE *fp)
+{
+	return W_CheckWADContainsEx(fp, NULL, true);
+}
+
+static int W_CheckPK3ContainsEx(FILE *fp, lumpchecklist_t *checklist, boolean checkmap)
 {
     zend_t zend;
     zlentry_t zlentry;
@@ -2513,13 +2532,23 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 			memset(lumpname, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
 			strncpy(lumpname, trimname, min(8, dotpos - trimname));
 
-			if (W_NameStartsWith(lumpname, checklist))
+			if (checkmap)
+			{
+				if (CHECKMAPMARKER(lumpname))
+					return true;
+			}
+			else if (W_NameStartsWith(lumpname, checklist))
 			{
 				return true;
 			}
 		}
 
-		if (W_NameStartsWith(fullname, checklist))
+		if (checkmap)
+		{
+			if (CHECKMAPMARKER(fullname))
+				return true;
+		}
+		else if (W_NameStartsWith(fullname, checklist))
 		{
 			return true;
 		}
@@ -2561,12 +2590,24 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 	}
 }
 
-static int W_CheckFileContains(const char *filename, lumpchecklist_t *checklist)
+static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
+{
+	return W_CheckPK3ContainsEx(fp, checklist, false);
+}
+
+static int W_CheckPK3ContainsMap(FILE *fp)
+{
+	return W_CheckPK3ContainsEx(fp, NULL, true);
+}
+
+static int W_CheckFileContainsEx(const char *filename, lumpchecklist_t *checklist, boolean checkmap)
 {
 	FILE *handle;
 	int contains = false;
 
-	if (!checklist)
+	// if we just check for maps this will be NULL
+	// hacky but i dont care
+	if (!checklist && !checkmap)
 		I_Error("No checklist for %s\n", filename);
 
 	// open wad file
@@ -2577,27 +2618,41 @@ static int W_CheckFileContains(const char *filename, lumpchecklist_t *checklist)
 
 	if (type == RET_PK3)
 	{
-		contains = W_CheckPK3Contains(handle, checklist);
+		if (checkmap)
+			contains = W_CheckPK3ContainsMap(handle);
+		else
+			contains = W_CheckPK3Contains(handle, checklist);
 	}
 	else if (type == RET_WAD)
 	{
-		contains = W_CheckWADContains(handle, checklist);
+		if (checkmap)
+			contains = W_CheckWADContainsMap(handle);
+		else
+			contains = W_CheckWADContains(handle, checklist);
 	}
 
 	fclose(handle);
 	return contains;
 }
 
+static int W_CheckFileContains(const char *filename, lumpchecklist_t *checklist)
+{
+	return W_CheckFileContainsEx(filename, checklist, false);
+}
+
+static int W_CheckFileContainsMap(const char *filename)
+{
+	return W_CheckFileContainsEx(filename, NULL, true);
+}
+
+// kinda stupid but we cant just check for any lump containing "MAP"
+// we have to explicitly check if its MAP and 5 characters long
+// the more correct way would be checking inside wad files nested within pk3´s
+// and check the presence of actual map data like SSECTORS or something
+// but man i cannot be assed to rework shit for that
 int W_CheckAutoLoadContainsMap(const char *filename)
 {
-	// for now this checks for map marker
-	static lumpchecklist_t autoloadblacklist[] =
-	{
-		{"MAP", 3},
-		{NULL,  0},
-	};
-
-	return W_CheckFileContains(filename, autoloadblacklist);
+	return W_CheckFileContainsMap(filename);
 }
 
 int W_CheckPostLoadList(const char *filename)
@@ -2676,8 +2731,9 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			vlumps[i].size = vsizecache[realentry];
 
 			const char *name = (fileinfo + realentry)->name;
+			I_Assert(name != NULL);
 
-			if (strnlen(name, 8) == 5 && memcmp(name, "MAP", 3) == 0)
+			if (!name || CHECKMAPMARKER(name))
 			{
 				numlumps--; // We skip map marker, so 1 of entries becomes empty
 				continue; // This will skip i++ so we will write to same entry
@@ -2686,9 +2742,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			// Play it safe with the name in this case.
 			memcpy(vlumps[i].name, name, 8);
 			vlumps[i].name[8] = '\0';
-			vlumps[i].data = (UINT8 *)(
-				Z_Malloc(vlumps[i].size, PU_LEVEL, NULL) // This is memory inefficient, sorry about that.
-			);
+			vlumps[i].data = (UINT8 *)(Z_Malloc(vlumps[i].size, PU_LEVEL, NULL)); // This is memory inefficient, sorry about that.
 			memcpy(vlumps[i].data, wadData + LONG((fileinfo + realentry)->filepos), vlumps[i].size);
 			i++;
 		}
@@ -2698,15 +2752,20 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 	}
 	else
 	{
-		// Count number of lumps until the end of resource OR up until next "MAPXX" lump.
+		// Count number of lumps until the end of resource OR up until next 0-length lump OR up until next "MAPXX" lump.
 		lumpnum_t lumppos = lumpnum + 1;
 		for (i = LUMPNUM(lumppos); i < wadfiles[WADFILENUM(lumpnum)]->numlumps; i++, lumppos++, numlumps++)
 		{
-			const char *name = W_CheckNameForNum(lumppos);
-			if (name == NULL)
-				continue;
+			if (W_LumpLength(lumppos) == 0)
+			{
+				break;
+			}
 
-			if (memcmp(name, "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
+			const char *name = W_CheckNameForNum(lumppos);
+			I_Assert(name != NULL);
+
+			// if no name then theres no lump
+			if (!name || CHECKMAPMARKER(name))
 			{
 				break;
 			}
@@ -2721,10 +2780,9 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		{
 			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
 			const char *name = W_CheckNameForNum(lumpnum);
-			if (name == NULL)
-				continue;
+			I_Assert(name != NULL);
 
-			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
+			if (!name || CHECKMAPMARKER(name))
 			{
 				--i; // Decrement so on next iteration we write on same i, so we don't leave corrupted vlumps entry
 				numlumps--; // Just so we don't try to access the leftover vlumps entry

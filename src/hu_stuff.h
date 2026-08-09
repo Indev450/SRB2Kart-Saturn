@@ -88,6 +88,10 @@ extern patch_t *tallminus;
 // set true whenever the tab rankings are being shown for any reason
 extern boolean hu_showscores;
 
+extern consvar_t cv_chat_xoffset;
+extern consvar_t cv_chat_yoffset;
+extern consvar_t cv_chat_showlimit;
+
 // init heads up data at game startup.
 void HU_Init(void);
 
@@ -104,6 +108,7 @@ void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_clearChatChars(void);
 void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags);	// Lat': Ping drawer for scoreboard.
+void HU_drawLocalPlayerPing(INT32 x, INT32 y, INT32 flags);
 void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 hilicol);
 void HU_DrawEmeralds(INT32 x, INT32 y, INT32 pemeralds);
 const char *HU_SkinColorToConsoleColor(skincolors_t color);

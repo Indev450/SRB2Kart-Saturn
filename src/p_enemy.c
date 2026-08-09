@@ -250,7 +250,8 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
 	I_Assert(movedir < NUMDIRS);
 
 	tryx = actor->x + FixedMul(speed*xspeed[movedir], actor->scale);
-	if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
+
+	if (twodmo(actor))
 		tryy = actor->y;
 	else
 		tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
@@ -328,7 +329,7 @@ void P_NewChaseDir(mobj_t *actor)
 	else
 		d[1] = DI_NODIR;
 
-	if (twodlevel || actor->flags2 & MF2_TWOD)
+	if (twodmo(actor))
 		d[2] = DI_NODIR;
 	if (deltay < -FixedMul(10*FRACUNIT, actor->scale))
 		d[2] = DI_SOUTH;
@@ -872,7 +873,7 @@ void A_PointyThink(void *thing)
 	TVector v;
 	TVector *res;
 	angle_t fa;
-	fixed_t radius = FixedMul(actor->info->radius*actor->info->reactiontime, actor->scale);
+	fixed_t radius;
 	boolean firsttime = true;
 	INT32 sign;
 
@@ -929,6 +930,8 @@ void A_PointyThink(void *thing)
 
 	if (!actor->tracer) // For some reason we do not have spike balls...
 		return;
+
+	radius = FixedMul(actor->info->radius*actor->info->reactiontime, actor->scale);
 
 	// Position spike balls relative to the value of 'lastlook'.
 	ball = actor->tracer;
@@ -2759,9 +2762,11 @@ void A_Invincibility(void *thing)
 	if (P_IsLocalPlayer(player) && !player->powers[pw_super])
 	{
 		S_StopMusic();
+
 		if (mariomode)
 			G_GhostAddColor((INT32) (player - players), GHC_INVINCIBLE);
-		S_ChangeMusicInternal((mariomode) ? "minvnc" : "invinc", false);
+
+		S_ChangeMusicInternal(mariomode ? "minvnc" : "invinc", false);
 	}
 }
 
@@ -4355,7 +4360,7 @@ void A_MouseThink(void *thing)
 		|| (actor->eflags & MFE_VERTICALFLIP && actor->z + actor->height == actor->ceilingz))
 		&& !actor->reactiontime)
 	{
-		if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
+		if (twodmo(actor))
 		{
 			if (P_RandomChance(FRACUNIT/2))
 				actor->angle += ANGLE_180;
@@ -10874,10 +10879,7 @@ void A_BrakLobShot(void *thing)
 		return; // Don't even bother if we've got nothing to aim at.
 
 	// Look up actor's current gravity situation
-	if (actor->subsector->sector->gravity)
-		g = FixedMul(gravity,(FixedDiv(*actor->subsector->sector->gravity>>FRACBITS, 1000)));
-	else
-		g = gravity;
+	g =  P_GetSectorGravity(actor->subsector->sector);
 
 	// Look up distance between actor and its target
 	x = P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y);
@@ -10992,10 +10994,7 @@ void A_NapalmScatter(void *thing)
 		airtime = 16<<FRACBITS;
 
 	// Look up actor's current gravity situation
-	if (actor->subsector->sector->gravity)
-		g = FixedMul(gravity,(FixedDiv(*actor->subsector->sector->gravity>>FRACBITS, 1000)));
-	else
-		g = gravity;
+	g = P_GetSectorGravity(actor->subsector->sector);
 
 	// vy = (g*(airtime-1))/2
 	vy = FixedMul(g,(airtime-(1<<FRACBITS)))>>1;

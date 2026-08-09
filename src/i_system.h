@@ -14,6 +14,9 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
+// page for Saturn issue reports
+#define SATURNISSUEPAGE "https://github.com/Indev450/SRB2Kart-Saturn/issues"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -203,6 +206,15 @@ void I_ShutdownSystem(void);
 /**	\brief To check if a Interrupt or Terminate Signal was fired
  */
 boolean I_Interrupted(void);
+static inline void I_HandleInterrupt(void)
+{
+	if (I_Interrupted())
+		I_Quit();
+}
+
+/** \brief Open A URL
+ */
+int I_OpenURL(const char *url);
 
 /**	\brief	The I_GetDiskFreeSpace function
 

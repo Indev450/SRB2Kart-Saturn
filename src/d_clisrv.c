@@ -110,7 +110,7 @@ SINT8 joinnode = 0; // used for CL_VIEWSERVER
 boolean player_muted[MAXPLAYERS] = {};
 
 // Server specific vars
-UINT8 playernode[MAXPLAYERS] = {};
+UINT8 playernode[MAXPLAYERS] = {UINT8_MAX};
 
 // Minimum timeout for sending the savegame
 // The actual timeout will be longer depending on the savegame length
@@ -125,6 +125,7 @@ static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the 
 UINT16 pingmeasurecount = 1;
 UINT32 realpingtable[MAXPLAYERS] = {}; //the base table of ping where an average will be sent to everyone.
 UINT32 playerpingtable[MAXPLAYERS] = {}; //table of player latency values.
+UINT32 localplayerping = 0;
 
 #define GENTLEMANSMOOTHING (TICRATE)
 static tic_t reference_lag = 0;
@@ -356,12 +357,13 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 
 		if (2+nparam > MAXTEXTCMD)
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %d! (size: %s, max: %d)\n"), id, sizeu1(2+nparam), MAXTEXTCMD);
+			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %s with id %d! (size: %s, max: %d)\n"), netxcmdnames[id-1], id, sizeu1(2+nparam), MAXTEXTCMD);
 			return;
 		}
 
 		// for future reference: if (cv_debug) != debug disabled.
-		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
+		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %s with id %d... (size: %d, needed: %s)\n"), netxcmdnames[id-1], id, localtextcmd[playerid][0], sizeu1(nparam));
+
 		if (buf == NULL)
 		{
 			textcmdbuf[playerid] = (textcmdbuf_t*)Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
@@ -839,11 +841,13 @@ static void resynch_write_ctf(resynchend_pak *rst)
 				rst->flagplayer[i] = (SINT8)j;
 				break;
 			}
+
 			if (j == MAXPLAYERS) // fine, no I_Error
 			{
 				CONS_Alert(CONS_ERROR, "One of the flags has gone completely missing...\n");
 				rst->flagplayer[i] = -2;
 			}
+
 			continue;
 		}
 
@@ -1133,6 +1137,7 @@ static void CV_SavePlayerNames(UINT8 **p)
 			WRITEUINT8(*p, 0);
 			continue;
 		}
+
 		WRITESTRING(*p, player_names[i]);
 	}
 }
@@ -1146,10 +1151,13 @@ static void CV_LoadPlayerNames(UINT8 **p)
 	for (; i < MAXPLAYERS; ++i)
 	{
 		READSTRING(*p, tmp_name);
+
 		if (tmp_name[0] == 0)
 			continue;
+
 		if (tmp_name[MAXPLAYERNAME]) // overflow detected
 			I_Error("Received bad server config packet when trying to join");
+
 		memcpy(player_names[i], tmp_name, MAXPLAYERNAME+1);
 	}
 }
@@ -1447,6 +1455,7 @@ static void CL_DrawConnectionStatus(void)
 					if (playerinfo[i].node < 255)
 					{
 						strncpy(player_name, playerinfo[i].name, MAXPLAYERNAME);
+						player_name[MAXPLAYERNAME] = '\0';
 
 						// if we get a skin color
 						// try to colourize the player name
@@ -1620,8 +1629,8 @@ static boolean CL_SendJoin(void)
 	netbuffer->u.clientcfg.packetversion = PACKETVERSION;
 	netbuffer->u.clientcfg.version = VERSION;
 	netbuffer->u.clientcfg.subversion = SUBVERSION;
-	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION,
-			sizeof(netbuffer->u.clientcfg.application));
+	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION, sizeof(netbuffer->u.clientcfg.application)-1);
+	netbuffer->u.clientcfg.application[sizeof(netbuffer->u.clientcfg.application)-1] = '\0';
 #ifdef SATURNJOIN
 	netbuffer->u.clientcfg.issaturn = ISSATURN;
 #endif
@@ -1646,88 +1655,91 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
+	serverinfo_pak *serverinfo = &netbuffer->u.serverinfo;
+
 	netbuffer->packettype = PT_SERVERINFO;
-	netbuffer->u.serverinfo._255 = 255;
-	netbuffer->u.serverinfo.packetversion = PACKETVERSION;
-	netbuffer->u.serverinfo.version = VERSION;
-	netbuffer->u.serverinfo.subversion = SUBVERSION;
-	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
-			sizeof netbuffer->u.serverinfo.application);
+	serverinfo->_255 = 255;
+	serverinfo->packetversion = PACKETVERSION;
+	serverinfo->version = VERSION;
+	serverinfo->subversion = SUBVERSION;
+	strncpy(serverinfo->application, SRB2APPLICATION, sizeof(serverinfo->application)-1);
+	serverinfo->application[sizeof(serverinfo->application)-1] = '\0';
 	// return back the time value so client can compute their ping
-	netbuffer->u.serverinfo.time = (tic_t)LONG(servertime);
-	netbuffer->u.serverinfo.leveltime = (tic_t)LONG(leveltime);
+	serverinfo->time = (tic_t)LONG(servertime);
+	serverinfo->leveltime = (tic_t)LONG(leveltime);
 
 	// force 1 player
 	if (UseFakeSeed())
-		netbuffer->u.serverinfo.numberofplayer = (UINT8)1;
+		serverinfo->numberofplayer = (UINT8)1;
 	else
-		netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
+		serverinfo->numberofplayer = (UINT8)D_NumPlayers();
 
-	netbuffer->u.serverinfo.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
+	serverinfo->maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 
 	// SRB2Kart: Vanilla's gametype constants for MS support
-	netbuffer->u.serverinfo.gametype = (UINT8)((gt == GT_MATCH) ? VANILLA_GT_MATCH : VANILLA_GT_RACE);
+	serverinfo->gametype = (UINT8)((gt == GT_MATCH) ? VANILLA_GT_MATCH : VANILLA_GT_RACE);
 
-	netbuffer->u.serverinfo.modifiedgame = (UINT8)modifiedgame;
-	netbuffer->u.serverinfo.cheatsenabled = CV_CheatsEnabled();
+	serverinfo->modifiedgame = (UINT8)modifiedgame;
+	serverinfo->cheatsenabled = CV_CheatsEnabled();
 
-	netbuffer->u.serverinfo.kartvars = (UINT8) (
+	serverinfo->kartvars = (UINT8) (
 		(cv_kartspeed.value & SV_SPEEDMASK) |
 		(dedicated ? SV_DEDICATED : 0)
 	);
 
-	CopyCaretColors(netbuffer->u.serverinfo.servername, cv_servername.string,
-		MAXSERVERNAME);
-	strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), sizeof(netbuffer->u.serverinfo.mapname)-1);
+	CopyCaretColors(serverinfo->servername, cv_servername.string, MAXSERVERNAME);
 
-	memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, sizeof(netbuffer->u.serverinfo.mapmd5));
+	strncpy(serverinfo->mapname, G_BuildMapName(gamemap), sizeof(serverinfo->mapname)-1);
+	serverinfo->mapname[sizeof(serverinfo->mapname)-1] = '\0';
 
-	netbuffer->u.serverinfo.iszone = 0;
+	memcpy(serverinfo->mapmd5, mapmd5, sizeof(serverinfo->mapmd5));
 
-	memset(netbuffer->u.serverinfo.maptitle, 0, sizeof(netbuffer->u.serverinfo.maptitle));
-	memset(netbuffer->u.serverinfo.httpsource, 0, MAX_MIRROR_LENGTH);
+	serverinfo->iszone = 0;
+
+	memset(serverinfo->maptitle, 0, sizeof(serverinfo->maptitle));
+	memset(serverinfo->httpsource, 0, MAX_MIRROR_LENGTH);
 
 	if (!(mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU) && mapheaderinfo[gamemap-1]->lvlttl[0])
 	{
-		strncpy(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->lvlttl, sizeof(netbuffer->u.serverinfo.maptitle)-1);
+		strncpy(serverinfo->maptitle, mapheaderinfo[gamemap-1]->lvlttl, sizeof(serverinfo->maptitle)-1);
 
 		if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
 		{
 			if (mapheaderinfo[gamemap-1]->zonttl[0])
 			{
-				strncat(netbuffer->u.serverinfo.maptitle, " ", sizeof(netbuffer->u.serverinfo.maptitle)-1);
-				strncat(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->zonttl,
-						sizeof(netbuffer->u.serverinfo.maptitle)-1);
+				strncat(serverinfo->maptitle, " ", sizeof(serverinfo->maptitle)-1);
+				strncat(serverinfo->maptitle, mapheaderinfo[gamemap-1]->zonttl, sizeof(serverinfo->maptitle)-1);
 			}
 			else
 			{
-				netbuffer->u.serverinfo.iszone = 1; // ms and clients will append this themselves
+				serverinfo->iszone = 1; // ms and clients will append this themselves
 			}
 		}
 
 		if (mapheaderinfo[gamemap-1]->actnum[0])
 		{
-			strncat(netbuffer->u.serverinfo.maptitle, " ", sizeof(netbuffer->u.serverinfo.maptitle)-1);
-			strncat(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->actnum,
-					sizeof(netbuffer->u.serverinfo.maptitle)-1);
+			strncat(serverinfo->maptitle, " ", sizeof(serverinfo->maptitle)-1);
+			strncat(serverinfo->maptitle, mapheaderinfo[gamemap-1]->actnum, sizeof(serverinfo->maptitle)-1);
 		}
 	}
 	else
-		strncpy(netbuffer->u.serverinfo.maptitle, "Unknown", 33);
+	{
+		strncpy(serverinfo->maptitle, "Unknown", sizeof(serverinfo->maptitle)-1);
+	}
 
-	netbuffer->u.serverinfo.maptitle[32] = '\0';
+	serverinfo->maptitle[sizeof(serverinfo->maptitle)-1] = '\0';
 
-	netbuffer->u.serverinfo.actnum = 0; //mapheaderinfo[gamemap-1]->actnum
+	serverinfo->actnum = 0; //mapheaderinfo[gamemap-1]->actnum
 
 	mirror_length = strlen(httpurl);
 	if (mirror_length > MAX_MIRROR_LENGTH)
 		mirror_length = MAX_MIRROR_LENGTH;
 
-	if (snprintf(netbuffer->u.serverinfo.httpsource, mirror_length+1, "%s", httpurl) < 0)
+	if (snprintf(serverinfo->httpsource, mirror_length+1, "%s", httpurl) < 0)
 		// If there's an encoding error, send nothing, we accept that the above may be truncated
-		strncpy(netbuffer->u.serverinfo.httpsource, "", mirror_length);
+		strncpy(serverinfo->httpsource, "", mirror_length);
 
-	netbuffer->u.serverinfo.httpsource[MAX_MIRROR_LENGTH-1] = '\0';
+	serverinfo->httpsource[MAX_MIRROR_LENGTH-1] = '\0';
 
 	p = PutFileNeeded(0);
 
@@ -2026,6 +2038,7 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	P_SaveNetGame(&save, resending);
 
 	length = save.p - save.buffer;
+
 	if (length > SAVEGAMESIZE)
 	{
 		Z_Free(save.buffer);
@@ -2178,7 +2191,8 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	if (unlink(tmpsave) == -1)
 		CONS_Alert(CONS_ERROR, M_GetText("Can't delete %s\n"), tmpsave);
 	consistancy[gametic%BACKUPTICS] = Consistancy();
-	CON_ToggleOff();
+	if (!reloading)
+		CON_ToggleOff();
 
 #ifdef SATURNPAK
 	// Tell the server we have received and reloaded the gamestate
@@ -2856,10 +2870,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	{
 		INT32 key;
 
-		if (I_Interrupted())
-		{
-			I_Quit();
-		}
+		I_HandleInterrupt();
 
 		I_OsPolling();
 
@@ -3441,7 +3452,7 @@ void CL_ClearPlayer(INT32 playernum)
 	if (players[playernum].mo)
 	{
 		// Don't leave a NiGHTS ghost!
-		if (UNLIKELY((players[playernum].pflags & PF_NIGHTSMODE) && players[playernum].mo->tracer))
+		if (nightsplayer(&players[playernum]) && players[playernum].mo->tracer)
 			P_RemoveMobj(players[playernum].mo->tracer);
 		P_RemoveMobj(players[playernum].mo);
 	}
@@ -3497,6 +3508,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	playernode[playernum] = UINT8_MAX;
 	while ((doomcom->numslots > 1) && !playeringame[doomcom->numslots-1])
 		doomcom->numslots--;
+
+	// Unmute slot if player was muted
+	player_muted[playernum] = false;
 
 	// Reset the name
 	sprintf(player_names[playernum], "Player %d", playernum+1);
@@ -3756,6 +3770,10 @@ static void Command_Ban(void)
 		if (pn == -1 || pn == 0)
 			return;
 
+		// player does not exist
+		if (!playeringame[pn])
+			return;
+
 		WRITEUINT8(p, pn);
 
 		if (COM_Argc() == 2)
@@ -3873,6 +3891,10 @@ static void Command_Kick(void)
 		if (pn == -1 || pn == 0)
 			return;
 
+		// player does not exist
+		if (!playeringame[pn])
+			return;
+
 		// Special case if we are trying to kick a player who is downloading the game state:
 		// trigger a timeout instead of kicking them, because a kick would only
 		// take effect after they have finished downloading
@@ -3922,6 +3944,13 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 	pnum = READUINT8(*p);
 	msg = READUINT8(*p);
 
+	if (pnum >= MAXPLAYERS)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal kick command received from %s for player %d\n"), player_names[playernum], pnum);
+		return;
+	}
+
+	// FIXME: this does not work at all on dedi, servernode == 0 which is prevented from kick/ban command
 	if (pnum == serverplayer && IsPlayerAdmin(playernum))
 	{
 		CONS_Printf(M_GetText("Server is being shut down remotely. Goodbye!\n"));
@@ -3975,6 +4004,16 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 		pnum = playernum;
 		msg = KICK_MSG_CON_FAIL;
 	}
+
+	// without this the server will remove itself and thus self destruct on dedicated
+	if (server && (playernode[pnum] == UINT8_MAX || !playeringame[pnum]))
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Attempting to kick player %d which is not in game received from %s\n"), pnum, player_names[playernum]);
+		return;
+	}
+
+	// make sure we dont read garbage anywhere
+	memset(reason, 0, sizeof(buf));
 
 	if (msg == KICK_MSG_CUSTOM_BAN || msg == KICK_MSG_CUSTOM_KICK)
 	{
@@ -4447,6 +4486,7 @@ void SV_ResetServer(void)
 	pingmeasurecount = 1;
 	memset(realpingtable, 0, sizeof(realpingtable));
 	memset(playerpingtable, 0, sizeof(playerpingtable));
+	localplayerping = 0;
 
 	ClearAdminPlayers();
 
@@ -4795,7 +4835,7 @@ void CL_RemoveSplitscreenPlayer(UINT8 p)
 // is there a game running
 boolean Playing(void)
 {
-	return (server && serverrunning) || (client && cl_mode == CL_CONNECTED);
+	return ((server && serverrunning) || (client && cl_mode == CL_CONNECTED));
 }
 
 boolean SV_SpawnServer(void)
@@ -5396,7 +5436,7 @@ static void PT_ServerCFG(SINT8 node)
 	{
 		maketic = gametic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
 		if ((gametype = netbuffer->u.servercfg.gametype) >= NUMGAMETYPES)
-			I_Error("Bad gametype in cliserv!");
+			I_Error("Bad gametype %d in cliserv!", gametype);
 		modifiedgame = netbuffer->u.servercfg.modifiedgame;
 		for (j = 0; j < MAXPLAYERS; j++)
 			adminplayers[j] = netbuffer->u.servercfg.adminplayers[j];
@@ -6836,7 +6876,10 @@ boolean TryRunTics(tic_t realtics)
 			DEBFILE(va("============ Running tic %d (local %d)\n", gametic, leveltime));
 
 			if (update_stats)
+			{
+				ps_prevtictime = ps_tictime;
 				PS_START_TIMING(ps_tictime);
+			}
 
 			G_Ticker((gametic % NEWTICRATERATIO) == 0);
 			ExtraDataTicker();
@@ -6983,10 +7026,12 @@ static void UpdatePingTable(void)
 
 	INT32 i;
 
+	const boolean playing = Playing();
+
 	if (server)
 	{
-		//if (Playing() && !(gametime % 8)) // Value chosen based on _my vibes man_ << dont do this for v8 atleast, this is placeboeing ppl to hell and back
-		if (Playing() && !(gametime % 35))	// update once per second.
+		//if (playing && !(gametime % 8)) // Value chosen based on _my vibes man_ << dont do this for v8 atleast, this is placeboeing ppl to hell and back
+		if (playing && !(gametime % 35))	// update once per second.
 			PingUpdate();
 
 		fastest = 0;
@@ -7045,6 +7090,10 @@ static void UpdatePingTable(void)
 		else
 			lowest_lag = simulated_lag = 0;
 	}
+
+	// this is really dumb but oh well
+	if (playing && !(gametime % 35))
+		localplayerping = playerpingtable[consoleplayer];
 }
 
 #ifdef HOLEPUNCH

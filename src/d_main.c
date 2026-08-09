@@ -79,6 +79,7 @@
 #include "core/memory.h"
 
 #include "lua_script.h"
+#include "lua_profile.h"
 
 /* Manually defined asset hashes for non-CMake builds
  * Last updated 2015 / 05 / 03 - SRB2 v2.1.15 - srb2.srb
@@ -154,7 +155,7 @@ boolean music_disabled = false;
 INT32 debugload = 0;
 #endif
 
-char savegamename[256];
+char savegamename[256] = {};
 
 char srb2home[256] = ".";
 char srb2path[256] = ".";
@@ -274,20 +275,6 @@ static void D_Renderview(void)
 		return;
 
 	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
-
-	if (rendermode == render_soft && cv_homremoval.value)
-	{
-		if (cv_homremoval.value == 1)
-		{
-			// Clear the software screen buffer to remove HOM
-			memset(vid.screens[0], 31, vid.width * vid.height);
-		}
-		else if (cv_homremoval.value == 2)
-		{
-			//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-			memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
-		}
-	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{
@@ -658,6 +645,11 @@ static boolean D_Display(void)
 
 	    CON_Drawer(); // Ha, i LIED!
 
+		if (cv_lua_profile.value > 0)
+		{
+			LUA_RenderTimers();
+		}
+
 		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
 		PS_STOP_TIMING(ps_swaptime);
@@ -726,10 +718,7 @@ void D_SRB2Loop(void)
 
 		enterprecise = I_GetPreciseTime();
 
-		if (I_Interrupted())
-		{
-			I_Quit();
-		}
+		I_HandleInterrupt();
 
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
@@ -1162,7 +1151,7 @@ static void D_FindAddonsToAutoload(void)
 		// you can probably imagine how that goes in a netgame....
 		if (W_CheckAutoLoadContainsMap(wadsToAutoload))
 		{
-			CONS_Printf("Autoload: file %s contains map data! skipping...", wadsToAutoload);
+			CONS_Alert(CONS_WARNING, "Autoload: file %s contains map data, this WILL cause crashes and desynchs! skipping...\n", wadsToAutoload);
 			continue;
 		}
 
@@ -1356,20 +1345,24 @@ static void IdentifyVersion(void)
 //
 // search for maps
 //
-static void D_CheckMaps(boolean checkreplaced)
+static void D_CheckMapReplacements(boolean pwad)
 {
 	INT32 i;
 	char *name;
 	UINT16 wadnum;
 	lumpinfo_t *lumpinfo;
+	size_t numfiles;
 
-	for (wadnum = 0; wadnum < mainwads; wadnum++)
+	wadnum = pwad ? (mainwads+1) : 0;
+	numfiles = pwad ? numwadfiles : mainwads;
+
+	for (; wadnum < numfiles; wadnum++)
 	{
 		lumpinfo = wadfiles[wadnum]->lumpinfo;
 		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
 		{
 			name = lumpinfo->name;
-			P_CheckMapReplacements(name, checkreplaced);
+			P_CheckMapReplacements(name, pwad);
 		}
 	}
 }
@@ -1832,17 +1825,19 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	D_CheckMaps(false);
+	D_CheckMapReplacements(false);
 
-	W_InitMultipleFiles(startuppwads, startuppwadcount, true);
-
-	// Only search for pwad maps if we actually have a pwad added
 	if (startuppwadcount > 0)
 	{
-		D_CheckMaps(true);
+		CONS_Printf("W_InitMultipleFiles(): Adding extra PWADs.\n");
+		W_InitMultipleFiles(startuppwads, startuppwadcount, true);
+
+		// Only search for pwad maps if we actually have a pwad added
+		D_CheckMapReplacements(true);
+
+		D_CleanFile(startuppwads, startuppwadcount);
 	}
 
-	D_CleanFile(startuppwads, startuppwadcount);
 	startuppwadcount = 0;
 
 	cht_Init();
@@ -1929,7 +1924,7 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 
-#if SOUND==SOUND_DUMMY
+#if SOUND == SOUND_DUMMY
 	sound_disabled = true;
 	music_disabled = true;
 #else

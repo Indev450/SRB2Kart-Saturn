@@ -246,10 +246,6 @@ ifdef STATIC
 libs+=-static
 endif
 
-ifneq (,$(filter $(CC) $(CXX),gcc g++))
- opts+=-mno-ms-bitfields
-endif
-
 # build with profiling information
 ifdef PROFILEMODE
 opts+=-pg

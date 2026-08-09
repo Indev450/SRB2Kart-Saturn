@@ -66,8 +66,6 @@ boolean botingame = false;
 UINT8 botskin = 0;
 UINT8 botcolor = 0;
 
-JoyType_t Joystick[MAXSPLITSCREENPLAYERS] = {};
-
 // SRB2kart
 char gamedatafilename[64] = "kartdata.dat";
 char timeattackfolder[64] = "kart";
@@ -455,34 +453,13 @@ consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, dr
 static CV_PossibleValue_t cechotoggle_t[] = {{0, "Off"}, {1, "On"}, {2, "Console"}, {0, NULL}};
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, cechotoggle_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-#if MAXPLAYERS > 16
-#error "please update player_name table using the new value for MAXPLAYERS"
-#endif
-
 #ifdef SEENAMES
 player_t *seenplayer = NULL; // player we're aiming at right now
 #endif
 
-char player_names[MAXPLAYERS][MAXPLAYERNAME+1] =
-{
-	"Player 1",
-	"Player 2",
-	"Player 3",
-	"Player 4",
-	"Player 5",
-	"Player 6",
-	"Player 7",
-	"Player 8",
-	"Player 9",
-	"Player 10",
-	"Player 11",
-	"Player 12",
-	"Player 13",
-	"Player 14",
-	"Player 15",
-	"Player 16"
-}; // SRB2kart - removed Players 17 through 32
-
+// now automatically allocated in D_RegisterServerCommands
+// so that it doesn't have to be updated depending on the value of MAXPLAYERS
+char player_names[MAXPLAYERS][MAXPLAYERNAME+1];
 INT32 player_name_changes[MAXPLAYERS] = {};
 
 INT16 rw_maximums[NUM_WEAPONS] =
@@ -755,7 +732,7 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 	if (retaxis > (+JOYAXISRANGE))
 		retaxis = +JOYAXISRANGE;
 
-	if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
+	if (!DigitalGamepadStyle(pnum) && axissel < AXISDEAD)
 	{
 		const INT32 jdeadzone = ((JOYAXISRANGE-1) * deadzone) >> FRACBITS;
 
@@ -803,8 +780,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 
 	const UINT8 forplayer = (ssplayer-1);
 
-	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+	const boolean analogjoystickmove  = cv_usejoystick[forplayer].value && !DigitalGamepadStyle(forplayer);
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && DigitalGamepadStyle(forplayer);
 
 	turnright = InputDown(gc_turnright, ssplayer);
 	turnleft = InputDown(gc_turnleft, ssplayer);
@@ -859,7 +836,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
 	INT32 axis = 0;
-	const boolean usejoystick = cv_usejoystick[(ssplayer-1)].value;
+	const UINT8 forplayer = (ssplayer-1);
+	const boolean usejoystick = cv_usejoystick[forplayer].value;
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, saltyhop, honking, etc.
@@ -895,7 +873,7 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 #undef CHECKINPUT
 
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
-	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
+	camspin[forplayer] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 
 	// Reset to our spec player if we watch someone else.
 	if ((cmd->driftturn || cmd->buttons)
@@ -992,10 +970,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	player_t *player = P_GetLocalPlayerForNum(forplayer);
 
 	camera_t *thiscam = &camera[forplayer];
-	const boolean freecam = camera[forplayer].freecam;
-
-	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+	const boolean freecam = thiscam->freecam;
 
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
@@ -1026,6 +1001,9 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 		return;
 	}
+
+	const boolean analogjoystickmove  = cv_usejoystick[forplayer].value && !DigitalGamepadStyle(forplayer);
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && DigitalGamepadStyle(forplayer);
 
 	usejoystick = (analogjoystickmove || gamepadjoystickmove);
 	turnright = InputDown(gc_turnright, ssplayer);
@@ -1311,6 +1289,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 	{
 		// fail so reset game stuff
 		Command_ExitGame_f();
+		P_FreeCorruptMapWarnings();
 		return;
 	}
 
@@ -1344,6 +1323,8 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
+	// print any map errors now due to clearhud above :chaosleep:
+	P_PrintCorruptMapWarnings();
 
 	server_lagless = !cv_gentlemens.value;
 
@@ -4089,6 +4070,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 		const char *actnum = NULL;
 
 		len += strlen(mapheaderinfo[mapnum-1]->lvlttl);
+
 		if (strlen(mapheaderinfo[mapnum-1]->zonttl) > 0)
 		{
 			zonetext = M_GetText(mapheaderinfo[mapnum-1]->zonttl);
@@ -4099,6 +4081,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 			zonetext = M_GetText("Zone");
 			len += strlen(zonetext) + 1;	// ' ' + zonetext
 		}
+
 		if (strlen(mapheaderinfo[mapnum-1]->actnum) > 0)
 		{
 			actnum = M_GetText(mapheaderinfo[mapnum-1]->actnum);
@@ -4112,8 +4095,10 @@ char *G_BuildMapTitle(INT32 mapnum)
 
 		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
 
-		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
-		if (actnum) sprintf(title + strlen(title), " %s", actnum);
+		if (zonetext)
+			sprintf(title + strlen(title), " %s", zonetext);
+		if (actnum)
+			sprintf(title + strlen(title), " %s", actnum);
 	}
 
 	return title;

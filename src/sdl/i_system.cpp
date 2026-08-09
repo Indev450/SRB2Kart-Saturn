@@ -83,6 +83,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
 #if defined (__linux__)
 #include <sys/vfs.h>
+#elif defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
 #else
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -172,8 +178,7 @@ const char *wadSearchPaths[] = {
 
 /**	\brief WAD file to look for
 */
-#define WADKEYWORD1 "srb2.srb"
-#define WADKEYWORD2 "srb2.wad"
+#define WADKEYWORD "srb2.srb"
 /**	\brief holds wad path
 */
 static char returnWadPath[256];
@@ -555,12 +560,12 @@ void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char *txt;
-	va_list  argptr;
+	va_list argptr;
 
 	if (!fmt)
 		return;
 
-	va_start(argptr,fmt);
+	va_start(argptr, fmt);
 	len = vsnprintf(NULL, 0, fmt, argptr);
 	va_end(argptr);
 	if (len == 0)
@@ -571,7 +576,7 @@ void I_OutputMsg(const char *fmt, ...)
 	if (!txt)
 		I_Error("I_OutputMsg: Out of memory!\n");
 
-	va_start(argptr,fmt);
+	va_start(argptr, fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
 
@@ -691,7 +696,7 @@ void I_OutputMsg(const char *fmt, ...)
 //
 // I_GetKey
 //
-INT32 I_GetKey (void)
+INT32 I_GetKey(void)
 {
 	// Warning: I_GetKey empties the event queue till next keypress
 	event_t *ev;
@@ -743,26 +748,22 @@ INT32 numcontrollers = 0;
 //
 void I_JoyScale(void)
 {
-	Joystick[0].bGamepadStyle = cv_joyscale[0].value == 0;
-	JoyInfo[0].scale = Joystick[0].bGamepadStyle ? 1 : cv_joyscale[0].value;
+	JoyInfo[0].scale = DigitalGamepadStyle(0) ? 1 : cv_joyscale[0].value;
 }
 
 void I_JoyScale2(void)
 {
-	Joystick[1].bGamepadStyle = cv_joyscale[1].value == 0;
-	JoyInfo[1].scale = Joystick[1].bGamepadStyle ? 1 : cv_joyscale[1].value;
+	JoyInfo[1].scale = DigitalGamepadStyle(1) ? 1 : cv_joyscale[1].value;
 }
 
 void I_JoyScale3(void)
 {
-	Joystick[2].bGamepadStyle = cv_joyscale[2].value == 0;
-	JoyInfo[2].scale = Joystick[2].bGamepadStyle ? 1 : cv_joyscale[2].value;
+	JoyInfo[2].scale = DigitalGamepadStyle(2) ? 1 : cv_joyscale[2].value;
 }
 
 void I_JoyScale4(void)
 {
-	Joystick[3].bGamepadStyle = cv_joyscale[3].value == 0;
-	JoyInfo[3].scale = Joystick[3].bGamepadStyle ? 1 : cv_joyscale[3].value;
+	JoyInfo[3].scale = DigitalGamepadStyle(3) ? 1 : cv_joyscale[3].value;
 }
 
 // Cheat to get the device index for a joystick handle
@@ -1404,7 +1405,11 @@ void I_SleepDuration(precise_t duration)
 		duration -= slack;
 		struct timespec ts = {
 			.tv_sec = static_cast<__time_t>(duration / precision),
+#ifdef __BIONIC__
+			.tv_nsec = static_cast<long>(duration * 1000000000 / precision % 1000000000),
+#else
 			.tv_nsec = static_cast<__syscall_slong_t>(duration * 1000000000 / precision % 1000000000),
+#endif
 		};
 		int status;
 		do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
@@ -1704,7 +1709,7 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	sprintf(signal_name, "%s", signame);
 }
 
-static int I_OpenURL(const char *url)
+int I_OpenURL(const char *url)
 {
 #if SDL_VERSION_ATLEAST(2,0,14)
 	return SDL_OpenURL(va("%s", url));
@@ -1740,7 +1745,13 @@ static void I_ShowErrorBox(const char *title, const char *msg)
 	SDL_ShowMessageBox(&messageboxdata, &buttonid);
 
 	if (buttonid == 1)
-		I_OpenURL("https://github.com/Indev450/SRB2Kart-Saturn/issues");
+	{
+		int url = I_OpenURL(SATURNISSUEPAGE);
+
+		// SDL_OpenURL unsupported or failed
+		if (url == -1)
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to Open Web Page", "Please open the following page in your web browser:\n" SATURNISSUEPAGE, NULL);
+	}
 }
 
 static void I_ShowSimpleErrorBox(const char *title, char *msg)
@@ -2257,7 +2268,6 @@ void I_ShutdownSystem(void)
 		logstream = NULL;
 	}
 #endif
-
 }
 
 void I_GetDiskFreeSpace(INT64 *freespace)
@@ -2429,7 +2439,7 @@ static boolean isWadPathOk(const char *path)
 	if (!wad3path)
 		return false;
 
-	sprintf(wad3path, pandf, path, WADKEYWORD1);
+	sprintf(wad3path, pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
@@ -2469,10 +2479,10 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[255] = "";
+	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD1);
+	strcpy(tempsw, WADKEYWORD);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
 	if (fstemp == FS_FOUND)
 	{
@@ -2633,13 +2643,13 @@ size_t I_GetFreeMem(size_t *total)
 		*total = 32 << 20;
 	return 32 << 20;
 #elif defined (_WIN32)
-	MEMORYSTATUS info;
+	MEMORYSTATUSEX info;
 
-	info.dwLength = sizeof (MEMORYSTATUS);
-	GlobalMemoryStatus( &info );
+	info.dwLength = sizeof (MEMORYSTATUSEX);
+	GlobalMemoryStatusEx( &info );
 	if (total)
-		*total = (size_t)info.dwTotalPhys;
-	return (size_t)info.dwAvailPhys;
+		*total = (size_t)info.ullTotalPhys;
+	return (size_t)info.ullAvailPhys;
 #elif defined (__OS2__)
 	UINT32 pr_arena;
 
@@ -2672,7 +2682,7 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
@@ -2681,12 +2691,12 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
 	memTag += sizeof (MEMTOTAL);
-	totalKBytes = (size_t)atoi(memTag);
+	totalKBytes = strtoul(memTag, NULL, 10);
 
 	if ((memTag = strstr(buf, MEMAVAILABLE)) == NULL)
 	{
@@ -2700,7 +2710,7 @@ size_t I_GetFreeMem(size_t *total)
 		{
 			// Error
 			if (total)
-				*total = 0L;
+				*total = 0;
 			return 0;
 		}
 		freeKBytes = MemAvailable;
@@ -2708,12 +2718,40 @@ size_t I_GetFreeMem(size_t *total)
 	else
 	{
 		memTag += sizeof (MEMAVAILABLE);
-		freeKBytes = atoi(memTag);
+		freeKBytes = strtoul(memTag, NULL, 10);
 	}
 
 	if (total)
 		*total = totalKBytes << 10;
 	return freeKBytes << 10;
+#elif defined(__APPLE__)
+	/* macOS */
+	mach_port_t host = mach_host_self();
+	kern_return_t kr;
+	mach_msg_type_number_t count;
+	vm_size_t v_page_size;
+	struct vm_statistics64 vm_stats;
+	uint64_t total_mem, free_mem;
+	size_t size;
+
+	size = sizeof(total_mem);
+	if (sysctlbyname("hw.memsize", &total_mem, &size, NULL, 0) < 0)
+		total_mem = 0;
+
+	kr = host_page_size(host, &v_page_size);
+	if (kr != KERN_SUCCESS)
+		v_page_size = 4096;
+
+	count = HOST_VM_INFO64_COUNT;
+	kr = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stats, &count);
+	if (kr == KERN_SUCCESS)
+		free_mem = (uint64_t)(vm_stats.free_count + vm_stats.inactive_count) * v_page_size;
+	else
+		free_mem = 0;
+
+	if (total)
+		*total = (size_t)total_mem;
+	return (size_t)free_mem;
 #else
 	// Guess 48 MB.
 	if (total)

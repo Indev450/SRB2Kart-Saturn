@@ -76,6 +76,11 @@
 //
 
 // Include GLSL_FLOOR_FUDGES or GLSL_WALL_FUDGES or define the fudges in shaders that use this macro.
+
+// dither shader based on
+// https://github.com/hughsk/glsl-dither/blob/master/8x8.glsl
+// https://github.com/libretro/glsl-shaders/blob/master/dithering/shaders/bayer_4x4.glsl
+// adapted and messed about to work with srb2 and scale per resolution
 #define GLSL_DOOM_COLORMAP_DITHER \
 	"float baseValue = max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
 	"float patscale = min(scr_resolution.x / 1280.0, scr_resolution.y / 720.0);\n" \

@@ -247,6 +247,9 @@ set(SRB2_CONFIG_ASAN OFF CACHE BOOL
 set(SRB2_CONFIG_UBSAN OFF CACHE BOOL
 	"Compile with UndefinedBehaviorSanitizer (libubsan).")
 
+set(SRB2_CONFIG_MUMBLE ON CACHE BOOL
+	"Enable Mumble support")
+
 set(SRB2_CONFIG_SATURNPAK ON CACHE BOOL
 	"Enable Saturn specific special packet. Required for using the newer resynch system")
 set(SRB2_CONFIG_SATURNJOIN ON CACHE BOOL
@@ -275,6 +278,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_hooklib.c
 		lua_hudlib.c
 		lua_hudlib_drawlist.c
+		lua_profile.cpp
 		lua_infolib.c
 		lua_maplib.c
 		lua_mathlib.c
@@ -290,6 +294,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_hook.h
 		lua_hud.h
 		lua_hudlib_drawlist.h
+		lua_profile.h
 		lua_libs.h
 		lua_script.h
 		lua_udatalib.h

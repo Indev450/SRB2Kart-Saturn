@@ -586,7 +586,7 @@ void Y_Ticker(void)
 
 				if (data.rankingsmode && intertic > sorttic+16+(2*TICRATE))
 				{
-					INT32 q=0,r=0;
+					INT32 q = 0, r = 0;
 					boolean kaching = true;
 
 					for (q = 0; q < data.numplayers; q++)

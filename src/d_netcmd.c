@@ -47,6 +47,7 @@
 #include "z_zone.h"
 #include "lua_script.h"
 #include "lua_hook.h"
+#include "lua_profile.h"
 #include "m_cond.h"
 #include "m_anigif.h"
 #include "k_kart.h" // SRB2kart
@@ -150,6 +151,7 @@ static void Command_ListWADS_f(void);
 static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_ListUnusedSprites_f(void);
+static void Command_ListUnusedMapSlots_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -505,6 +507,9 @@ static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+//consvar_t cv_lua_profile = {"lua_profile", "0").values(CV_Unsigned).onchange(lua_profile_OnChange).description("Show hook timings over an average of N tics");
+consvar_t cv_lua_profile = {"lua_profile", "0", CV_CALL, CV_Unsigned, lua_profile_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
 // only there to better keep track of it globally
 consvar_t cv_director = {"director", "Off", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -565,6 +570,7 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"MODIFYVOTE",
 	"PICKVOTE",
 	"REMOVEPLAYER",
+	"DISCORD",
 	"LUACMD",
 	"LUAVAR"
 };
@@ -598,6 +604,12 @@ void D_RegisterServerCommands(void)
 		Forceskin_cons_t[i].value = 0;
 		Forceskin_cons_t[i].strvalue = NULL;
 	}
+
+	// Set default player names
+	// Monster Iestyn (12/08/19): not sure where else I could have actually put this, but oh well
+	for (i = 0; i < MAXPLAYERS; i++)
+		sprintf(player_names[i], "Player %d", 1 + i);
+
 	RegisterNetXCmd(XD_NAMEANDCOLOR, Got_NameAndColor);
 	RegisterNetXCmd(XD_WEAPONPREF, Got_WeaponPref);
 	RegisterNetXCmd(XD_MAP, Got_Mapcmd);
@@ -645,6 +657,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("locatelump", Command_LocateLump_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
+	COM_AddCommand("listunusedmapslots", Command_ListUnusedMapSlots_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
@@ -928,10 +941,10 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
-	CV_RegisterVar(&cv_audbuffersize);
-
 	CV_RegisterVar(&cv_palette);
 	CV_RegisterVar(&cv_palettenum);
+
+	CV_RegisterVar(&cv_lua_profile);
 
 	// m_menu.c
 	CV_RegisterVar(&cv_chatheight);
@@ -940,6 +953,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatspamprotection);
 	CV_RegisterVar(&cv_consolechat);
 	CV_RegisterVar(&cv_chatnotifications);
+	CV_RegisterVar(&cv_chat_xoffset);
+	CV_RegisterVar(&cv_chat_yoffset);
+	CV_RegisterVar(&cv_chat_showlimit);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_chatcentertext);
 	CV_RegisterVar(&cv_songcredits);
@@ -1005,9 +1021,17 @@ void D_RegisterClientCommands(void)
 
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
-		CV_RegisterVar(&cv_rumble[i]);
-		CV_RegisterVar(&cv_rumblestrength[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
+
+		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_rumble_strength[i]);
+		CV_RegisterVar(&cv_rumble_spinout[i]);
+		CV_RegisterVar(&cv_rumble_sneakerboost[i]);
+		CV_RegisterVar(&cv_rumble_offroad[i]);
+		CV_RegisterVar(&cv_rumble_bananadrag[i]);
+		CV_RegisterVar(&cv_rumble_stairjank[i]);
+		CV_RegisterVar(&cv_rumble_brakedrift[i]);
+		CV_RegisterVar(&cv_rumble_driftcharge[i]);
 	}
 
 	CV_RegisterVar(&cv_gamepadifunfocused);
@@ -1027,6 +1051,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_midimusicvolume);
 #endif
 	CV_RegisterVar(&cv_numChannels);
+	CV_RegisterVar(&cv_audbuffersize);
 
 #ifdef HAVE_OPENMPT
 	CV_RegisterVar(&cv_modfilter);
@@ -1548,8 +1573,8 @@ static void SendNameAndColor(UINT8 splitplayer)
 	// TODO: make those cvars arrays
 	consvar_t *playercolor, *playername, *playerskin;
 	consvar_t *colorvars[] = {&cv_playercolor, &cv_playercolor2, &cv_playercolor3, &cv_playercolor4};
-	consvar_t *namevars[] = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
-	consvar_t *skinvars[] = {&cv_skin, &cv_skin2, &cv_skin3, &cv_skin4};
+	consvar_t *namevars[]  = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
+	consvar_t *skinvars[]  = {&cv_skin, &cv_skin2, &cv_skin3, &cv_skin4};
 
 	playercolor = colorvars[splitplayer];
 	playername  = namevars[splitplayer];
@@ -1793,7 +1818,7 @@ INT32 D_LookupPlayer(const char *s)
 
 	if ((playernum = atoi(s)))
 	{
-		playernum = max(min(playernum, MAXPLAYERS-1), 0);/* not out of range */
+		playernum = max(min(playernum, MAXPLAYERS-1), 0); /* not out of range */
 		return playernum;
 	}
 
@@ -4591,6 +4616,23 @@ void Command_ListUnusedSprites_f(void)
 	}
 }
 
+void Command_ListUnusedMapSlots_f(void)
+{
+	INT32 i;
+
+	CONS_Printf("\x82Printing map slot non-usage...\n");
+
+	for (i = 0; i < NUMMAPS; i++)
+	{
+		// is checking this enough?
+		if (mapheaderinfo[i])
+			continue;
+
+		CONS_Printf("%s\n", G_BuildMapName(i+1));
+	}
+}
+
+
 // =========================================================================
 //                            MISC. COMMANDS
 // =========================================================================
@@ -5471,7 +5513,6 @@ static void Name_OnChange(void)
 	}
 
 	SendNameAndColor(0);
-
 }
 
 static void Name2_OnChange(void)
@@ -5662,19 +5703,22 @@ static void Command_SkinSearch(void)
 	size_t i;
 	UINT16 s;
 	UINT16 ic = 0;
-	//skin_t *skininput = &skins[s];
-	for (i = 1; i < COM_Argc(); i++){
-		for( s = 0 ; s <  numallskins ; s++ )
+
+	for (i = 1; i < COM_Argc(); i++)
+	{
+		for (s = 0; s < numskins; s++)
 		{
 			skin_t *skininput = &skins[s];
-			if (strcasestr(skininput->realname,COM_Argv(i)))
+
+			if (strcasestr(skininput->realname, COM_Argv(i)))
 			{
 				ic++;
-				CONS_Printf("%d. %s%s:\x80 %s\n", ic,HU_SkinColorToConsoleColor(skininput->prefcolor),skininput->realname,skininput->name);
+				CONS_Printf("%d. %s%s:\x80 %s\n", ic, HU_SkinColorToConsoleColor(skininput->prefcolor), skininput->realname, skininput->name);
 			}
 		}
 	}
-				CONS_Printf("Total %d skins.\n", ic);
+
+	CONS_Printf("Total %d skins.\n", ic);
 }
 
 /** Sends a color change for the console player, unless that player is moving.

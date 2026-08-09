@@ -1153,8 +1153,11 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		INT32 durs = spr->mobj->state->tics;
 		INT32 tics = spr->mobj->tics;
 		//mdlframe_t *next = NULL;
+
+		//const UINT8 flip = (UINT8)(!(spr->mobj->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(spr->mobj)); // :chaosleep:
 		const UINT8 flip = (UINT8)((spr->mobj->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
-		const UINT8 hflip = (UINT8)(!(spr->mobj->mirrored) != !(spr->mobj->frame & FF_HORIZONTALFLIP));
+		const UINT8 hflip = (UINT8)(!(spr->mobj->mirrored) != !R_ThingHorizontallyFlipped(spr->mobj));
+
 		spritedef_t *sprdef;
 		spriteframe_t *sprframe;
 		spriteinfo_t *sprinfo;
@@ -1400,12 +1403,11 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		const angle_t sliptideroll = ((cv_sliptideroll.value && spr->mobj->player) ? spr->mobj->player->sliproll : 0);
 		const SINT8 flipfactor = flip ? -1 : 1;
+		const angle_t thingrollangle = (spr->mobj->rollangle - spr->mobj->temprollangle);
 
-		if (spr->mobj->rollangle || sliptideroll)
+		if (thingrollangle || sliptideroll)
 		{
-			angle_t rollang = sliptideroll
-			? (spr->mobj->rollangle) + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])
-			: (spr->mobj->rollangle);
+			angle_t rollang = sliptideroll ? (thingrollangle + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])) : thingrollangle;
 
 			rollang *= flipfactor;
 

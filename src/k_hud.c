@@ -98,6 +98,8 @@ consvar_t cv_showminimapfinished = {"showminimapfinished", "On", CV_SAVE, CV_OnO
 CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
 consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, minimapdot_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t posanim_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Smooth"}, {0, NULL}};
 consvar_t cv_posanim        = {"postitionanimation", "On", CV_SAVE, posanim_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_smallposnum    = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -109,6 +111,11 @@ consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, hudite
 consvar_t cv_fancyroulette = {"animatedroulette", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_darkitembox   = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark border with specific items
 consvar_t cv_multiitemicon = {"multiitemicon", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+enum { ROULETTECOLOR_NONE = -1, ROULETTECOLOR_HUD, ROULETTECOLOR_PLAYER, ROULETTECOLOR_ITEM };
+static CV_PossibleValue_t roulettecolor_cons_t[] = {
+	{ROULETTECOLOR_NONE, "None"}, {ROULETTECOLOR_HUD, "Hud"}, {ROULETTECOLOR_PLAYER, "Player"}, {ROULETTECOLOR_ITEM, "Item"}, {0, NULL}};
+consvar_t cv_roulettecolor = {"roulettecolor", "Hud", CV_SAVE, roulettecolor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -226,6 +233,7 @@ void K_RegisterKartHudStuff(void)
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showminimapfinished);
 	CV_RegisterVar(&cv_showminimapangle);
+	CV_RegisterVar(&cv_spinoutroll);
 
 	CV_RegisterVar(&cv_showlapemblem);
 
@@ -242,6 +250,8 @@ void K_RegisterKartHudStuff(void)
 
 	CV_RegisterVar(&cv_multiitemicon);
 	CV_RegisterVar(&cv_huditemamount);
+
+	CV_RegisterVar(&cv_roulettecolor);
 
 	CV_RegisterVar(&cv_highresportrait);
 
@@ -1136,7 +1146,7 @@ enum
 	SPEEDO_PMETERSMOL,
 };
 
-static SINT8 K_GetSpeedometerStyle(void)
+static UINT8 K_GetSpeedometerStyle(void)
 {
 	if (cv_newspeedometer.value == 2 && xtra_speedo)
 		return SPEEDO_EXTRA;
@@ -1507,74 +1517,77 @@ static void K_drawKartItem(void)
 
 	if (stplyr->kartstuff[k_itemroulette])
 	{
-		localcolor = K_GetHudColor();
+		if (cv_roulettecolor.value == ROULETTECOLOR_PLAYER)
+			localcolor = stplyr->skincolor;
+		else if (cv_roulettecolor.value != ROULETTECOLOR_NONE)
+			localcolor = K_GetHudColor();
 
 		switch ((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
 		{
 			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
 			case 0: // Sneaker
 				localpatch = kp_sneaker[offset];
-				//localcolor = SKINCOLOR_RASPBERRY;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_RASPBERRY;
 				break;
 			case 1: // Banana
 				localpatch = kp_banana[offset];
-				//localcolor = SKINCOLOR_YELLOW;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_YELLOW;
 				break;
 			case 2: // Orbinaut
 				localpatch = kp_orbinaut[3+offset];
-				//localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_STEEL;
 				break;
 			case 3: // Mine
 				localpatch = kp_mine[offset];
-				//localcolor = SKINCOLOR_JET;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_JET;
 				break;
 			case 4: // Grow
 				localpatch = kp_grow[offset];
-				//localcolor = SKINCOLOR_TEAL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_TEAL;
 				break;
 			case 5: // Hyudoro
 				localpatch = kp_hyudoro[offset];
-				//localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_STEEL;
 				break;
 			case 6: // Rocket Sneaker
 				localpatch = kp_rocketsneaker[offset];
-				//localcolor = SKINCOLOR_TANGERINE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_TANGERINE;
 				break;
 			case 7: // Jawz
 				localpatch = kp_jawz[offset];
-				//localcolor = SKINCOLOR_JAWZ;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_JAWZ;
 				break;
 			case 8: // Self-Propelled Bomb
 				localpatch = kp_selfpropelledbomb[offset];
-				//localcolor = SKINCOLOR_JET;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_JET;
 				break;
 			case 9: // Shrink
 				localpatch = kp_shrink[offset];
-				//localcolor = SKINCOLOR_ORANGE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_ORANGE;
 				break;
 			case 10: // Invincibility
 				localpatch = localinv;
-				//localcolor = SKINCOLOR_GREY;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_GREY;
 				break;
 			case 11: // Eggman Monitor
 				localpatch = kp_eggman[offset];
-				//localcolor = SKINCOLOR_ROSE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_ROSE;
 				break;
 			case 12: // Ballhog
 				localpatch = kp_ballhog[offset];
-				//localcolor = SKINCOLOR_LILAC;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_LILAC;
 				break;
 			case 13: // Thunder Shield
 				localpatch = kp_thundershield[offset];
-				//localcolor = SKINCOLOR_CYAN;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_CYAN;
 				break;
 			/*case 14: // Pogo Spring
 				localpatch = kp_pogospring[offset];
-				localcolor = SKINCOLOR_TANGERINE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_TANGERINE;
 				break;
 			case 15: // Kitchen Sink
 				localpatch = kp_kitchensink[offset];
-				localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_STEEL;
 				break;*/
 			default:
 				break;
@@ -3568,6 +3581,10 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 #endif
 
 	skin = K_GetMobjSkin(mo);
+
+	if (!skin)
+		return;
+
 	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
 
 	if (minimaphead == NULL)
@@ -3771,6 +3788,9 @@ static void K_drawKartMinimap(void)
 
 		mobj_t *mobj = players[localplayers[i]].mo;
 
+		if (!mobj)
+			continue;
+
 		// dont draw for no contestants
 		boolean playertimedout = (mobj->health <= 0 && players[localplayers[i]].pflags & PF_TIMEOVER);
 
@@ -3928,9 +3948,22 @@ static void K_drawBattleFullscreen(void)
 
 	INT32 x = BASEVIDWIDTH/2;
 	INT32 y = (-64*FRACUNIT) + cardanim; // card animation goes from 0 to 164, 164 is the middle of the screen
-	INT32 splitflags = V_SNAPTOTOP; // I don't feel like properly supporting non-green resolutions, so you can have a misuse of SNAPTO instead
+	INT32 splitflags = splitscreen ? V_SNAPTOTOP : 0; // I don't feel like properly supporting non-green resolutions, so you can have a misuse of SNAPTO instead
 	fixed_t scale = FRACUNIT;
 	boolean drawcomebacktimer = true;	// lazy hack because it's cleaner in the long run.
+
+	// Small hack, if we're not in splitscreen we will not use V_SNAPTOTOP, instead we will just slightly offset
+	// y position so "attack or protect" doesn't slightly show before popping in
+	// We will also reduce this when is closer to finishing so when its at the bottom, the "hack offset" is 0
+	if (!splitscreen)
+	{
+		fixed_t offset = ((vid.height - vid.dup*BASEVIDHEIGHT)/vid.dup) * FRACUNIT/2;
+
+		// cardanim goes from 0 to 164, so when it is 164 offset will be multiplied by (1 - 164/164) = 0 :3
+		offset = FixedMul(offset, FRACUNIT - FixedDiv(cardanim, 164*FRACUNIT));
+
+		y -= offset;
+	}
 
 	if (!LUA_HudEnabled(hud_battlecomebacktimer))
 		drawcomebacktimer = false;
@@ -4019,12 +4052,12 @@ static void K_drawBattleFullscreen(void)
 			if (K_UseColorHud()) // Colourized hud
 			{
 				UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, colormap);
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, splitflags, kp_timeoutstickerclr, colormap);
 			}
 			else
-				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, splitflags, kp_timeoutsticker, NULL);
 
-			V_DrawKartString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
+			V_DrawKartString(x-txoff, ty, splitflags, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		}
 	}
 
@@ -4282,7 +4315,7 @@ static void K_drawInput(void)
 		// kart does not have anything we can get analogue joystick y axis values from
 		// during normal gameplay, so replicate shit here
 
-		const boolean analogjoystickmove = (!demo.playback && P_IsLocalPlayer(stplyr) && cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle);
+		const boolean analogjoystickmove = (!demo.playback && P_IsLocalPlayer(stplyr) && cv_usejoystick[stplyrnum].value && !DigitalGamepadStyle(stplyrnum));
 		axis = analogjoystickmove ? JoyAxis(AXISAIM, stplyrnum+1) : 0;
 
 		if (axis != 0)
@@ -4384,6 +4417,9 @@ static void K_drawChallengerScreen(void)
 
 static void K_drawLapStartAnim(void)
 {
+	if (!cv_showlapemblem.value)
+		return;
+
 	// This is an EVEN MORE insanely complicated animation.
 	const UINT8 progress = 80-stplyr->kartstuff[k_lapanimation];
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
@@ -4427,9 +4463,10 @@ static void K_drawLapStartAnim(void)
 		V_DrawFixedPatch(leftx, y, FRACUNIT, vflags, kp_lapanim_lap[min(progress/2, 6)], NULL);
 
 		char *lapnum = va("%02d", stplyr->laps + 1);
-		const size_t laplength = strlen(lapnum);
 
-		for (size_t i = 0; i < laplength; i++)
+		const int laplength = (int)strlen(lapnum);
+
+		for (int i = 0; i < laplength; i++)
 		{
 			int digit = lapnum[i] - '0';
 			int frame = min(2, progress/2 - 8 - (i*2));
@@ -4559,7 +4596,11 @@ static void K_drawCheckpointDebugger(void)
 	else
 		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Skip: %d)", stplyr->starpostnum, numstarposts, ((numstarposts/2) + stplyr->starpostnum)));
 
-	V_DrawString(8, 192, 0, va("Waypoint dist: Prev %d, Next %d", stplyr->kartstuff[k_prevcheck], stplyr->kartstuff[k_nextcheck]));
+	// really gnarly hack
+	const INT32 prevcheck = (stprevnextchecks[0] != INT32_MAX) ? stprevnextchecks[0]: stplyr->kartstuff[k_prevcheck];
+	const INT32 nextcheck = (stprevnextchecks[1] != INT32_MAX) ? stprevnextchecks[1]: stplyr->kartstuff[k_nextcheck];
+
+	V_DrawString(8, 192, 0, va("Waypoint dist: Prev %d, Next %d", prevcheck, nextcheck));
 }
 
 // determines if gametype info (laps/bumpers) should be hidden
@@ -4811,7 +4852,7 @@ void K_drawKartHUD(void)
 	{
 		if (stplyr->exiting)
 			K_drawKartFinish();
-		else if (stplyr->kartstuff[k_lapanimation] && !splitscreen && cv_showlapemblem.value)
+		else if (stplyr->kartstuff[k_lapanimation] && !splitscreen)
 			K_drawLapStartAnim();
 	}
 

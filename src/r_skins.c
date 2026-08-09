@@ -712,7 +712,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			// skip to end of this skin's frames
 			lastlump = lump;
 
-			while (W_CheckNameForNumPwad(wadnum, lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump), csprname,4)==0)
+			while (W_CheckNameForNumPwad(wadnum, lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump), csprname, 4) == 0)
 				lastlump++;
 
 			// allocate (or replace) sprite frames, and set spritedef
@@ -817,7 +817,6 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	}
 
 #undef lnumskins
-	//sortSkinGrid();
 
 	return;
 }

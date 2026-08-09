@@ -776,15 +776,15 @@ static int GLFramebuffer_CheckExt(void)
 	// gl versions from 2.1 may still support framebuffer objects
 
 	// maybe, just maybe, we support the standart extensions
-	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
 		return FBO_ARB;
 
 	// nope, try the older 2.1 extensions
-	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
 	{
 		// perhaps we may even support a stencil attachment
 		if (GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions))
@@ -885,7 +885,7 @@ void SetupGLFunc4(void)
 	{ \
 		GL_MSG_Warning("failed to get OpenGL FBO function: %s\n", #func); \
 		GL_DBG_Printf("\nFBO: No framebuffer object support\n"); \
-		supportFBO = false; \
+		supportFBO = FBO_NONE; \
 		return; \
 	} \
 
@@ -1122,7 +1122,7 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
-	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
+	if ((fabsf(deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
@@ -1465,6 +1465,19 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
 		GL_DrawScreenTexture(tex, NULL, 0);
 
+#ifdef USE_FBO_OGL
+	// FIXME: this is incredibly stupid
+	// but the final screen texture will NOT be drawn in the downsample fbo
+	if (tex == HWD_SCREENTEXTURE_GENERIC2 &&
+		UseScreenFBO() && HWR_ShouldUsePaletteRendering())
+	{
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
+		GL_EnableShader();
+		GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+		GL_UnSetShader();
+	}
+#endif
+
 	image = malloc(screen_width*screen_height*3);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, image);
@@ -1583,6 +1596,7 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 		angle = atanf((v2->y-v1->y)/(v2->x-v1->x));
 	else
 		angle = (float)N_PI_DEMI;
+
 	dx = sinf(angle) / (float)screen_width;
 	dy = cosf(angle) / (float)screen_height;
 
@@ -1697,7 +1711,7 @@ static void GL_SetBlendMode(FBITFIELD flags)
 
 void GL_SetBlend(FBITFIELD PolyFlags)
 {
-	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;;
+	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;
 
 	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Skydecal|PF_Invisible))
 	{
@@ -2489,7 +2503,7 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
 
 	// Build the sky dome! Yes!
-	if (sky->rebuild)
+	if (sky->rebuild || !sky->vbo)
 	{
 		// delete VBO when already exists
 		if (sky->vbo)
@@ -2914,7 +2928,7 @@ void GL_CreateModelVBOs(model_t *model)
 	}
 }
 
-#define BUFFER_OFFSET(i) ((char*)(i))
+#define BUFFER_OFFSET(i) ((void*)(i))
 
 void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
 {
@@ -3207,8 +3221,8 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		float dy = stransform->viewaiming * 2;
 
-		if (stransform->fliptype == TRANSFORM_FLIP
-			|| stransform->fliptype == TRANSFORM_MIRRORFLIP)
+		if (stransform->fliptype == TRANSFORM_FLIP ||
+			stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
@@ -3233,7 +3247,7 @@ void GL_SetTransform(FTransform *stransform)
 #ifdef USE_FBO_OGL
 static void GL_Framebuffer_DeleteAttachments(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	// Unbind the framebuffer
@@ -3253,7 +3267,7 @@ static void GL_Framebuffer_DeleteAttachments(void)
 
 static void GL_Framebuffer_Generate(void)
 {
-	if (!supportFBO || framebufferobject.init || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || framebufferobject.init || !UseScreenFBO())
 		return;
 
 	// Generate the framebuffer
@@ -3273,10 +3287,10 @@ static void GL_Framebuffer_Generate(void)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
-		pglBindTexture(GL_TEXTURE_2D, 0);
 
 		// Attach the framebuffer texture to the framebuffer
 		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, framebufferobject.tex, 0);
+		pglBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	// Generate the renderbuffer
@@ -3318,7 +3332,7 @@ static void GL_Framebuffer_Generate(void)
 
 		// if this fails, dont retry it a gazillion times
 		// this wouldnt recover
-		supportFBO = false;
+		supportFBO = FBO_NONE;
 		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 		return;
 	}
@@ -3331,7 +3345,7 @@ static void GL_Framebuffer_Generate(void)
 
 void GL_Framebuffer_Unbind(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3340,13 +3354,13 @@ void GL_Framebuffer_Unbind(void)
 
 void GL_Framebuffer_Enable(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || !UseScreenFBO())
 		return;
 
 	GL_Framebuffer_Generate();
 
 	// failed
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
@@ -3355,7 +3369,7 @@ void GL_Framebuffer_Enable(void)
 
 void GL_Framebuffer_Disable(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);

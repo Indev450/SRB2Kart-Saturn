@@ -66,12 +66,29 @@ consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t rumblestrength_cons_t[] = {{FRACUNIT/4, "MIN"}, {FRACUNIT*4, "MAX"}, {0, NULL}};
 
-consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS] = {
+consvar_t cv_rumble_strength[MAXSPLITSCREENPLAYERS] = {
 	{"rumblestrength",  "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"rumblestrength2", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"rumblestrength3", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"rumblestrength4", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
+
+#define IMPL_RUMBLE_TYPE(type)\
+consvar_t cv_rumble_##type [MAXSPLITSCREENPLAYERS] = {\
+	{"rumble_"  #type, "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},\
+	{"rumble2_" #type, "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},\
+	{"rumble3_" #type, "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},\
+	{"rumble4_" #type, "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}\
+};
+
+IMPL_RUMBLE_TYPE(spinout);
+IMPL_RUMBLE_TYPE(sneakerboost);
+IMPL_RUMBLE_TYPE(offroad);
+IMPL_RUMBLE_TYPE(bananadrag);
+IMPL_RUMBLE_TYPE(stairjank);
+IMPL_RUMBLE_TYPE(brakedrift);
+IMPL_RUMBLE_TYPE(driftcharge);
+
 
 static CV_PossibleValue_t gamepadled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
 consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
@@ -1036,8 +1053,8 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 	// doesent need to be super precise
 	// but ensure this is within range (0-65535)
 	// placed here so it applies to lua aswell
-	low_strength = (UINT16)min(FixedMul(low_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
-	high_strength = (UINT16)min(FixedMul(high_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
+	low_strength = (UINT16)min(FixedMul(low_strength, cv_rumble_strength[playernum].value), UINT16_MAX);
+	high_strength = (UINT16)min(FixedMul(high_strength, cv_rumble_strength[playernum].value), UINT16_MAX);
 
 	I_GamepadRumble(playernum, low_strength, high_strength, duration);
 }
@@ -1059,7 +1076,7 @@ void G_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
+	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL || demo.playback)
 	{
 		return;
 	}
@@ -1090,6 +1107,11 @@ void G_DeviceRumbleTick(void)
 
 		const player_t *player = P_GetLocalPlayerForNum(i);
 
+		if (!player)
+		{
+			continue;
+		}
+
 		// allow lua to do some crap for spectators
 		if (player->spectator || !player->mo)
 		{
@@ -1105,17 +1127,20 @@ void G_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (player->kartstuff[k_spinouttimer])
+		if (cv_rumble_spinout[i].value
+			&& player->kartstuff[k_spinouttimer])
 		{
 			//low = high = FRACUNIT / 6;
 			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
 		}
-		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
+		else if (cv_rumble_sneakerboost[i].value
+			&& (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2))))
 		{
 			low = high = RUMBLE_STRONG;
 		}
-		else if ((player->kartstuff[k_offroad])
-			&& player->speed != 0
+		else if (cv_rumble_offroad[i].value
+			&& (player->kartstuff[k_offroad])
+			&& (player->speed != 0)
 			&& P_IsObjectOnGround(player->mo))
 		{
 			// weaken this depending on if you got hyu or invinc
@@ -1132,26 +1157,37 @@ void G_DeviceRumbleTick(void)
 				low = high = RUMBLE_MODERATE;
 			}
 		}
-		else if ((player->kartstuff[k_bananadrag] > TICRATE)
-			&& player->speed != 0
+		else if (cv_rumble_bananadrag[i].value
+			&& (player->kartstuff[k_bananadrag] > TICRATE)
+			&& (player->speed != 0)
 			&& P_IsObjectOnGround(player->mo))
 		{
 			if (leveltime & 1) // this is actually funny lel
 				high = RUMBLE_MODERATE;
 		}
+		else if (cv_rumble_stairjank[i].value
+			&& (player->stairjank > 8)
+			&& (player->speed != 0)
+			&& P_IsObjectOnGround(player->mo))
+		{
+			low = high = RUMBLE_VERYWEAK;
+		}
 
-		if (player->kartstuff[k_brakedrift])
+		if (cv_rumble_brakedrift[i].value
+			&& player->kartstuff[k_brakedrift])
 		{
 			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 		}
 
 		// pulse when gettin new driftlevel
 		// let this come last
-		if (player->kartstuff[k_driftcharge]
+		if (cv_rumble_driftcharge[i].value
+			&& player->kartstuff[k_driftcharge]
 			&& player->driftlevel)
 		{
 			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 
+			// make it rumble slightly longer the higher your driftlevel!
 			if (player->driftlevel == 2)
 				lenght = 114;
 			else if (player->driftlevel == 3)

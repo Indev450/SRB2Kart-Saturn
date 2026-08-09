@@ -44,7 +44,7 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key);
 // If currently typing something that looks like an existing emote, return suggestions for it
 boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplete_t *autocomplete);
 
-#define M_DrawTextInput(x, y, input, flags) M_DrawTextInputScroll((x), (y), (input), (flags), ((input)->buffer_size-1)*8)
+#define M_DrawTextInput(x, y, input, flags) M_DrawTextInputScroll((x), (y), (input), (flags), ((input)->buffer_size-2)*8)
 void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, INT32 MAXINPUTWIDTH);
 
 #endif

@@ -51,10 +51,6 @@ extern consvar_t cv_mousevisible;
 //WTF
 extern consvar_t cv_mouseturn;
 extern consvar_t cv_usejoystick[4]; //MAXSPLITSCREENPLAYERS
-#ifdef LJOYSTICK
-extern consvar_t cv_joyport;
-extern consvar_t cv_joyport2;
-#endif
 extern consvar_t cv_joyscale[4]; //MAXSPLITSCREENPLAYERS
 
 // normally in p_mobj but the .h is not read
@@ -153,6 +149,7 @@ extern consvar_t cv_showminimapnames;
 extern consvar_t cv_showminimapfinished;
 extern consvar_t cv_minihead;
 extern consvar_t cv_showminimapangle;
+extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_showlapemblem;
 
@@ -191,6 +188,8 @@ extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_thinkframe_page;
 extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
+
+extern consvar_t cv_lua_profile;
 
 extern consvar_t cv_director, cv_kartdebugdirector, cv_showdirectorhud;
 

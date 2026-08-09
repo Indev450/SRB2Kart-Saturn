@@ -845,7 +845,7 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->ceilingheight, 0, 1, -1); // update things on ceiling
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->floorheight, 0, 0, -1); // update things on floor
 			bouncer->sector->ceilingdata = NULL;
-			bouncer->sector->floordata = NULL;;
+			bouncer->sector->floordata = NULL;
 			bouncer->sector->moved = true;
 			P_RemoveThinker(&bouncer->thinker);    // remove bouncer from actives
 		}
@@ -1107,13 +1107,12 @@ void T_SpikeSector(levelspecthink_t *spikes)
 
 		if (affectsec == spikes->sector) // Applied to an actual sector
 		{
-			fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, affectsec);
-			fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, affectsec);
-
 			if (affectsec->flags & SF_FLIPSPECIAL_FLOOR)
 			{
 				if (!(thing->eflags & MFE_VERTICALFLIP) && thing->momz > 0)
 					continue;
+
+				fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, affectsec);
 
 				if (thing->z == affectfloor)
 					dothepain = true;
@@ -1124,18 +1123,20 @@ void T_SpikeSector(levelspecthink_t *spikes)
 				if ((thing->eflags & MFE_VERTICALFLIP) && thing->momz < 0)
 					continue;
 
+				fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, affectsec);
+
 				if (thing->z + thing->height == affectceil)
 					dothepain = true;
 			}
 		}
 		else
 		{
-			fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, spikes->sector);
-			fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, spikes->sector);
 			if (affectsec->flags & SF_FLIPSPECIAL_FLOOR)
 			{
 				if (!(thing->eflags & MFE_VERTICALFLIP) && thing->momz > 0)
 					continue;
+
+				fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, spikes->sector);
 
 				if (thing->z == affectceil)
 					dothepain = true;
@@ -1145,6 +1146,8 @@ void T_SpikeSector(levelspecthink_t *spikes)
 			{
 				if ((thing->eflags & MFE_VERTICALFLIP) && thing->momz < 0)
 					continue;
+
+				fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, spikes->sector);
 
 				if (thing->z + thing->height == affectfloor)
 					dothepain = true;
@@ -1652,6 +1655,7 @@ wegotit:
 static mobj_t *SearchMarioNode(msecnode_t *node)
 {
 	mobj_t *thing = NULL;
+
 	for (; node; node = node->m_thinglist_next)
 	{
 		// Things which should NEVER be ejected from a MarioBlock, by type.
@@ -2079,10 +2083,11 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 						continue;
 
 					topheight = P_GetSpecialTopZ(players[j].mo, sec, targetsec);
-					bottomheight = P_GetSpecialBottomZ(players[j].mo, sec, targetsec);
 
 					if (players[j].mo->z > topheight)
 						continue;
+
+					bottomheight = P_GetSpecialBottomZ(players[j].mo, sec, targetsec);
 
 					if (players[j].mo->z + players[j].mo->height < bottomheight)
 						continue;
@@ -2333,7 +2338,7 @@ void T_RaiseSector(levelspecthink_t *raise)
 		fixed_t origspeed = raise->vars[3];
 
 		// Slow down as you get closer to the bottom
-		raise->vars[3] = FixedMul(raise->vars[3],FixedDiv(raise->sector->ceilingheight - raise->vars[7], (raise->vars[5] - raise->vars[7])>>5));
+		raise->vars[3] = FixedMul(raise->vars[3], FixedDiv(raise->sector->ceilingheight - raise->vars[7], (raise->vars[5] - raise->vars[7])>>5));
 
 		if (raise->vars[3] <= origspeed/16)
 			raise->vars[3] = origspeed/16;
@@ -2344,7 +2349,7 @@ void T_RaiseSector(levelspecthink_t *raise)
 	{
 		fixed_t origspeed = raise->vars[3];
 		// Slow down as you get closer to the top
-		raise->vars[3] = FixedMul(raise->vars[3],FixedDiv(raise->vars[5] - raise->sector->ceilingheight, (raise->vars[5] - raise->vars[7])>>5));
+		raise->vars[3] = FixedMul(raise->vars[3], FixedDiv(raise->vars[5] - raise->sector->ceilingheight, (raise->vars[5] - raise->vars[7])>>5));
 
 		if (raise->vars[3] <= origspeed/16)
 			raise->vars[3] = origspeed/16;

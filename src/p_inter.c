@@ -589,7 +589,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->momx = special->momy = special->momz = 0;
 			P_GivePlayerRings(player, 1);
 
-			if (UNLIKELY((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING))
+			if (nightsmode && special->type != MT_FLINGRING)
 				P_DoNightsScore(player);
 			break;
 
@@ -601,7 +601,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->momx = special->momy = 0;
 			P_GivePlayerRings(player, 1);
 
-			if (UNLIKELY((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN))
+			if (nightsmode && special->type != MT_FLINGCOIN)
 				P_DoNightsScore(player);
 			break;
 		case MT_BLUEBALL:
@@ -617,7 +617,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			else
 				special->scalespeed = 4*FRACUNIT/5;
 
-			if (UNLIKELY(maptol & TOL_NIGHTS))
+			if (nightsmode)
 				P_DoNightsScore(player);
 			break;
 		case MT_AUTOPICKUP:
@@ -831,7 +831,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			{
 				S_StartSound(toucher, special->info->seesound);
 
-				if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
+				if (nightsplayer(player))
 				{
 					player->bumpertime = TICRATE/2;
 					if (special->threshold > 0)
@@ -883,18 +883,20 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			break;
 		case MT_HOOPCOLLIDE:
 			// This produces a kind of 'domino effect' with the hoop's pieces.
-			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
-
+			for (; special != NULL && special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
 			i = 0;
-			for (; special->hnext != NULL && special->type == MT_HOOP; special = special->hnext)
+			for (; special != NULL && special->type == MT_HOOP; special = special->hnext)
 			{
-				if (!P_MobjWasRemoved(special->target))
+				if (!P_MobjWasRemoved(special))
 				{
 					special->fuse = 11;
 					special->movedir = i;
-					special->extravalue1 = special->target->extravalue1;
-					special->extravalue2 = special->target->extravalue2;
-					special->target->threshold = 4242;
+					if (!P_MobjWasRemoved(special->target))
+					{
+						special->extravalue1 = special->target->extravalue1;
+						special->extravalue2 = special->target->extravalue2;
+						special->target->threshold = 4242;
+					}
 				}
 				i++;
 			}
@@ -1131,7 +1133,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					S_StartSound(toucher, special->info->painsound);
 					return;
 				}
-				else if (UNLIKELY((player->pflags & PF_NIGHTSMODE) && (player->pflags & PF_DRILLING)) || (player->pflags & (PF_JUMPED|PF_SPINNING|PF_GLIDING))
+				else if ((nightsplayer(player) && (player->pflags & PF_DRILLING)) || (player->pflags & (PF_JUMPED|PF_SPINNING|PF_GLIDING))
 						|| player->powers[pw_invulnerability] || player->powers[pw_super]) // Do you possess the ability to subdue the object?
 				{
 					// Shatter the shield!
@@ -1462,49 +1464,11 @@ boolean P_CheckRacers(void)
 	return false;
 }
 
-/** Kills an object.
-  *
-  * \param target    The victim.
-  * \param inflictor The attack weapon. May be NULL (environmental damage).
-  * \param source    The attacker. May be NULL.
-  * \todo Cleanup, refactor, split up.
-  * \sa P_DamageMobj
-  */
-void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
+static void P_UpdateRemovedOrbital(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 {
-	mobjtype_t item;
-	mobj_t *mo;
-	int ms;
-
-	if (target->flags & (MF_ENEMY|MF_BOSS))
-		target->momx = target->momy = target->momz = 0;
-
-	// SRB2kart
-	if (target->type != MT_PLAYER && !(target->flags & MF_MONITOR)
-		 && !(target->type == MT_ORBINAUT || target->type == MT_ORBINAUT_SHIELD
-		 || target->type == MT_JAWZ || target->type == MT_JAWZ_DUD || target->type == MT_JAWZ_SHIELD
-		 || target->type == MT_BANANA || target->type == MT_BANANA_SHIELD
-		 || target->type == MT_EGGMANITEM || target->type == MT_EGGMANITEM_SHIELD
-		 || target->type == MT_BALLHOG || target->type == MT_SPB)) // kart dead items
-		target->flags |= MF_NOGRAVITY; // Don't drop Tails 03-08-2000
-	else
-		target->flags &= ~MF_NOGRAVITY; // lose it if you for whatever reason have it, I'm looking at you shields
-	//
-
-	if (target->flags2 & MF2_NIGHTSPULL)
-		P_SetTarget(&target->tracer, NULL);
-
-	// dead target is no more shootable
-	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SPECIAL);
-	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
-	target->health = 0; // This makes it easy to check if something's dead elsewhere.
-
-	if (LUA_HookMobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
-		return;
-
 	// SRB2kart
 	// I wish I knew a better way to do this
-	if (target->target && target->target->player && target->target->player->mo)
+	if (!P_MobjWasRemovedCompat(target->target) && target->target->player && !P_MobjWasRemovedCompat(target->target->player->mo))
 	{
 		if (target->target->player->kartstuff[k_eggmanheld] && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->kartstuff[k_eggmanheld] = 0;
@@ -1517,7 +1481,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->kartstuff[k_itemamount])
 				{
-					if (target->target->hnext)
+					if (!P_MobjWasRemovedCompat(target->target->hnext))
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 
 					target->target->player->kartstuff[k_itemamount] = 0;
@@ -1546,14 +1510,60 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				P_SetTarget(&target->target->hnext, NULL);
 		}
 	}
-	// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
+}
+
+
+/** Kills an object.
+  *
+  * \param target    The victim.
+  * \param inflictor The attack weapon. May be NULL (environmental damage).
+  * \param source    The attacker. May be NULL.
+  * \todo Cleanup, refactor, split up.
+  * \sa P_DamageMobj
+  */
+void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
+{
+	mobjtype_t item;
+	mobj_t *mo;
+	int ms;
+
+	if (target->flags & (MF_ENEMY|MF_BOSS))
+		target->momx = target->momy = target->momz = 0;
+
+	// SRB2kart
+	if (target->type != MT_PLAYER
+		 && !(target->flags & MF_MONITOR)
+		 && !(target->type == MT_ORBINAUT || target->type == MT_ORBINAUT_SHIELD
+		 || target->type == MT_JAWZ || target->type == MT_JAWZ_DUD || target->type == MT_JAWZ_SHIELD
+		 || target->type == MT_BANANA || target->type == MT_BANANA_SHIELD
+		 || target->type == MT_EGGMANITEM || target->type == MT_EGGMANITEM_SHIELD
+		 || target->type == MT_BALLHOG || target->type == MT_SPB)) // kart dead items
+		target->flags |= MF_NOGRAVITY; // Don't drop Tails 03-08-2000
+	else
+		target->flags &= ~MF_NOGRAVITY; // lose it if you for whatever reason have it, I'm looking at you shields
+	//
+
+	if (target->flags2 & MF2_NIGHTSPULL)
+		P_SetTarget(&target->tracer, NULL);
+
+	// dead target is no more shootable
+	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SPECIAL);
+	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
+	target->health = 0; // This makes it easy to check if something's dead elsewhere.
+
+	if (LUA_HookMobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
+		return;
+
+	P_UpdateRemovedOrbital(target, inflictor, source);
+
 	if (target->player)
+	{
+		// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
 		K_DropRocketSneaker(target->player);
 
-	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
-	if (target->player && !target->player->spectator)
-	{
-		target->flags2 &= ~MF2_DONTDRAW;
+		// Let EVERYONE know what happened to a player! 01-29-2002 Tails
+		if (!target->player->spectator)
+			target->flags2 &= ~MF2_DONTDRAW;
 	}
 
 	// if killed by a player
@@ -1563,6 +1573,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		{
 			P_SetTarget(&target->target, source);
 			source->player->numboxes++;
+
 			if (cv_itemrespawn.value && (netgame || multiplayer))
 			{
 				target->fuse = cv_itemrespawntime.value*TICRATE + 2; // Random box generation
@@ -1580,35 +1591,41 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_fading.value && P_IsLocalPlayer(target->player))
+		if (P_IsLocalPlayer(target->player))
 		{
-			if (netgame || multiplayer)
-				ms = cv_respawntime.value * 1000;
-			else
-				ms = 1000;
+			if (cv_fading.value)
+			{
+				if (netgame || multiplayer)
+					ms = cv_respawntime.value * 1000;
+				else
+					ms = 1000;
 
-			/*
-			If the time spent with the music paused is less than half
-			a second, continue playing the song (just mute it).
-			*/
-			if ((ms - cv_respawnfademusicout.value) < 500)
-				S_FadeMusic(0, cv_respawnfademusicout.value);
-			else
-				S_FadeOutStopMusic(cv_respawnfademusicout.value);
-		}
+				/*
+				 * If the time spent with the music paused is less than half
+				 * a second, continue playing the song (just mute it).
+				 */
+				if ((ms - cv_respawnfademusicout.value) < 500)
+					S_FadeMusic(0, cv_respawnfademusicout.value);
+				else
+					S_FadeOutStopMusic(cv_respawnfademusicout.value);
+			}
 
-		for (UINT8 i = 0; i <= splitscreen; i++)
-		{
-			if (target->player == P_GetLocalPlayerForNum(i))
+			if (target->player == &players[consoleplayer])
 			{
 				// don't die in auto map,
 				// switch view prior to dying
-				if (i == 0 && automapactive)
+				if (automapactive)
 					AM_Stop();
+			}
 
-				// added : 22-02-98: recenter view for next life...
-				localaiming[i] = 0;
-				break;
+			for (UINT8 i = 0; i <= splitscreen; i++)
+			{
+				if (target->player == P_GetLocalPlayerForNum(i))
+				{
+					// added : 22-02-98: recenter view for next life...
+					localaiming[i] = 0;
+					break;
+				}
 			}
 		}
 
@@ -1624,7 +1641,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	if (!mariomode // Don't show birds, etc. in Mario Mode Tails 12-23-2001
+	if (LIKELY(!mariomode) // Don't show birds, etc. in Mario Mode Tails 12-23-2001
 	&& target->flags & MF_ENEMY)
 	{
 		if (cv_soniccd.value)
@@ -1678,7 +1695,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 					else
 						prandom = P_RandomKey(5); // No placable object, just use a random number.
 
-					switch(prandom)
+					switch (prandom)
 					{
 						default: item = MT_BUNNY; break;
 						case 1: item = MT_BIRD; break;
@@ -2222,18 +2239,24 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		return false;
 
 	// well no clue but this may happen ig
-	if (!target || (target->health <= 0))
+	if (P_MobjWasRemovedCompat(target))
+		return false;
+
+	if (target->health <= 0)
 		return false;
 
 	// Spectator handling
 	if (netgame)
 	{
-		if (damage == DMG_SPECTATOR && target->player && target->player->spectator)
-			damage = DMG_INSTAKILL;
-		else if (target->player && target->player->spectator)
-			return false;
+		if (target->player && target->player->spectator)
+		{
+			if (damage == DMG_SPECTATOR)
+				damage = DMG_INSTAKILL;
+			else
+				return false;
+		}
 
-		if (source && source->player && source->player->spectator)
+		if (!P_MobjWasRemovedCompat(source) && source->player && source->player->spectator)
 			return false;
 	}
 
@@ -2327,16 +2350,17 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (player->exiting)
 				return false;
 
-			if (UNLIKELY(!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS)))
+			if (UNLIKELY(!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && nightsmode))
 				return false;
 		}
 
-		if (UNLIKELY(player->pflags & PF_NIGHTSMODE)) // NiGHTS damage handling
+		if (nightsplayer(player)) // NiGHTS damage handling
 		{
 			if (!force)
 			{
 				if (source == target)
 					return false; // Don't hit yourself with your own paraloop, baka
+
 				if (source && source->player && !cv_friendlyfire.value
 				&& (gametype == GT_COOP
 				|| (G_GametypeHasTeams() && target->player->ctfteam == source->player->ctfteam)))
@@ -2386,7 +2410,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 		else if (player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->powers[pw_flashing])
 		{
-			if (!force)	// shoulddamage bypasses all of that.
+			if (!force) // shoulddamage bypasses all of that.
 			{
 				K_DoInstashield(player);
 				return false;
@@ -2575,7 +2599,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 			ns = FixedMul(((i*FRACUNIT)/16)+2*FRACUNIT, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
+			if (!twodmo(player->mo))
 				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			P_SetObjectMomZ(mo, 8*FRACUNIT, false);
@@ -2599,7 +2623,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 			ns = FixedMul(momxy, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
+			if (!twodmo(player->mo))
 				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			ns = momz;
@@ -2706,7 +2730,7 @@ void P_PlayerWeaponPanelBurst(player_t *player)
 		ns = FixedMul(3*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
+		if (!twodmo(player->mo))
 			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 4*FRACUNIT, false);
@@ -2790,7 +2814,7 @@ void P_PlayerWeaponAmmoBurst(player_t *player)
 		ns = FixedMul(2*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa), ns);
 
-		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
+		if (!twodmo(player->mo))
 			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 3*FRACUNIT, false);
@@ -2906,7 +2930,7 @@ void P_PlayerEmeraldBurst(player_t *player, boolean toss)
 
 			momx = FixedMul(FINECOSINE(fa), ns);
 
-			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
+			if (!twodmo(player->mo))
 				momy = FixedMul(FINESINE(fa),ns);
 			else
 				momy = 0;
@@ -2963,7 +2987,7 @@ void P_PlayerFlagBurst(player_t *player, boolean toss)
 	{
 		angle_t fa = P_RandomByte()*FINEANGLES/256;
 		flag->momx = FixedMul(FINECOSINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
-		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
+		if (!twodmo(player->mo))
 			flag->momy = FixedMul(FINESINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
 	}
 
