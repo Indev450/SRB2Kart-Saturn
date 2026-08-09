@@ -515,8 +515,8 @@ static boolean M_BackupConfig(const char *filename)
 {
 	char backupfile[MAX_WADPATH+4];
 
-	snprintf(backupfile, sizeof backupfile, "%s.bak", filename);
-	backupfile[sizeof backupfile - 1] = '\0';
+	snprintf(backupfile, sizeof(backupfile), "%s.bak", filename);
+	backupfile[sizeof(backupfile) - 1] = '\0';
 
 	FILE *config = fopen(filename, "r");
 
@@ -766,27 +766,27 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	}
 
 	if (gamestate == GS_LEVEL)
-		snprintf(maptext, 8, "%s", G_BuildMapName(gamemap));
+		snprintf(maptext, sizeof(maptext), "%s", G_BuildMapName(gamemap));
 	else
-		snprintf(maptext, 8, "Unknown");
+		snprintf(maptext, sizeof(maptext), "Unknown");
 
 	if (gamestate == GS_LEVEL && mapheaderinfo[gamemap-1]->lvlttl[0] != '\0')
-		snprintf(lvlttltext, 48, "%s%s%s",
+		snprintf(lvlttltext, sizeof(lvlttltext), "%s%s%s",
 			mapheaderinfo[gamemap-1]->lvlttl,
 			(strlen(mapheaderinfo[gamemap-1]->zonttl) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->zonttl) : // SRB2kart
 			((mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) ? "" : " ZONE"),
 			(strlen(mapheaderinfo[gamemap-1]->actnum) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->actnum) : "");
 	else
-		snprintf(lvlttltext, 48, "Unknown");
+		snprintf(lvlttltext, sizeof(lvlttltext), "Unknown");
 
 	if (gamestate == GS_LEVEL && players[displayplayers[0]].mo)
-		snprintf(locationtxt, 40, "X:%d Y:%d Z:%d A:%d",
+		snprintf(locationtxt, sizeof(locationtxt), "X:%d Y:%d Z:%d A:%d",
 			players[displayplayers[0]].mo->x>>FRACBITS,
 			players[displayplayers[0]].mo->y>>FRACBITS,
 			players[displayplayers[0]].mo->z>>FRACBITS,
 			FixedInt(AngleFixed(players[displayplayers[0]].mo->angle)));
 	else
-		snprintf(locationtxt, 40, "Unknown");
+		snprintf(locationtxt, sizeof(locationtxt), "Unknown");
 
 	memset(png_infotext, 0x00, sizeof(png_infotext));
 
@@ -1393,7 +1393,7 @@ char *va(const char *format, ...)
 	static char string[1024];
 
 	va_start(argptr, format);
-	vsnprintf(string, 1024, format, argptr);
+	vsnprintf(string, sizeof(string), format, argptr);
 	va_end(argptr);
 
 	return string;
@@ -1735,6 +1735,7 @@ UINT8 M_CountBits(UINT32 num, UINT8 size)
 const char *GetRevisionString(void)
 {
 	static char rev[9] = {0};
+
 	if (rev[0])
 		return rev;
 
@@ -1742,6 +1743,7 @@ const char *GetRevisionString(void)
 		strncpy(rev, comprevision, 7);
 	else
 		snprintf(rev, 7, "r%s", comprevision);
+
 	rev[7] = '\0';
 
 	return rev;

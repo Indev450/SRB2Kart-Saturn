@@ -3849,7 +3849,7 @@ void G_SaveGame(UINT32 savegameslot)
 	savebuffer_t save = {};
 
 	snprintf(savename, sizeof(savename), savegamename, savegameslot);
-	backup = va("%s",savename);
+	backup = va("%s", savename);
 
 	// save during evaluation or credits? game's over, folks!
 	if (gamestate == GS_CREDITS || gamestate == GS_EVALUATION)
@@ -3867,7 +3867,7 @@ void G_SaveGame(UINT32 savegameslot)
 			return;
 		}
 
-		memset(name, 0, sizeof (name));
+		memset(name, 0, sizeof(name));
 		snprintf(name, sizeof(name), "version %d", VERSION);
 		WRITEMEM(save.p, name, VERSIONSIZE);
 

@@ -2762,11 +2762,11 @@ static void Command_ReplayMarker(void)
 
 		if (title)
 		{
-			snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+			snprintf(demo.titlename, sizeof(demo.titlename), "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 			Z_Free(title);
 		}
 		else
-			snprintf(demo.titlename, 64, "[%i:%02d/%.5s]", G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+			snprintf(demo.titlename, sizeof(demo.titlename), "[%i:%02d/%.5s]", G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 
 		CONS_Printf("Replay will be saved!\n");
 	}

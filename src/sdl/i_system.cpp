@@ -1278,7 +1278,7 @@ static void I_SetupMumble(void)
 	int shmfd;
 	char memname[256];
 
-	snprintf(memname, 256, "/MumbleLink.%d", getuid());
+	snprintf(memname, sizeof(memname), "/MumbleLink.%d", getuid());
 	shmfd = shm_open(memname, O_RDWR, S_IRUSR | S_IWUSR);
 
 	if (shmfd < 0)
@@ -1887,7 +1887,7 @@ FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 {
 	char text[128];
 
-	snprintf(text, sizeof text,
+	snprintf(text, sizeof(text),
 			"Error while setting up signal reporting: %s: %s",
 			pr,
 			strerror(errno)
@@ -2103,7 +2103,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 		if (errorcount > 20)
 		{
 			va_start(argptr, error);
-			vsnprintf(buffer, 8192, error, argptr);
+			vsnprintf(buffer, sizeof(buffer), error, argptr);
 			va_end(argptr);
 
 			sigttl = "SRB2Kart " VERSIONSTRING " Recursive Error";
@@ -2117,7 +2117,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 	// Display error message in the console before we start shutting it down
 	va_start(argptr, error);
-	vsnprintf(buffer, 8192, error, argptr);
+	vsnprintf(buffer, sizeof(buffer), error, argptr);
 	va_end(argptr);
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 

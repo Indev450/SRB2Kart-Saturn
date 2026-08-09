@@ -266,8 +266,8 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->actnum[0] = '\0';
 	mapheaderinfo[num]->typeoflevel = 0;
 	mapheaderinfo[num]->nextlevel = (INT16)(i + 1);
-	snprintf(mapheaderinfo[num]->musname, 7, "%sM", G_BuildMapName(i));
-	mapheaderinfo[num]->musname[6] = 0;
+	snprintf(mapheaderinfo[num]->musname, sizeof(mapheaderinfo[num]->musname), "%sM", G_BuildMapName(i));
+	mapheaderinfo[num]->musname[sizeof(mapheaderinfo[num]->musname)-1] = 0;
 	mapheaderinfo[num]->mustrack = 0;
 	mapheaderinfo[num]->muspos = 0;
 	mapheaderinfo[num]->forcecharacter[0] = '\0';
@@ -3065,7 +3065,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		// Don't include these in the fade!
 		char tx[64];
 		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
-		snprintf(tx, 63, "%s%s%s",
+		snprintf(tx, sizeof(tx), "%s%s%s",
 			mapheader->lvlttl,
 			(strlen(mapheader->zonttl) > 0) ? va(" %s",mapheader->zonttl) : // SRB2kart
 			((mapheader->levelflags & LF_NOZONE) ? "" : " Zone"),
