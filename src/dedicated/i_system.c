@@ -548,7 +548,7 @@ void I_OutputMsg(const char *fmt, ...)
 		I_Error("I_OutputMsg: Out of memory!\n");
 
 	va_start(argptr, fmt);
-	vsprintf(txt, fmt, argptr);
+	vsnprintf(txt, len+1, fmt, argptr);
 	va_end(argptr);
 
 #ifdef HAVE_TTF
@@ -556,7 +556,7 @@ void I_OutputMsg(const char *fmt, ...)
 	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
 #endif
 
-	len = strlen(txt);
+	len = strnlen(txt, len+1);
 
 #ifdef LOGMESSAGES
 	if (logstream)
@@ -1059,7 +1059,7 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
 			break;
 		default:
-			sprintf(signal_msg, "Signal number %d", signal_num);
+			snprintf(signal_msg, 512, "Signal number %d", signal_num);
 			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
 			break;
 	}
@@ -1067,13 +1067,17 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	if (core_dumped)
 	{
 		if (sigmsg)
-			sprintf(signal_msg, "%s (core dumped)", sigmsg);
+		{
+			snprintf(signal_msg, 512, "%s (core dumped)", sigmsg);
+		}
 		else
+		{
 			strcat(signal_msg, " (core dumped)");
+		}
 	}
 	else
 	{
-		sprintf(signal_msg, "%s", sigmsg);
+		snprintf(signal_msg, 512, "%s", sigmsg);
 	}
 }
 
@@ -1770,7 +1774,8 @@ char *I_GetUserName(void)
 				}
 			}
 		}
-		strncpy(username, p, MAXPLAYERNAME);
+
+		snprintf(username, sizeof(username), "%s", p);
 	}
 
 	if (!fastcmp(username, ""))
@@ -1858,28 +1863,23 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = (char*)(malloc(256));
+	char wad3path[256];
 
-	if (!wad3path)
-		return false;
-
-	sprintf(wad3path, pandf, path, WADKEYWORD);
+	snprintf(wad3path, sizeof(wad3path), pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
-		free(wad3path);
 		return true;
 	}
 
-	free(wad3path);
 	return false;
 }
 
-static void pathonly(char *s)
+static void pathonly(char *s, size_t size)
 {
 	size_t j;
 
-	for (j = strlen(s); j != (size_t)-1; j--)
+	for (j = strnlen(s, size); j != (size_t)-1; j--)
 	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
@@ -1906,11 +1906,12 @@ static const char *searchWad(const char *searchDir)
 	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD);
+	snprintf(tempsw, sizeof(tempsw), "%s", WADKEYWORD);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
+
 	if (fstemp == FS_FOUND)
 	{
-		pathonly(tempsw);
+		pathonly(tempsw, sizeof(tempsw));
 		return tempsw;
 	}
 
@@ -1948,7 +1949,7 @@ static const char *locateWad(void)
 
 #ifndef NOCWD
 	// examine current dir
-	strcpy(returnWadPath, ".");
+	snprintf(returnWadPath, sizeof(returnWadPath), "%s", ".");
 	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
@@ -1960,7 +1961,7 @@ static const char *locateWad(void)
 	// examine user jart directory
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
-		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s" PATHSEP DEFAULTDIR, envstr);
 		CHECKWADPATH(returnWadPath);
 	}
 #endif
@@ -1974,7 +1975,7 @@ static const char *locateWad(void)
 	// examine default dirs
 	for (i = 0; wadDefaultPaths[i]; i++)
 	{
-		strcpy(returnWadPath, wadDefaultPaths[i]);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s", wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
 

@@ -516,7 +516,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
 
 		finallight += offset;
-		finallight = CLAMP(finallight, 0 , 255);
+		finallight = CLAMP(finallight, 0, 255);
 	}
 
 	return (FUINT)finallight;
@@ -534,7 +534,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
 
 		finallight += (fof ? -offset : offset);
-		finallight = CLAMP(finallight, 0 , 255);
+		finallight = CLAMP(finallight, 0, 255);
 	}
 
 	return (FUINT)finallight;
@@ -6522,7 +6522,7 @@ static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 	}
 
 	// puts the numbers into the lumpname
-	sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)wipenum, (UINT16)scrnnum);
+	snprintf(&lumpname[4], sizeof(lumpname) - 4, "%.2hu%.2hu", (UINT16)wipenum, (UINT16)scrnnum);
 	wipelumpnum = W_CheckNumForName(lumpname);
 
 	// again, shouldn't be here really

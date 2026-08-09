@@ -605,14 +605,18 @@ const char *G_BuildMapName(INT32 map)
 	}
 
 	if (map < 100 && map >= 0) // ...but why use signed integer in first place? idk but this prevents warning (and potential buffer overflow lol)
-		sprintf(&mapname[3], "%.2d", map);
+	{
+		snprintf(&mapname[3], sizeof(mapname)-3, "%.2d", map);
+	}
 	else
 	{
 		mapname[3] = (char)('A' + (char)((map - 100) / 36));
+
 		if ((map - 100) % 36 < 10)
 			mapname[4] = (char)('0' + (char)((map - 100) % 36));
 		else
 			mapname[4] = (char)('A' + (char)((map - 100) % 36) - 10);
+
 		mapname[5] = '\0';
 	}
 
@@ -3778,7 +3782,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	startonmapnum = mapoverride;
 #endif
 
-	sprintf(savename, savegamename, slot);
+	snprintf(savename, sizeof(savename), savegamename, slot);
 
 	length = FIL_ReadFile(savename, &save.buffer);
 	if (!length)
@@ -3790,7 +3794,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	save.p = save.buffer;
 
 	memset(vcheck, 0, sizeof (vcheck));
-	sprintf(vcheck, "version %d", VERSION);
+	snprintf(vcheck, sizeof(vcheck), "version %d", VERSION);
 
 	if (!fastcmp((const char *)save.p, (const char *)vcheck))
 	{
@@ -3856,7 +3860,7 @@ void G_SaveGame(UINT32 savegameslot)
 	const char *backup;
 	savebuffer_t save = {};
 
-	sprintf(savename, savegamename, savegameslot);
+	snprintf(savename, sizeof(savename), savegamename, savegameslot);
 	backup = va("%s",savename);
 
 	// save during evaluation or credits? game's over, folks!
@@ -3876,7 +3880,7 @@ void G_SaveGame(UINT32 savegameslot)
 		}
 
 		memset(name, 0, sizeof (name));
-		sprintf(name, "version %d", VERSION);
+		snprintf(name, sizeof(name), "version %d", VERSION);
 		WRITEMEM(save.p, name, VERSIONSIZE);
 
 		P_SaveGame(&save);
@@ -4105,12 +4109,12 @@ char *G_BuildMapTitle(INT32 mapnum)
 		if (!title)
 			return NULL;
 
-		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
+		snprintf(title, len, "%s", mapheaderinfo[mapnum-1]->lvlttl);
 
 		if (zonetext)
-			sprintf(title + strlen(title), " %s", zonetext);
+			snprintf(title + strlen(title), len - strlen(title), " %s", zonetext);
 		if (actnum)
-			sprintf(title + strlen(title), " %s", actnum);
+			snprintf(title + strlen(title), len - strlen(title), " %s", actnum);
 	}
 
 	return title;
