@@ -663,14 +663,14 @@ static void Y_UpdateRecordReplays(void)
 
 	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
 
-	snprintf(lastdemo, sizeof(lastdemo), "%s-%s-last.lmp", gpath, cv_chooseskin.string);
+	snprintf(lastdemo, sizeof(lastdemo)-1, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		snprintf(bestdemo, sizeof(bestdemo), "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo)-1, "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -679,7 +679,7 @@ static void Y_UpdateRecordReplays(void)
 			CONS_Printf("\x83%s\x80 %s '%s'\n", M_GetText("NEW RECORD TIME!"), M_GetText("Saved replay as"), bestdemo);
 		}
 
-		snprintf(bestdemo, sizeof(bestdemo), "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo)-1, "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 		{ // Better lap time, save this demo.
 			if (FIL_FileExists(bestdemo))
