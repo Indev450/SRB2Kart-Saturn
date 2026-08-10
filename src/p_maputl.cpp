@@ -466,7 +466,7 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 		// Check for collision with front side's midtexture if Effect 4 is set
 		if (linedef->flags & ML_EFFECT4
 				  && !linedef->polyobj) // don't do anything for polyobjects! ...for now
-			{
+		{
 			side_t *side = &sides[linedef->sidenum[0]];
 			fixed_t textop, texbottom, texheight;
 			fixed_t texmid, delta1, delta2;
