@@ -1793,6 +1793,24 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 #endif
 }
 
+INT32 I_ChDir(const char *path)
+{
+#ifdef _WIN32
+	return (SetCurrentDirectoryA(path) ? 0 : -1);
+#else
+	return chdir(path);
+#endif
+}
+
+char *I_GetCwd(char *buf, size_t size)
+{
+#ifdef _WIN32
+	return (GetCurrentDirectoryA((DWORD)size, buf) ? buf : NULL);
+#else
+	return getcwd(buf, size);
+#endif
+}
+
 char *I_GetEnv(const char *name)
 {
 	return getenv(name);
@@ -1965,12 +1983,11 @@ const char *I_LocateWad(void)
 		// change to the directory where we found srb2.srb
 #if defined (_WIN32)
 		waddir = _fullpath(NULL, waddir, MAX_PATH);
-		SetCurrentDirectoryA(waddir);
 #else
 		waddir = realpath(waddir, NULL);
-		if (waddir == NULL || chdir(waddir) == -1)
-			I_OutputMsg("Couldn't change working directory\n");
 #endif
+		if (waddir == NULL || I_ChDir(waddir) == -1)
+			I_OutputMsg("Couldn't change working directory\n");
 	}
 
 	return waddir;
