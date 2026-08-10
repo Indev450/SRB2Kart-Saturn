@@ -63,10 +63,13 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
+
 #if defined (__unix__) || defined (UNIXCOMMON)
+#include <sys/stat.h>
 #include <fcntl.h>
 #endif
 
@@ -2266,6 +2269,7 @@ void I_ShutdownSystem(void)
 	for (c = MAX_QUIT_FUNCS-1; c >= 0; c--)
 		if (quit_funcs[c])
 			(*quit_funcs[c])();
+
 #ifdef LOGMESSAGES
 	if (logstream)
 	{
@@ -2375,6 +2379,24 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 #endif
 }
 
+INT32 I_ChDir(const char *path)
+{
+#ifdef _WIN32
+	return (SetCurrentDirectoryA(path) ? 0 : -1);
+#else
+	return chdir(path);
+#endif
+}
+
+char *I_GetCwd(char *buf, size_t size)
+{
+#ifdef _WIN32
+	return (GetCurrentDirectoryA((DWORD)size, buf) ? buf : NULL);
+#else
+	return getcwd(buf, size);
+#endif
+}
+
 char *I_GetEnv(const char *name)
 {
 #ifdef NEED_SDL_GETENV
@@ -2465,6 +2487,7 @@ const char *I_ClipboardPaste(void)
 			*i = '?'; // Nonprintable chars become question marks
 		++i;
 	}
+
 	return (const char *)&clipboard_modified;
 }
 
@@ -2618,12 +2641,11 @@ extern "C" const char *I_LocateWad(void)
 		// change to the directory where we found srb2.srb
 #if defined (_WIN32)
 		waddir = _fullpath(NULL, waddir, MAX_PATH);
-		SetCurrentDirectoryA(waddir);
 #else
 		waddir = realpath(waddir, NULL);
-		if (waddir == NULL || chdir(waddir) == -1)
-			I_OutputMsg("Couldn't change working directory\n");
 #endif
+		if (waddir == NULL || I_ChDir(waddir) == -1)
+			I_OutputMsg("Couldn't change working directory\n");
 	}
 
 	return waddir;
