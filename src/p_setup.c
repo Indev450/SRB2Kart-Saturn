@@ -3065,7 +3065,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		// Don't include these in the fade!
 		char tx[64];
 		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
-		snprintf(tx, sizeof(tx), "%s%s%s",
+		snprintf(tx, sizeof(tx)-1, "%s%s%s",
 			mapheader->lvlttl,
 			(strlen(mapheader->zonttl) > 0) ? va(" %s",mapheader->zonttl) : // SRB2kart
 			((mapheader->levelflags & LF_NOZONE) ? "" : " Zone"),
