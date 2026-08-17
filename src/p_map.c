@@ -245,12 +245,12 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 {
-	player_t *p = object->player; // will be NULL if not a player
+	player_t *player = object->player; // will be NULL if not a player
 	fixed_t zdist; // distance between bottoms
 	fixed_t speed = spring->info->mass; // conveniently, both fans and gas jets use this for the vertical thrust
 	SINT8 flipval = P_MobjFlip(spring); // virtually everything here centers around the thruster's gravity, not the object's!
 
-	if (p && object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
+	if (player && object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
 		return;
 
 	// is object's top below thruster's position? if not, calculate distance between their bottoms
@@ -276,7 +276,7 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 				break;
 			if (flipval*object->momz >= FixedMul(speed, spring->scale)) // if object's already moving faster than your best, don't bother
 				break;
-			if (p && (p->climbing || p->pflags & PF_GLIDING)) // doesn't affect Knux when he's using his abilities!
+			if (player && (player->climbing || player->pflags & PF_GLIDING)) // doesn't affect Knux when he's using his abilities!
 				break;
 
 			object->momz += flipval*FixedMul(speed/4, spring->scale);

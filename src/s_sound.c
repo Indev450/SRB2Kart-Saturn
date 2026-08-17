@@ -433,7 +433,7 @@ static boolean S_CheckSameSoundLimit(sfxenum_t sfx_id)
 		return true;
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
-		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)sfx_id)
+		if (channels[cnum].sfxinfo == &S_sfx[sfx_id])
 			scount++;
 
 	//CONS_Printf("same sound count: %d for sfx: %d\n", scount, sfx_id);
@@ -864,18 +864,18 @@ void S_SetSfxVolume(INT32 volume)
 	if (volume < 0 || volume > 31)
 		CONS_Alert(CONS_WARNING, "sfxvolume should be between 0-31\n");
 
-	CV_SetValue(&cv_soundvolume, volume&0x1F);
+	CV_SetValue(&cv_soundvolume, volume & 0x1F);
 	actualsfxvolume = cv_soundvolume.value; // check for change of var
 
 	// now hardware volume
-	I_SetSfxVolume(volume&0x1F);
+	I_SetSfxVolume(volume & 0x1F);
 }
 
 void S_ClearSfx(void)
 {
 	size_t i;
 	for (i = 1; i < NUMSFX; i++)
-		I_FreeSfx(S_sfx + i);
+		I_FreeSfx(&S_sfx[i]);
 }
 
 static void S_StopChannel(INT32 cnum)
@@ -1067,12 +1067,12 @@ INT32 S_OriginPlaying(void *origin)
 
 // Searches through the channels and checks if a given id
 // is playing anywhere.
-INT32 S_IdPlaying(sfxenum_t id)
+INT32 S_IdPlaying(sfxenum_t sfx_id)
 {
 	INT32 cnum;
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
-		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
+		if (channels[cnum].sfxinfo == &S_sfx[sfx_id])
 			return 1;
 
 	return 0;
@@ -1080,7 +1080,7 @@ INT32 S_IdPlaying(sfxenum_t id)
 
 // Searches through the channels and checks for
 // origin x playing sound id y.
-INT32 S_SoundPlaying(void *origin, sfxenum_t id)
+INT32 S_SoundPlaying(void *origin, sfxenum_t sfx_id)
 {
 	INT32 cnum;
 
@@ -1089,8 +1089,8 @@ INT32 S_SoundPlaying(void *origin, sfxenum_t id)
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
-		if (channels[cnum].origin == origin
-		 && (size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
+		if (channels[cnum].origin == origin &&
+			channels[cnum].sfxinfo == &S_sfx[sfx_id])
 			return 1;
 	}
 

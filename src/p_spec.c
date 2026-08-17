@@ -2161,7 +2161,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				newname[1] = 'C';
 				newname[2] = 'R';
 
-				scrnum = sides[line->sidenum[0]].textureoffset>>FRACBITS;
+				scrnum = sides[line->sidenum[0]].textureoffset >> FRACBITS;
 				if (scrnum < 0 || scrnum > 999)
 				{
 					scrnum = 0;
@@ -2169,9 +2169,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				}
 				else
 				{
-					newname[5] = (char)('0' + (char)((scrnum/100)));
-					newname[6] = (char)('0' + (char)((scrnum%100)/10));
-					newname[7] = (char)('0' + (char)(scrnum%10));
+					newname[5] = (char)('0' + (char)((scrnum / 100)));
+					newname[6] = (char)('0' + (char)((scrnum % 100) / 10));
+					newname[7] = (char)('0' + (char)(scrnum % 10));
 				}
 				newname[8] = '\0';
 
