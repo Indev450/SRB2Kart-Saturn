@@ -398,7 +398,7 @@ static void R_AddLine(seg_t *line)
 			// Find the other side!
 			INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, -1);
 
-			if (line->linedef == &lines[line2])
+			if (line2 >= 0 && line->linedef == &lines[line2])
 				line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, line2);
 
 			if (line2 >= 0) // found it!
