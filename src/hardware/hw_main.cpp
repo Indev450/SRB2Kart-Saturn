@@ -2306,7 +2306,7 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 				// Find the other side!
 				INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, -1);
 
-				if (line->linedef == &lines[line2])
+				if (line2 >= 0 && line->linedef == &lines[line2])
 					line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, line2);
 
 				if (line2 >= 0) // found it!
