@@ -118,14 +118,14 @@ void COM_BufAddTextEx(const char *ptext, size_t plen)
 	size_t l;
 	char *text;
 
-	l = strlen(ptext);
-
 	if (plen == 0)
-		plen = l;
+		plen = strlen(ptext);
 
 	text = Z_Malloc(sizeof(char) * (plen+1), PU_STATIC, NULL);
 	memcpy(text, ptext, plen);
 	text[plen] = '\0';
+
+	l = strlen(text);
 
 	if (com_text.cursize + l >= com_text.maxsize)
 	{
