@@ -579,8 +579,8 @@ FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype
 	static UINT8 seen = 0; // so we dont have to check all this shit constantly
 	int numCalls = call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
 
-	if (!seen && numCalls > 0 && mobj_type == MT_NULL && (
-		   hook->hook_type == MOBJ_HOOK(MobjThinker    )
+	if (!seen && numCalls > 0 && mobj_type == MT_NULL &&
+	(      hook->hook_type == MOBJ_HOOK(MobjThinker    )
 		|| hook->hook_type == MOBJ_HOOK(MobjCollide    )
 		|| hook->hook_type == MOBJ_HOOK(MobjMoveCollide)
 		|| hook->hook_type == MOBJ_HOOK(MobjFuse       )
@@ -588,6 +588,7 @@ FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype
 	))
 	{
 		seen = 1;
+
 		CONS_Alert(
 			CONS_WARNING, "%s\n", va(
 			"%s hooks not attached to a specific mobj type may cause performance issues!",
@@ -609,12 +610,10 @@ FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype
 	return numCalls;
 }
 
-/*
-FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
+/*FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
 {
 	return call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
-}
-*/
+}*/
 
 static int call_hooks
 (
@@ -899,7 +898,7 @@ int LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT3
 int LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	return damage_hook(target, inflictor, source, damage,
-					   MOBJ_HOOK(MobjDamage), res_true);
+					MOBJ_HOOK(MobjDamage), res_true);
 }
 
 int LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source)
@@ -988,7 +987,7 @@ void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 {
 	Hook_State hook = {};
 	if (prepare_string_hook
-			(&hook, 0, STRING_HOOK(LinedefExecute), line->text))
+		(&hook, 0, STRING_HOOK(LinedefExecute), line->text))
 	{
 		LUA_PushUserdata(gL, line, META_LINE);
 		LUA_PushUserdata(gL, mo, META_MOBJ);

@@ -591,6 +591,7 @@ void LUA_InvalidateLevel(void)
 
 	for (i = 0; i < numsubsectors; i++)
 		LUA_InvalidateUserdata(&subsectors[i]);
+
 	for (i = 0; i < numsectors; i++)
 	{
 		LUA_InvalidateUserdata(&sectors[i]);
@@ -611,6 +612,7 @@ void LUA_InvalidateLevel(void)
 
 	for (i = 0; i < numsides; i++)
 		LUA_InvalidateUserdata(&sides[i]);
+
 	for (i = 0; i < numvertexes; i++)
 		LUA_InvalidateUserdata(&vertexes[i]);
 
