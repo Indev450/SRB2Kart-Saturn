@@ -2830,8 +2830,9 @@ static void HU_DrawRankings(void)
 		scorelines++;
 
 #if MAXPLAYERS > 16
-	if (scorelines > 16)
-		break; //dont draw past bottom of screen, show the best only
+	// 32 Player TODO: port over and cleanup scoreboard from sat-32p/blankart
+	if (scorelines >= 16)
+		break; // dont draw past bottom of screen, show the best only
 #endif
 	}
 

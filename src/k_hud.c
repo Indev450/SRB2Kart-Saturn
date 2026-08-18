@@ -695,6 +695,9 @@ void K_LoadKartHUDGraphics(void)
 		kp_winnernum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
+	// 32 player note: there are only 16 of those!
+	// so slots after this will just be missing patches!
+	// but keeping like this incase of missed adjustments which might cause crashes otherwise
 	snprintf(buffer, sizeof(buffer), "OPPRNKxx");
 	for (i = 0; i <= MAXPLAYERS; i++)
 	{
@@ -2294,6 +2297,11 @@ static boolean K_drawKartPositionFaces(void)
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
 
+#if MAXPLAYERS > 16
+			if (pos > 16)
+				V_DrawPingNum(FACE_X+2, Y+10, V_HUDTRANS|V_SNAPTOLEFT, pos, NULL);
+			else
+#endif
 			// Draws the little number over the face
 			V_DrawScaledPatch(FACE_X-5, Y+10, V_HUDTRANS|V_SNAPTOLEFT, kp_facenum[pos]);
 		}
@@ -2385,6 +2393,12 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			INT32 pos = player->kartstuff[k_position];
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
+
+#if MAXPLAYERS > 16
+			if (pos > 16)
+				V_DrawPingNum(x+2, y+10, 0, pos, NULL);
+			else
+#endif
 			// Draws the little number over the face
 			V_DrawScaledPatch(x-5, y+6, 0, kp_facenum[pos]);
 		}

@@ -274,12 +274,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 //
 static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 {
+	INT32 i;
+
 	if (standings->numplayers == 0)
 	{
 		return;
 	}
-
-	INT32 i;
 
 #define NUMFORNEWCOLUMN 8
 	INT32 y = 41, gutter = ((standings->numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
@@ -320,6 +320,12 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 	{
 		const UINT8 pnum = standings->num[i];
 		player_t *player = &players[pnum];
+
+#if MAXPLAYERS > 16
+		// 32 Player TODO: port over and cleanup standings drawer from sat-32p/blankart
+		if (i > 16)
+			break;
+#endif
 
 		if (pnum == MAXPLAYERS)
 			;
