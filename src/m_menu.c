@@ -7655,11 +7655,8 @@ static void M_DrawMPMainMenu(void)
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
 
-#if MAXPLAYERS != 16
-Update the maxplayers label...
-#endif
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[4].alphaKey,
-		((itemOn == 4) ? highlightflags : 0)|MENUCAPS, "(2-16 Players)");
+		((itemOn == 4) ? highlightflags : 0)|MENUCAPS, va("(2-%d Players)", MAXPLAYERS));
 
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[5].alphaKey,
 		((itemOn == 5) ? highlightflags : 0)|MENUCAPS,

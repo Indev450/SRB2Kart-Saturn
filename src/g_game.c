@@ -2631,12 +2631,18 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		// Just spawn there.
 		//return playerstarts[0];
 
+#if MAXPLAYERS > 16
+		//this section courtesy of fickle - v1.1 battle royale
+		// screw collision chex
+		return playerstarts[pos % numcoopstarts];
+#else
 		if (P_IsLocalPlayerNum(playernum))
 		{
 			CONS_Alert(CONS_WARNING, "Could not spawn at any Race starts!\n");
 		}
 
 		return NULL;
+#endif
 	}
 
 	if (P_IsLocalPlayerNum(playernum))

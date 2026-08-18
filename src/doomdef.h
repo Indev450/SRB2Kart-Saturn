@@ -604,8 +604,8 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 // undefine to enable fixes and features that are not vanilla compatible
 #define COMPAT_VANILLA
-// if we build with 32 player (or more!) support we dont need to care vanilla compat
-#if MAXPLAYERS > 16
+// if we build with 32 player (or more or less!) support we dont need to care vanilla compat
+#if MAXPLAYERS != 16
 #undef COMPAT_VANILLA
 #endif
 
