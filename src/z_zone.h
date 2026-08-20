@@ -42,39 +42,42 @@ extern "C" {
 enum
 {
 	// Tags < PU_LEVEL are not purged until freed explicitly.
-	PU_STATIC                = 1, // static entire execution time
-	PU_LUA                   = 2, // static entire execution time -- used by lua so it doesn't get caught in loops forever
-	PU_PERFSTATS             = 3, // static between changes to ps_samplesize cvar
+	PU_STATIC                = 0, // static entire execution time
+	PU_LUA, // static entire execution time -- used by lua so it doesn't get caught in loops forever
+	PU_PERFSTATS, // static between changes to ps_samplesize cvar
 
-	PU_SOUND                 = 11, // static while playing
-	PU_MUSIC                 = 12, // static while playing
+	PU_SOUND, // static while playing
+	PU_MUSIC, // static while playing
 
-	PU_PATCH                 = 14, // static entire execution time
-	PU_PATCH_LOWPRIORITY     = 15, // lower priority patch, static until level exited
-	PU_PATCH_ROTATED         = 16, // rotated patch, static entire execution time
-	PU_PATCH_DATA            = 17, // patch data, lifetime depends on the patch that owns it
-	PU_SPRITE                = 18, // sprite patch, static until WAD added
-	PU_HUDGFX                = 19, // HUD patch, static until WAD added
+	PU_PATCH, // static entire execution time
+	PU_PATCH_LOWPRIORITY, // lower priority patch, static until level exited
+	PU_PATCH_ROTATED, // rotated patch, static until level exited or WAD added
+	PU_PATCH_DATA, // patch data, lifetime depends on the patch that owns it
+	PU_SPRITE, // sprite patch, static until WAD added
+	PU_HUDGFX, // HUD patch, static until WAD added
 
-	PU_HWRPATCHINFO          = 21, // Hardware GLPatch_t struct for OpenGL texture cache
-	PU_HWRPATCHCOLMIPMAP     = 22, // Hardware GLMipmap_t struct colormap variation of patch
-	PU_HWRMODELTEXTURE       = 23, // Hardware model texture
+	PU_HWRPATCHINFO, // Hardware GLPatch_t struct for OpenGL texture cache
+	PU_HWRPATCHCOLMIPMAP, // Hardware GLMipmap_t struct colormap variation of patch
+	PU_HWRMODELTEXTURE, // Hardware model texture
 
-	PU_HWRCACHE              = 48, // static until unlocked
-	PU_CACHE                 = 49, // static until unlocked
+	PU_HWRCACHE, // static until unlocked
+	PU_CACHE, // static until unlocked
 
 	// Tags s.t. PU_LEVEL <= tag < PU_PURGELEVEL are purged at level start
-	PU_LEVEL                 = 50, // static until level exited
-	PU_LEVSPEC               = 51, // a special thinker in a level
-	PU_HWRPLANE              = 52, // if ZPLANALLOC is enabled in hw_bsp.c, this is used to alloc polygons for OpenGL
+	PU_LEVEL, // static until level exited
+	PU_LEVSPEC, // a special thinker in a level
+	PU_HWRPLANE, // if ZPLANALLOC is enabled in hw_bsp.c, this is used to alloc polygons for OpenGL
 
 	// Tags >= PU_PURGELEVEL are purgable whenever needed
-	PU_PURGELEVEL            = 100, // Note: this is never actually used as a tag
-	PU_CACHE_UNLOCKED        = 101, // Note: unused
-	PU_HWRCACHE_UNLOCKED     = 102, // 'unlocked' PU_HWRCACHE memory:
+	PU_PURGELEVEL, // Note: this is never actually used as a tag
+	PU_CACHE_UNLOCKED, // Note: unused
+	PU_HWRCACHE_UNLOCKED, // 'unlocked' PU_HWRCACHE memory:
 									// 'second-level' cache for graphics
-                                    // stored in hardware format and downloaded as needed
-	PU_HWRMODELTEXTURE_UNLOCKED = 103, // 'unlocked' PU_HWRMODELTEXTURE memory
+
+									// stored in hardware format and downloaded as needed
+	PU_HWRMODELTEXTURE_UNLOCKED, // 'unlocked' PU_HWRMODELTEXTURE memory
+
+	NUM_PURGETAGS
 };
 
 //
@@ -157,7 +160,7 @@ void Z_SetUser(void *ptr, void **newuser);
 //
 #define Z_TagUsage(tagnum) Z_TagsUsage(tagnum, tagnum)
 size_t Z_TagsUsage(INT32 lowtag, INT32 hightag);
-#define Z_TotalUsage() Z_TagsUsage(0, INT32_MAX)
+#define Z_TotalUsage() Z_TagsUsage(0, NUM_PURGETAGS-1)
 
 //
 // Miscellaneous functions
