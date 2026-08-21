@@ -1723,11 +1723,11 @@ void G_BeginRecording(void)
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
 		if (title)
 		{
-			snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+			snprintf(demotitlename, sizeof(demotitlename)-1, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
 			Z_Free(title);
 		}
 		else
-			snprintf(demotitlename, 64, "%s", modeattacking ? "Time Attack" : connectedservername);
+			snprintf(demotitlename, sizeof(demotitlename)-1, "%s", modeattacking ? "Time Attack" : connectedservername);
 
 		// Init just in case it isn't initialized already
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
@@ -2212,7 +2212,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2222,7 +2222,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2247,14 +2247,14 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 #ifdef DEMO_COMPAT_100
 		case 0x0001:
 			pdemo->type = MD_OUTDATED;
-			sprintf(pdemo->title, "Legacy Replay");
+			snprintf(pdemo->title, sizeof(pdemo->title), "Legacy Replay");
 			break;
 #endif
 		// too old, cannot support.
 		default:
 			CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
 			pdemo->type = MD_INVALID;
-			sprintf(pdemo->title, "INVALID REPLAY");
+			snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 			return;
 	}
 
@@ -2267,7 +2267,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2288,7 +2288,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is a legacy multiplayer replay and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 #endif
@@ -2522,7 +2522,7 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	if (!handle)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2534,7 +2534,7 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	if (count < 96 || memcmp(info_p, DEMOHEADER, 12))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2563,13 +2563,13 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 			break;
 #ifdef DEMO_COMPAT_100
 		case 0x0001:
-			sprintf(pdemo->title, "Legacy Replay");
+			snprintf(pdemo->title, sizeof(pdemo->title), "Legacy Replay");
 			break;
 #endif
 		// too old, cannot support.
 		default:
 			CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
-			sprintf(pdemo->title, "INVALID REPLAY");
+			snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 	}
 }
 
@@ -2633,7 +2633,7 @@ void G_DoPlayDemo(char *defdemoname)
 			//FIL_DefaultExtension(defdemoname, ".lmp");
 			if (!FIL_ReadFile(defdemoname, &demobuf.buffer))
 			{
-				snprintf(msg, 1024, M_GetText("Failed to read file '%s'.\n"), defdemoname);
+				snprintf(msg, sizeof(msg), M_GetText("Failed to read file '%s'.\n"), defdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				gameaction = ga_nothing;
 				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
@@ -2645,7 +2645,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// load demo resource from WAD
 		else if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
 		{
-			snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("Failed to read lump '%s'.\n"), defdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			gameaction = ga_nothing;
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
@@ -2666,7 +2666,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	if (memcmp(demobuf.p, DEMOHEADER, 12))
 	{
-		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2692,7 +2692,7 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 		// too old, cannot support.
 		default:
-			snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2703,7 +2703,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	if (memcmp(demobuf.p, "PLAY", 4))
 	{
-		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2720,7 +2720,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		if (demoflags & DF_MULTIPLAYER)
 		{
-			snprintf(msg, 1024, M_GetText("%s is an alpha multiplayer replay and cannot be played.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s is an alpha multiplayer replay and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2747,31 +2747,31 @@ void G_DoPlayDemo(char *defdemoname)
 			switch (error)
 			{
 				case DFILE_ERROR_NOTLOADED:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo are not loaded.\n\nUse\n\"playdemo %s -addfiles\"\nto load them and play the demo.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_OUTOFORDER:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo are loaded out of order.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_INCOMPLETEOUTOFORDER:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo are not loaded, and some are out of order.\n\nUse\n\"playdemo %s -addfiles\"\nto load needed files and play the demo.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_CANNOTLOAD:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo cannot be loaded.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_EXTRAFILES:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"You have additional files loaded beyond the demo's file list.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n",
 						 pdemoname);
 					break;
@@ -2821,7 +2821,7 @@ void G_DoPlayDemo(char *defdemoname)
 	// ...*map* not loaded?
 	if (!gamemap || (gamemap > NUMMAPS) || (W_CheckNumForName(G_BuildMapName(gamemap)) == LUMPERROR))
 	{
-		snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2853,7 +2853,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// Skin not loaded?
 		if (!SetPlayerSkin(0, skin))
 		{
-			snprintf(msg, 1024, M_GetText("%s features a character that is not currently loaded.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s features a character that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2863,7 +2863,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// ...*map* not loaded?
 		if (!gamemap || (gamemap > NUMMAPS) || !mapheaderinfo[gamemap-1] || !(mapheaderinfo[gamemap-1]->menuflags & LF2_EXISTSHACK))
 		{
-			snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2886,7 +2886,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// Sigh ... it's an empty demo.
 		if (*demobuf.p == DEMOMARKER)
 		{
-			snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s contains no data to be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2924,7 +2924,7 @@ void G_DoPlayDemo(char *defdemoname)
 	// Sigh ... it's an empty demo.
 	if (*demobuf.p == DEMOMARKER)
 	{
-		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2973,7 +2973,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 			if (modeattacking)
 			{
-				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
+				snprintf(msg, sizeof(msg), M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 				G_ResetDemoPlayback();
@@ -2985,7 +2985,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		if (modeattacking && numslots > 1)
 		{
-			snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();

@@ -154,14 +154,14 @@ void HU_LoadGraphics(void)
 	for (i = 0; i < HU_FONTSIZE; i++, j++)
 	{
 		// cache the heads-up font for entire game execution
-		sprintf(buffer, "STCFN%.3d", j);
+		snprintf(buffer, sizeof(buffer), "STCFN%.3d", j);
 		if (W_CheckNumForName(buffer) == LUMPERROR)
 			hu_font[i] = NULL;
 		else
 			hu_font[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 
 		// tiny version of the heads-up font
-		sprintf(buffer, "TNYFN%.3d", j);
+		snprintf(buffer, sizeof(buffer), "TNYFN%.3d", j);
 		if (W_CheckNumForName(buffer) == LUMPERROR)
 			tny_font[i] = NULL;
 		else
@@ -188,7 +188,7 @@ void HU_LoadGraphics(void)
 	for (i = 0; i < KART_FONTSIZE; i++, j++)
 	{
 		// cache the heads-up font for entire game execution
-		sprintf(buffer, "MKFNT%.3d", j);
+		snprintf(buffer, sizeof(buffer), "MKFNT%.3d", j);
 		if (W_CheckNumForName(buffer) == LUMPERROR)
 			kart_font[i] = NULL;
 		else
@@ -199,7 +199,7 @@ void HU_LoadGraphics(void)
 	j = LT_FONTSTART;
 	for (i = 0; i < LT_FONTSIZE; i++)
 	{
-		sprintf(buffer, "LTFNT%.3d", j);
+		snprintf(buffer, sizeof(buffer), "LTFNT%.3d", j);
 		j++;
 
 		if (W_CheckNumForName(buffer) == LUMPERROR)
@@ -212,7 +212,7 @@ void HU_LoadGraphics(void)
 	j = CRED_FONTSTART;
 	for (i = 0; i < CRED_FONTSIZE; i++)
 	{
-		sprintf(buffer, "CRFNT%.3d", j);
+		snprintf(buffer, sizeof(buffer), "CRFNT%.3d", j);
 		j++;
 
 		if (W_CheckNumForName(buffer) == LUMPERROR)
@@ -224,11 +224,11 @@ void HU_LoadGraphics(void)
 	// cache numbers too!
 	for (i = 0; i < 10; i++)
 	{
-		sprintf(buffer, "STTNUM%d", i);
+		snprintf(buffer, sizeof(buffer), "STTNUM%d", i);
 		tallnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
-		sprintf(buffer, "PINGN%d", i);
+		snprintf(buffer, sizeof(buffer), "PINGN%d", i);
 		pingnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
-		sprintf(buffer, "OPPRNK0%d", i);
+		snprintf(buffer, sizeof(buffer), "OPPRNK0%d", i);
 		ranknum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
@@ -240,7 +240,7 @@ void HU_LoadGraphics(void)
 	// cache ping gfx:
 	for (i = 0; i < 5; i++)
 	{
-		sprintf(buffer, "PINGGFX%d", i+1);
+		snprintf(buffer, sizeof(buffer), "PINGGFX%d", i+1);
 		pinggfx[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
@@ -2830,8 +2830,9 @@ static void HU_DrawRankings(void)
 		scorelines++;
 
 #if MAXPLAYERS > 16
-	if (scorelines > 16)
-		break; //dont draw past bottom of screen, show the best only
+	// 32 Player TODO: port over and cleanup scoreboard from sat-32p/blankart
+	if (scorelines >= 16)
+		break; // dont draw past bottom of screen, show the best only
 #endif
 	}
 

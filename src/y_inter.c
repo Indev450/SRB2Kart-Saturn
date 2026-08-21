@@ -153,7 +153,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		;
 	else if ((data.rankingsmode = (boolean)rankingsmode))
 	{
-		sprintf(data.levelstring, "* Total Rankings *");
+		snprintf(data.levelstring, sizeof(data.levelstring), "* Total Rankings *");
 		data.encore = false;
 	}
 	else
@@ -162,32 +162,41 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		if (mapheaderinfo[prevmap]->levelflags & LF_NOZONE)
 		{
 			if (mapheaderinfo[prevmap]->actnum[0])
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, mapheaderinfo[prevmap]->actnum);
+			}
 			else
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s *",
 					mapheaderinfo[prevmap]->lvlttl);
+			}
 		}
 		else
 		{
 			const char *zonttl = (mapheaderinfo[prevmap]->zonttl[0] ? mapheaderinfo[prevmap]->zonttl : "Zone");
+
 			if (mapheaderinfo[prevmap]->actnum[0])
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl, mapheaderinfo[prevmap]->actnum);
+			}
 			else
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl);
+			}
 		}
 
-		data.levelstring[sizeof data.levelstring - 1] = '\0';
+		data.levelstring[sizeof(data.levelstring) - 1] = '\0';
 
 		data.encore = encoremode;
 
@@ -265,12 +274,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 //
 static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 {
+	INT32 i;
+
 	if (standings->numplayers == 0)
 	{
 		return;
 	}
-
-	INT32 i;
 
 #define NUMFORNEWCOLUMN 8
 	INT32 y = 41, gutter = ((standings->numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
@@ -311,6 +320,12 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 	{
 		const UINT8 pnum = standings->num[i];
 		player_t *player = &players[pnum];
+
+#if MAXPLAYERS > 16
+		// 32 Player TODO: port over and cleanup standings drawer from sat-32p/blankart
+		if (i > 16)
+			break;
+#endif
 
 		if (pnum == MAXPLAYERS)
 			;
@@ -360,9 +375,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				if (standings->increase[pnum] != UINT8_MAX)
 				{
 					if (standings->increase[pnum] > 9)
-						snprintf(strtime, sizeof strtime, "(+%02d)", standings->increase[pnum]);
+						snprintf(strtime, sizeof(strtime), "(+%02d)", standings->increase[pnum]);
 					else
-						snprintf(strtime, sizeof strtime, "(+  %d)", standings->increase[pnum]);
+						snprintf(strtime, sizeof(strtime), "(+  %d)", standings->increase[pnum]);
 
 					if (standings->numplayers > NUMFORNEWCOLUMN)
 						V_DrawRightAlignedThinString(x+135+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -370,7 +385,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 						V_DrawRightAlignedString(x+120+gutter, y, 0, strtime);
 				}
 
-				snprintf(strtime, sizeof strtime, "%d", standings->val[i]);
+				snprintf(strtime, sizeof(strtime), "%d", standings->val[i]);
 
 				if (standings->numplayers > NUMFORNEWCOLUMN)
 					V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -385,9 +400,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				{
 					if (intertype == int_race)
 					{
-						snprintf(strtime, sizeof strtime, "%i'%02i\"%02i", G_TicsToMinutes(standings->val[i], true),
+						snprintf(strtime, sizeof(strtime), "%i'%02i\"%02i", G_TicsToMinutes(standings->val[i], true),
 						G_TicsToSeconds(standings->val[i]), G_TicsToCentiseconds(standings->val[i]));
-						strtime[sizeof strtime - 1] = '\0';
+						strtime[sizeof(strtime) - 1] = '\0';
 
 						if (standings->numplayers > NUMFORNEWCOLUMN)
 							V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -652,15 +667,16 @@ static void Y_UpdateRecordReplays(void)
 	if ((gpath = malloc(glen)) == NULL)
 		I_Error("Out of memory for replay filepath\n");
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
-	snprintf(lastdemo, 255, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
+	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+
+	snprintf(lastdemo, sizeof(lastdemo)-1, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		snprintf(bestdemo, 255, "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo)-1, "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -669,7 +685,7 @@ static void Y_UpdateRecordReplays(void)
 			CONS_Printf("\x83%s\x80 %s '%s'\n", M_GetText("NEW RECORD TIME!"), M_GetText("Saved replay as"), bestdemo);
 		}
 
-		snprintf(bestdemo, 255, "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo)-1, "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 		{ // Better lap time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -1499,12 +1515,12 @@ void Y_StartVote(void)
 		{
 			if (mapheaderinfo[votelevels[i][0]]->actnum[0])
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->actnum);
 			else
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl);
 		}
@@ -1512,12 +1528,12 @@ void Y_StartVote(void)
 		{
 			if (mapheaderinfo[votelevels[i][0]]->actnum[0])
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->zonttl, mapheaderinfo[votelevels[i][0]]->actnum);
 			else
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->zonttl);
 		}

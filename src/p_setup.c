@@ -180,7 +180,7 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 	// don't use va() because the calling function probably uses it
 	char mapnum[10];
 
-	sprintf(mapnum, "%hd", gamemap);
+	snprintf(mapnum, sizeof(mapnum), "%hd", gamemap);
 	CON_LogMessage("Map ");
 	CON_LogMessage(mapnum);
 	CON_LogMessage(" is corrupt: ");
@@ -266,8 +266,8 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->actnum[0] = '\0';
 	mapheaderinfo[num]->typeoflevel = 0;
 	mapheaderinfo[num]->nextlevel = (INT16)(i + 1);
-	snprintf(mapheaderinfo[num]->musname, 7, "%sM", G_BuildMapName(i));
-	mapheaderinfo[num]->musname[6] = 0;
+	snprintf(mapheaderinfo[num]->musname, sizeof(mapheaderinfo[num]->musname), "%sM", G_BuildMapName(i));
+	mapheaderinfo[num]->musname[sizeof(mapheaderinfo[num]->musname)-1] = 0;
 	mapheaderinfo[num]->mustrack = 0;
 	mapheaderinfo[num]->muspos = 0;
 	mapheaderinfo[num]->forcecharacter[0] = '\0';
@@ -2205,7 +2205,7 @@ void P_SetupLevelSky(INT32 skynum, boolean global)
 {
 	char skytexname[12];
 
-	sprintf(skytexname, "SKY%d", skynum);
+	snprintf(skytexname, sizeof(skytexname), "SKY%d", skynum);
 	skytexture = R_TextureNumForName(skytexname);
 	levelskynum = skynum;
 
@@ -2425,7 +2425,8 @@ static void P_RunLevelScript(const char *scriptname)
 		lumpnum_t lumpnum;
 		char newname[9];
 
-		strlcpy(newname, scriptname, sizeof(newname));
+		strncpy(newname, scriptname, sizeof(newname)-1);
+		newname[sizeof(newname)-1] = '\0';
 
 		lumpnum = W_CheckNumForName(newname);
 
@@ -2435,7 +2436,7 @@ static void P_RunLevelScript(const char *scriptname)
 			return;
 		}
 
-		COM_BufInsertText(W_CacheLumpNum(lumpnum, PU_CACHE));
+		COM_BufInsertTextEx(W_CacheLumpNum(lumpnum, PU_CACHE), W_LumpLength(lumpnum));
 	}
 	else
 	{
@@ -2450,23 +2451,26 @@ static void P_ForceCharacter(const char *forcecharskin)
 	if (netgame)
 	{
 		char skincmd[33];
+
 		if (splitscreen)
 		{
-			sprintf(skincmd, "skin2 %s\n", forcecharskin);
+			snprintf(skincmd, sizeof(skincmd), "skin2 %s\n", forcecharskin);
 			CV_Set(&cv_skin2, forcecharskin);
+
 			if (splitscreen > 1)
 			{
-				sprintf(skincmd, "skin3 %s\n", forcecharskin);
+				snprintf(skincmd, sizeof(skincmd), "skin3 %s\n", forcecharskin);
 				CV_Set(&cv_skin3, forcecharskin);
+
 				if (splitscreen > 2)
 				{
-					sprintf(skincmd, "skin4 %s\n", forcecharskin);
+					snprintf(skincmd, sizeof(skincmd), "skin4 %s\n", forcecharskin);
 					CV_Set(&cv_skin4, forcecharskin);
 				}
 			}
 		}
 
-		sprintf(skincmd, "skin %s\n", forcecharskin);
+		snprintf(skincmd, sizeof(skincmd), "skin %s\n", forcecharskin);
 		COM_BufAddText(skincmd);
 	}
 	else
@@ -2523,7 +2527,7 @@ static void P_LoadRecordGhosts(void)
 
 	const char *mapname = G_BuildMapName(gamemap);
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, mapname);
+	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, mapname);
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
@@ -2879,7 +2883,8 @@ static void P_SetupPlayer(void)
 	if (!demo.playback && multiplayer && D_NumPlayers())
 	{
 		static char buf[256];
-		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int)(time(NULL)), G_BuildMapName(gamemap));
+
+		snprintf(buf, sizeof(buf), "replay"PATHSEP"online"PATHSEP"%d-%s", (int)(time(NULL)), G_BuildMapName(gamemap));
 
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
@@ -3061,7 +3066,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		// Don't include these in the fade!
 		char tx[64];
 		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
-		snprintf(tx, 63, "%s%s%s",
+		snprintf(tx, sizeof(tx)-1, "%s%s%s",
 			mapheader->lvlttl,
 			(strlen(mapheader->zonttl) > 0) ? va(" %s",mapheader->zonttl) : // SRB2kart
 			((mapheader->levelflags & LF_NOZONE) ? "" : " Zone"),

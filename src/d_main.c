@@ -1245,7 +1245,7 @@ static void IdentifyVersion(void)
 #endif
 
 	char tempsrb2path[256] = ".";
-	if (getcwd(tempsrb2path, 256) == NULL)
+	if (I_GetCwd(tempsrb2path, 256) == NULL)
 		strcpy(tempsrb2path, ".");
 
 	// get the current directory (possible problem on NT with "." as current dir)

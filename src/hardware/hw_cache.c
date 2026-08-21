@@ -555,7 +555,8 @@ static void HWR_FreePatchCache(boolean freeall)
 		callback = FreeColormapsCallback;
 
 	//Z_IterateTags(PU_PATCH, PU_PATCH_ROTATED, callback);
-	Z_IterateTags(PU_PATCH, PU_PATCH, callback);
+	//Z_IterateTags(PU_PATCH, PU_PATCH_LOWPRIORITY, callback); // we dont really need to free low priority patches here as P_FreeLevelState takes care of them
+	Z_IterateTag(PU_PATCH, callback);
 	Z_IterateTags(PU_SPRITE, PU_HUDGFX, callback);
 }
 

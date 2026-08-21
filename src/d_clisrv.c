@@ -1629,8 +1629,8 @@ static boolean CL_SendJoin(void)
 	netbuffer->u.clientcfg.packetversion = PACKETVERSION;
 	netbuffer->u.clientcfg.version = VERSION;
 	netbuffer->u.clientcfg.subversion = SUBVERSION;
-	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION,
-			sizeof(netbuffer->u.clientcfg.application));
+	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION, sizeof(netbuffer->u.clientcfg.application)-1);
+	netbuffer->u.clientcfg.application[sizeof(netbuffer->u.clientcfg.application)-1] = '\0';
 #ifdef SATURNJOIN
 	netbuffer->u.clientcfg.issaturn = ISSATURN;
 #endif
@@ -1655,88 +1655,91 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
+	serverinfo_pak *serverinfo = &netbuffer->u.serverinfo;
+
 	netbuffer->packettype = PT_SERVERINFO;
-	netbuffer->u.serverinfo._255 = 255;
-	netbuffer->u.serverinfo.packetversion = PACKETVERSION;
-	netbuffer->u.serverinfo.version = VERSION;
-	netbuffer->u.serverinfo.subversion = SUBVERSION;
-	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
-			sizeof netbuffer->u.serverinfo.application);
+	serverinfo->_255 = 255;
+	serverinfo->packetversion = PACKETVERSION;
+	serverinfo->version = VERSION;
+	serverinfo->subversion = SUBVERSION;
+	strncpy(serverinfo->application, SRB2APPLICATION, sizeof(serverinfo->application)-1);
+	serverinfo->application[sizeof(serverinfo->application)-1] = '\0';
 	// return back the time value so client can compute their ping
-	netbuffer->u.serverinfo.time = (tic_t)LONG(servertime);
-	netbuffer->u.serverinfo.leveltime = (tic_t)LONG(leveltime);
+	serverinfo->time = (tic_t)LONG(servertime);
+	serverinfo->leveltime = (tic_t)LONG(leveltime);
 
 	// force 1 player
 	if (UseFakeSeed())
-		netbuffer->u.serverinfo.numberofplayer = (UINT8)1;
+		serverinfo->numberofplayer = (UINT8)1;
 	else
-		netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
+		serverinfo->numberofplayer = (UINT8)D_NumPlayers();
 
-	netbuffer->u.serverinfo.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
+	serverinfo->maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 
 	// SRB2Kart: Vanilla's gametype constants for MS support
-	netbuffer->u.serverinfo.gametype = (UINT8)((gt == GT_MATCH) ? VANILLA_GT_MATCH : VANILLA_GT_RACE);
+	serverinfo->gametype = (UINT8)((gt == GT_MATCH) ? VANILLA_GT_MATCH : VANILLA_GT_RACE);
 
-	netbuffer->u.serverinfo.modifiedgame = (UINT8)modifiedgame;
-	netbuffer->u.serverinfo.cheatsenabled = CV_CheatsEnabled();
+	serverinfo->modifiedgame = (UINT8)modifiedgame;
+	serverinfo->cheatsenabled = CV_CheatsEnabled();
 
-	netbuffer->u.serverinfo.kartvars = (UINT8) (
+	serverinfo->kartvars = (UINT8) (
 		(cv_kartspeed.value & SV_SPEEDMASK) |
 		(dedicated ? SV_DEDICATED : 0)
 	);
 
-	CopyCaretColors(netbuffer->u.serverinfo.servername, cv_servername.string,
-		MAXSERVERNAME);
-	strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), sizeof(netbuffer->u.serverinfo.mapname)-1);
+	CopyCaretColors(serverinfo->servername, cv_servername.string, MAXSERVERNAME);
 
-	memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, sizeof(netbuffer->u.serverinfo.mapmd5));
+	strncpy(serverinfo->mapname, G_BuildMapName(gamemap), sizeof(serverinfo->mapname)-1);
+	serverinfo->mapname[sizeof(serverinfo->mapname)-1] = '\0';
 
-	netbuffer->u.serverinfo.iszone = 0;
+	memcpy(serverinfo->mapmd5, mapmd5, sizeof(serverinfo->mapmd5));
 
-	memset(netbuffer->u.serverinfo.maptitle, 0, sizeof(netbuffer->u.serverinfo.maptitle));
-	memset(netbuffer->u.serverinfo.httpsource, 0, MAX_MIRROR_LENGTH);
+	serverinfo->iszone = 0;
+
+	memset(serverinfo->maptitle, 0, sizeof(serverinfo->maptitle));
+	memset(serverinfo->httpsource, 0, MAX_MIRROR_LENGTH);
 
 	if (!(mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU) && mapheaderinfo[gamemap-1]->lvlttl[0])
 	{
-		strncpy(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->lvlttl, sizeof(netbuffer->u.serverinfo.maptitle)-1);
+		strncpy(serverinfo->maptitle, mapheaderinfo[gamemap-1]->lvlttl, sizeof(serverinfo->maptitle)-1);
 
 		if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
 		{
 			if (mapheaderinfo[gamemap-1]->zonttl[0])
 			{
-				strncat(netbuffer->u.serverinfo.maptitle, " ", sizeof(netbuffer->u.serverinfo.maptitle)-1);
-				strncat(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->zonttl,
-						sizeof(netbuffer->u.serverinfo.maptitle)-1);
+				strncat(serverinfo->maptitle, " ", sizeof(serverinfo->maptitle)-1);
+				strncat(serverinfo->maptitle, mapheaderinfo[gamemap-1]->zonttl, sizeof(serverinfo->maptitle)-1);
 			}
 			else
 			{
-				netbuffer->u.serverinfo.iszone = 1; // ms and clients will append this themselves
+				serverinfo->iszone = 1; // ms and clients will append this themselves
 			}
 		}
 
 		if (mapheaderinfo[gamemap-1]->actnum[0])
 		{
-			strncat(netbuffer->u.serverinfo.maptitle, " ", sizeof(netbuffer->u.serverinfo.maptitle)-1);
-			strncat(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->actnum,
-					sizeof(netbuffer->u.serverinfo.maptitle)-1);
+			strncat(serverinfo->maptitle, " ", sizeof(serverinfo->maptitle)-1);
+			strncat(serverinfo->maptitle, mapheaderinfo[gamemap-1]->actnum, sizeof(serverinfo->maptitle)-1);
 		}
 	}
 	else
-		strncpy(netbuffer->u.serverinfo.maptitle, "Unknown", 33);
+	{
+		strncpy(serverinfo->maptitle, "Unknown", sizeof(serverinfo->maptitle)-1);
+	}
 
-	netbuffer->u.serverinfo.maptitle[32] = '\0';
+	serverinfo->maptitle[sizeof(serverinfo->maptitle)-1] = '\0';
 
-	netbuffer->u.serverinfo.actnum = 0; //mapheaderinfo[gamemap-1]->actnum
+	serverinfo->actnum = 0; //mapheaderinfo[gamemap-1]->actnum
 
 	mirror_length = strlen(httpurl);
 	if (mirror_length > MAX_MIRROR_LENGTH)
 		mirror_length = MAX_MIRROR_LENGTH;
 
-	if (snprintf(netbuffer->u.serverinfo.httpsource, mirror_length+1, "%s", httpurl) < 0)
+	if (snprintf(serverinfo->httpsource, mirror_length+1, "%s", httpurl) < 0)
 		// If there's an encoding error, send nothing, we accept that the above may be truncated
-		strncpy(netbuffer->u.serverinfo.httpsource, "", mirror_length);
+		strncpy(serverinfo->httpsource, "", mirror_length);
 
-	netbuffer->u.serverinfo.httpsource[MAX_MIRROR_LENGTH-1] = '\0';
+	serverinfo->httpsource[MAX_MIRROR_LENGTH-1] = '\0';
 
 	p = PutFileNeeded(0);
 
@@ -2094,7 +2097,7 @@ static void SV_SavedGame(void)
 	if (!cv_dumpconsistency.value)
 		return;
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	// first save it in a malloced buffer
 	save.p = save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
@@ -2132,7 +2135,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	length = FIL_ReadFile(tmpsave, &save.buffer);
 
@@ -2211,7 +2214,7 @@ static void CL_ReloadReceivedSavegame(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %d", i + 1);
+		snprintf(player_names[i], MAXPLAYERNAME+1, "Player %d", i + 1);
 	}
 
 	CL_LoadReceivedSavegame(true);
@@ -2947,7 +2950,7 @@ static void CL_ConnectToServer(void)
 	tic_t asksent;
 	char tmpsave[264];
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	filedownload.current = -1;
 	cl_mode = CL_SEARCHING;
@@ -3510,7 +3513,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	player_muted[playernum] = false;
 
 	// Reset the name
-	sprintf(player_names[playernum], "Player %d", playernum+1);
+	snprintf(player_names[playernum], MAXPLAYERNAME+1, "Player %d", playernum+1);
 
 	player_name_changes[playernum] = 0;
 
@@ -4472,7 +4475,7 @@ void SV_ResetServer(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %d", i + 1);
+		snprintf(player_names[i], MAXPLAYERNAME+1, "Player %d", i + 1);
 	}
 
 	memset(player_name_changes, 0, sizeof(player_name_changes));
@@ -5531,7 +5534,7 @@ static void PT_WillResendGamestate(void)
 
 	CONS_Printf(M_GetText("Reloading game state...\n"));
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	// Don't get a corrupt savegame error because tmpsave already exists
 	if (FIL_FileExists(tmpsave) && unlink(tmpsave) == -1)

@@ -2161,7 +2161,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				newname[1] = 'C';
 				newname[2] = 'R';
 
-				scrnum = sides[line->sidenum[0]].textureoffset>>FRACBITS;
+				scrnum = sides[line->sidenum[0]].textureoffset >> FRACBITS;
 				if (scrnum < 0 || scrnum > 999)
 				{
 					scrnum = 0;
@@ -2169,9 +2169,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				}
 				else
 				{
-					newname[5] = (char)('0' + (char)((scrnum/100)));
-					newname[6] = (char)('0' + (char)((scrnum%100)/10));
-					newname[7] = (char)('0' + (char)(scrnum%10));
+					newname[5] = (char)('0' + (char)((scrnum / 100)));
+					newname[6] = (char)('0' + (char)((scrnum % 100) / 10));
+					newname[7] = (char)('0' + (char)(scrnum % 10));
 				}
 				newname[8] = '\0';
 
@@ -2184,14 +2184,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				else
 				{
 					// W_CacheLumpNum may not have null terminator, so we need to do this :blobcatgooglyholditsheadinitshands:
-					size_t len = W_LumpLength(lumpnum);
-					char *script = Z_Malloc(len+1, PU_STATIC, NULL);
-					memcpy(script, W_CacheLumpNum(lumpnum, PU_CACHE), len);
-					script[len] = 0;
-
-					COM_BufInsertText(script);
-
-					Z_Free(script);
+					COM_BufInsertTextEx(W_CacheLumpNum(lumpnum, PU_CACHE), W_LumpLength(lumpnum));
 				}
 			}
 			break;

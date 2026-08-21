@@ -2632,6 +2632,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 			if (i & 1)
 				P_SetObjectMomZ(mo, ns, true);
 		}
+
 		if (player->mo->eflags & MFE_VERTICALFLIP)
 			mo->momz *= -1;
 	}

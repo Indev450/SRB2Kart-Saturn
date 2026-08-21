@@ -453,34 +453,13 @@ consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, dr
 static CV_PossibleValue_t cechotoggle_t[] = {{0, "Off"}, {1, "On"}, {2, "Console"}, {0, NULL}};
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, cechotoggle_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-#if MAXPLAYERS > 16
-#error "please update player_name table using the new value for MAXPLAYERS"
-#endif
-
 #ifdef SEENAMES
 player_t *seenplayer = NULL; // player we're aiming at right now
 #endif
 
-char player_names[MAXPLAYERS][MAXPLAYERNAME+1] =
-{
-	"Player 1",
-	"Player 2",
-	"Player 3",
-	"Player 4",
-	"Player 5",
-	"Player 6",
-	"Player 7",
-	"Player 8",
-	"Player 9",
-	"Player 10",
-	"Player 11",
-	"Player 12",
-	"Player 13",
-	"Player 14",
-	"Player 15",
-	"Player 16"
-}; // SRB2kart - removed Players 17 through 32
-
+// now automatically allocated in D_RegisterServerCommands
+// so that it doesn't have to be updated depending on the value of MAXPLAYERS
+char player_names[MAXPLAYERS][MAXPLAYERNAME+1];
 INT32 player_name_changes[MAXPLAYERS] = {};
 
 INT16 rw_maximums[NUM_WEAPONS] =
@@ -625,14 +604,18 @@ const char *G_BuildMapName(INT32 map)
 	}
 
 	if (map < 100 && map >= 0) // ...but why use signed integer in first place? idk but this prevents warning (and potential buffer overflow lol)
-		sprintf(&mapname[3], "%.2d", map);
+	{
+		snprintf(&mapname[3], sizeof(mapname)-3, "%.2d", map);
+	}
 	else
 	{
 		mapname[3] = (char)('A' + (char)((map - 100) / 36));
+
 		if ((map - 100) % 36 < 10)
 			mapname[4] = (char)('0' + (char)((map - 100) % 36));
 		else
 			mapname[4] = (char)('A' + (char)((map - 100) % 36) - 10);
+
 		mapname[5] = '\0';
 	}
 
@@ -2647,12 +2630,18 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		// Just spawn there.
 		//return playerstarts[0];
 
+#if MAXPLAYERS > 16
+		//this section courtesy of fickle - v1.1 battle royale
+		// screw collision chex
+		return playerstarts[pos % numcoopstarts];
+#else
 		if (P_IsLocalPlayerNum(playernum))
 		{
 			CONS_Alert(CONS_WARNING, "Could not spawn at any Race starts!\n");
 		}
 
 		return NULL;
+#endif
 	}
 
 	if (P_IsLocalPlayerNum(playernum))
@@ -3787,7 +3776,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	startonmapnum = mapoverride;
 #endif
 
-	sprintf(savename, savegamename, slot);
+	snprintf(savename, sizeof(savename), savegamename, slot);
 
 	length = FIL_ReadFile(savename, &save.buffer);
 	if (!length)
@@ -3799,7 +3788,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	save.p = save.buffer;
 
 	memset(vcheck, 0, sizeof (vcheck));
-	sprintf(vcheck, "version %d", VERSION);
+	snprintf(vcheck, sizeof(vcheck), "version %d", VERSION);
 
 	if (!fastcmp((const char *)save.p, (const char *)vcheck))
 	{
@@ -3865,8 +3854,8 @@ void G_SaveGame(UINT32 savegameslot)
 	const char *backup;
 	savebuffer_t save = {};
 
-	sprintf(savename, savegamename, savegameslot);
-	backup = va("%s",savename);
+	snprintf(savename, sizeof(savename), savegamename, savegameslot);
+	backup = va("%s", savename);
 
 	// save during evaluation or credits? game's over, folks!
 	if (gamestate == GS_CREDITS || gamestate == GS_EVALUATION)
@@ -3884,8 +3873,8 @@ void G_SaveGame(UINT32 savegameslot)
 			return;
 		}
 
-		memset(name, 0, sizeof (name));
-		sprintf(name, "version %d", VERSION);
+		memset(name, 0, sizeof(name));
+		snprintf(name, sizeof(name), "version %d", VERSION);
 		WRITEMEM(save.p, name, VERSIONSIZE);
 
 		P_SaveGame(&save);
@@ -4114,12 +4103,12 @@ char *G_BuildMapTitle(INT32 mapnum)
 		if (!title)
 			return NULL;
 
-		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
+		snprintf(title, len, "%s", mapheaderinfo[mapnum-1]->lvlttl);
 
 		if (zonetext)
-			sprintf(title + strlen(title), " %s", zonetext);
+			snprintf(title + strlen(title), len - strlen(title), " %s", zonetext);
 		if (actnum)
-			sprintf(title + strlen(title), " %s", actnum);
+			snprintf(title + strlen(title), len - strlen(title), " %s", actnum);
 	}
 
 	return title;

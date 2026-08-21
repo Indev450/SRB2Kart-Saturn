@@ -113,18 +113,29 @@ static vsbuf_t com_text; // variable sized buffer
   * \param ptext The text to add.
   * \sa COM_BufInsertText
   */
-void COM_BufAddText(const char *ptext)
+void COM_BufAddTextEx(const char *ptext, size_t plen)
 {
 	size_t l;
+	char *text;
 
-	l = strlen(ptext);
+	if (plen == 0)
+		plen = strlen(ptext);
+
+	text = Z_Malloc(sizeof(char) * (plen+1), PU_STATIC, NULL);
+	memcpy(text, ptext, plen);
+	text[plen] = '\0';
+
+	l = strlen(text);
 
 	if (com_text.cursize + l >= com_text.maxsize)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Command buffer full!\n"));
 		return;
 	}
-	VS_Write(&com_text, ptext, l);
+
+	VS_Write(&com_text, text, l);
+
+	Z_Free(text);
 }
 
 /** Adds command text and executes it immediately.
@@ -132,8 +143,10 @@ void COM_BufAddText(const char *ptext)
   * \param ptext The text to execute. A newline is automatically added.
   * \sa COM_BufAddText
   */
-void COM_BufInsertText(const char *ptext)
+void COM_BufInsertTextEx(const char *ptext, size_t plen)
 {
+	const INT32 old_wait = com_wait;
+
 	char *temp = NULL;
 	size_t templen;
 
@@ -145,9 +158,13 @@ void COM_BufInsertText(const char *ptext)
 		VS_Clear(&com_text);
 	}
 
+	com_wait = 0;
+
 	// add the entire text of the file (or alias)
-	COM_BufAddText(ptext);
+	COM_BufAddTextEx(ptext, plen);
 	COM_BufExecute(); // do it right away
+
+	com_wait += old_wait;
 
 	// add the copied off data
 	if (templen)
@@ -159,8 +176,7 @@ void COM_BufInsertText(const char *ptext)
 
 /** Progress the wait timer and flush waiting console commands when ready.
   */
-void
-COM_BufTicker(void)
+void COM_BufTicker(void)
 {
 	if (com_wait)
 	{
@@ -1596,7 +1612,9 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 	// send only changed cvars ...
 	// the client will reset all netvars to default before loading
 	WRITEUINT16(*p, 0x0000);
+
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
 		if (((cvar->flags & CV_NETVAR) && !CV_IsSetToDefault(cvar)) || (isdemorecording && cvar->netid == cv_numlaps.netid))
 		{
 			WRITEUINT16(*p, cvar->netid);
@@ -1614,7 +1632,7 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 				else
 				{
 					char buf[9];
-					sprintf(buf, "%d", mapheaderinfo[gamemap - 1]->numlaps);
+					snprintf(buf, sizeof(buf), "%d", mapheaderinfo[gamemap - 1]->numlaps);
 					WRITESTRING(*p, buf);
 				}
 			}
@@ -1626,6 +1644,8 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 			WRITEUINT8(*p, false);
 			++count;
 		}
+	}
+
 	WRITEUINT16(count_p, count);
 }
 
@@ -1782,8 +1802,7 @@ void CV_StealthSet(consvar_t *var, const char *value)
 void CV_StealthSetValue(consvar_t *var, INT32 value)
 {
 	char val[32];
-
-	sprintf(val, "%d", value);
+	snprintf(val, sizeof(val), "%d", value);
 	CV_SetCVar(var, val, true);
 }
 
@@ -1803,8 +1822,7 @@ void CV_Set(consvar_t *var, const char *value)
 void CV_SetValue(consvar_t *var, INT32 value)
 {
 	char val[32];
-
-	sprintf(val, "%d", value);
+	snprintf(val, sizeof(val), "%d", value);
 	CV_SetCVar(var, val, false);
 }
 
@@ -2202,6 +2220,7 @@ void CV_SaveVariables(FILE *f)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
 		if (cvar->flags & CV_SAVE)
 		{
 			char stringtowrite[MAXTEXTCMD+1];
@@ -2210,15 +2229,23 @@ void CV_SaveVariables(FILE *f)
 			if (fastcmp(cvar->string, "MAX") || fastcmp(cvar->string, "MIN"))
 			{
 				if (cvar->flags & CV_FLOAT)
-					sprintf(stringtowrite, "%f", FixedToFloat(cvar->value));
+				{
+					snprintf(stringtowrite, sizeof(stringtowrite), "%f", FixedToFloat(cvar->value));
+				}
 				else
-					sprintf(stringtowrite, "%d", cvar->value);
+				{
+					snprintf(stringtowrite, sizeof(stringtowrite), "%d", cvar->value);
+				}
 			}
 			else
-				strcpy(stringtowrite, cvar->string);
+			{
+				strncpy(stringtowrite, cvar->string, sizeof(stringtowrite)-1);
+				stringtowrite[sizeof(stringtowrite)-1] = '\0';
+			}
 
 			fprintf(f, "%s \"%s\"\n", cvar->name, stringtowrite);
 		}
+	}
 }
 
 //============================================================================

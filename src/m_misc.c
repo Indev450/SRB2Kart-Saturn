@@ -515,8 +515,8 @@ static boolean M_BackupConfig(const char *filename)
 {
 	char backupfile[MAX_WADPATH+4];
 
-	snprintf(backupfile, sizeof backupfile, "%s.bak", filename);
-	backupfile[sizeof backupfile - 1] = '\0';
+	snprintf(backupfile, sizeof(backupfile), "%s.bak", filename);
+	backupfile[sizeof(backupfile) - 1] = '\0';
 
 	FILE *config = fopen(filename, "r");
 
@@ -766,27 +766,27 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	}
 
 	if (gamestate == GS_LEVEL)
-		snprintf(maptext, 8, "%s", G_BuildMapName(gamemap));
+		snprintf(maptext, sizeof(maptext), "%s", G_BuildMapName(gamemap));
 	else
-		snprintf(maptext, 8, "Unknown");
+		snprintf(maptext, sizeof(maptext), "Unknown");
 
 	if (gamestate == GS_LEVEL && mapheaderinfo[gamemap-1]->lvlttl[0] != '\0')
-		snprintf(lvlttltext, 48, "%s%s%s",
+		snprintf(lvlttltext, sizeof(lvlttltext), "%s%s%s",
 			mapheaderinfo[gamemap-1]->lvlttl,
 			(strlen(mapheaderinfo[gamemap-1]->zonttl) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->zonttl) : // SRB2kart
 			((mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) ? "" : " ZONE"),
 			(strlen(mapheaderinfo[gamemap-1]->actnum) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->actnum) : "");
 	else
-		snprintf(lvlttltext, 48, "Unknown");
+		snprintf(lvlttltext, sizeof(lvlttltext), "Unknown");
 
 	if (gamestate == GS_LEVEL && players[displayplayers[0]].mo)
-		snprintf(locationtxt, 40, "X:%d Y:%d Z:%d A:%d",
+		snprintf(locationtxt, sizeof(locationtxt), "X:%d Y:%d Z:%d A:%d",
 			players[displayplayers[0]].mo->x>>FRACBITS,
 			players[displayplayers[0]].mo->y>>FRACBITS,
 			players[displayplayers[0]].mo->z>>FRACBITS,
 			FixedInt(AngleFixed(players[displayplayers[0]].mo->angle)));
 	else
-		snprintf(locationtxt, 40, "Unknown");
+		snprintf(locationtxt, sizeof(locationtxt), "Unknown");
 
 	memset(png_infotext, 0x00, sizeof(png_infotext));
 
@@ -1253,7 +1253,6 @@ boolean M_ScreenshotResponder(event_t *ev)
 	return true;
 }
 
-
 void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer)
 {
 	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
@@ -1261,7 +1260,7 @@ void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen,
 	const size_t amount = len - maxlen + 1;
 
 	// Note: anything above 17 will cause zero division
-	const size_t MAXSPEED = 6;
+	static const size_t MAXSPEED = 6;
 	const tic_t t = timer / (35/min(amount, MAXSPEED));
 
 	const size_t state = (t / amount) % 4;
@@ -1296,7 +1295,7 @@ void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen,
 	}
 
 	// Technically not necessary, since it gets set again after function call, but just in case
-	result[maxlen] = 0;
+	result[maxlen-1] = '\0';
 }
 
 void M_MinimapGenerate(void)
@@ -1394,7 +1393,7 @@ char *va(const char *format, ...)
 	static char string[1024];
 
 	va_start(argptr, format);
-	vsnprintf(string, 1024, format, argptr);
+	vsnprintf(string, sizeof(string), format, argptr);
 	va_end(argptr);
 
 	return string;
@@ -1708,7 +1707,7 @@ const char * M_Ftrim(double f)
 	int i;
 
 	/* I know I said it's the default, but just in case... */
-	sprintf(dig, "%.6f", fabs(modf(f, &f)));
+	snprintf(dig, sizeof(dig), "%.6f", fabs(modf(f, &f)));
 
 	/* trim trailing zeroes */
 	for (i = strlen(dig)-1; dig[i] == '0'; --i)
@@ -1736,6 +1735,7 @@ UINT8 M_CountBits(UINT32 num, UINT8 size)
 const char *GetRevisionString(void)
 {
 	static char rev[9] = {0};
+
 	if (rev[0])
 		return rev;
 
@@ -1743,6 +1743,7 @@ const char *GetRevisionString(void)
 		strncpy(rev, comprevision, 7);
 	else
 		snprintf(rev, 7, "r%s", comprevision);
+
 	rev[7] = '\0';
 
 	return rev;
@@ -1814,35 +1815,35 @@ TMatrix *RotateZMatrix(angle_t rad)
 char *sizeu1(size_t num)
 {
 	static char sizeu1_buf[28];
-	sprintf(sizeu1_buf, "%"PRIdS, num);
+	snprintf(sizeu1_buf, sizeof(sizeu1_buf), "%" PRIdS, num);
 	return sizeu1_buf;
 }
 
 char *sizeu2(size_t num)
 {
 	static char sizeu2_buf[28];
-	sprintf(sizeu2_buf, "%"PRIdS, num);
+	snprintf(sizeu2_buf, sizeof(sizeu2_buf), "%" PRIdS, num);
 	return sizeu2_buf;
 }
 
 char *sizeu3(size_t num)
 {
 	static char sizeu3_buf[28];
-	sprintf(sizeu3_buf, "%"PRIdS, num);
+	snprintf(sizeu3_buf, sizeof(sizeu3_buf), "%" PRIdS, num);
 	return sizeu3_buf;
 }
 
 char *sizeu4(size_t num)
 {
 	static char sizeu4_buf[28];
-	sprintf(sizeu4_buf, "%"PRIdS, num);
+	snprintf(sizeu4_buf, sizeof(sizeu4_buf), "%" PRIdS, num);
 	return sizeu4_buf;
 }
 
 char *sizeu5(size_t num)
 {
 	static char sizeu5_buf[28];
-	sprintf(sizeu5_buf, "%"PRIdS, num);
+	snprintf(sizeu5_buf, sizeof(sizeu5_buf), "%" PRIdS, num);
 	return sizeu5_buf;
 }
 

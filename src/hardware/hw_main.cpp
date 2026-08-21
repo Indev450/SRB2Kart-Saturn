@@ -514,7 +514,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
 
 		finallight += offset;
-		finallight = CLAMP(finallight, 0 , 255);
+		finallight = CLAMP(finallight, 0, 255);
 	}
 
 	return (FUINT)finallight;
@@ -532,7 +532,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
 
 		finallight += (fof ? -offset : offset);
-		finallight = CLAMP(finallight, 0 , 255);
+		finallight = CLAMP(finallight, 0, 255);
 	}
 
 	return (FUINT)finallight;
@@ -2306,7 +2306,7 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 				// Find the other side!
 				INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, -1);
 
-				if (line->linedef == &lines[line2])
+				if (line2 >= 0 && line->linedef == &lines[line2])
 					line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, line2);
 
 				if (line2 >= 0) // found it!
@@ -3235,6 +3235,18 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	if (!spr->mobj)
 		return;
 
+	// Ceiling scenery have no shadow.
+	if ((spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) == (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY))
+		return;
+
+	// Debris have no corona or shadow.
+	if (spr->mobj->flags2 & MF2_DEBRIS)
+		return;
+
+	// Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	if (spr->mobj->z < spr->mobj->floorz)
+		return;
+
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3495,10 +3507,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	hwrpatch = static_cast<GLPatch_t *>(gpatch->hardware);
 
 	// Draw shadow BEFORE sprite
-	if (UNLIKELY(cv_shadow.value // Shadows enabled
-		&& (sprmo->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(sprmo->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (sprmo->z >= sprmo->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	if (UNLIKELY(cv_shadow.value))
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -3824,10 +3833,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 
 	// Draw shadow BEFORE sprite
-	if (UNLIKELY(cv_shadow.value // Shadows enabled
-		&& (sprmo->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(sprmo->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (sprmo->z >= sprmo->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	if (UNLIKELY(cv_shadow.value))
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -6115,7 +6121,7 @@ static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 	}
 
 	// puts the numbers into the lumpname
-	sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)wipenum, (UINT16)scrnnum);
+	snprintf(&lumpname[4], sizeof(lumpname) - 4, "%.2hu%.2hu", (UINT16)wipenum, (UINT16)scrnnum);
 	wipelumpnum = W_CheckNumForName(lumpname);
 
 	// again, shouldn't be here really
