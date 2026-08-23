@@ -388,7 +388,7 @@ static void K_LoadSaturnHUDGraphics(void)
 			skp_speedpatchesdial[3] = (patch_t *)W_CachePatchName("SP_DFRAC", PU_HUDGFX);
 			skp_speedpatchesdial[4] = (patch_t *)W_CachePatchName("SP_DPERC", PU_HUDGFX);
 
-			sprintf(buffer, "K_DSPNMx");
+			snprintf(buffer, sizeof(buffer), "K_DSPNMx");
 			for (i = 0; i < 10; i++)
 			{
 				buffer[7] = '0'+(i%10);
@@ -507,7 +507,7 @@ static void K_LoadSaturnHUDGraphics(void)
 			skp_speedpatchesdialclr[3] = (patch_t *)W_CachePatchName("SC_DFRAC", PU_HUDGFX);
 			skp_speedpatchesdialclr[4] = (patch_t *)W_CachePatchName("SC_DPERC", PU_HUDGFX);
 
-			sprintf(buffer, "K_DSPNCx");
+			snprintf(buffer, sizeof(buffer), "K_DSPNCx");
 			for (i = 0; i < 10; i++)
 			{
 				buffer[7] = '0'+(i%10);
@@ -677,7 +677,7 @@ void K_LoadKartHUDGraphics(void)
 	kp_racefinish[5] = (patch_t *)W_CachePatchName("K_2PFINB", PU_HUDGFX);
 
 	// Position numbers
-	sprintf(buffer, "K_POSNxx");
+	snprintf(buffer, sizeof(buffer), "K_POSNxx");
 	for (i = 0; i < NUMPOSNUMS; i++)
 	{
 		buffer[6] = '0'+i;
@@ -688,14 +688,17 @@ void K_LoadKartHUDGraphics(void)
 		}
 	}
 
-	sprintf(buffer, "K_POSNWx");
+	snprintf(buffer, sizeof(buffer), "K_POSNWx");
 	for (i = 0; i < NUMWINFRAMES; i++)
 	{
 		buffer[7] = '0'+i;
 		kp_winnernum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	sprintf(buffer, "OPPRNKxx");
+	// 32 player note: there are only 16 of those!
+	// so slots after this will just be missing patches!
+	// but keeping like this incase of missed adjustments which might cause crashes otherwise
+	snprintf(buffer, sizeof(buffer), "OPPRNKxx");
 	for (i = 0; i <= MAXPLAYERS; i++)
 	{
 		buffer[6] = '0'+(i/10);
@@ -703,7 +706,7 @@ void K_LoadKartHUDGraphics(void)
 		kp_facenum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	sprintf(buffer, "K_CHILIx");
+	snprintf(buffer, sizeof(buffer), "K_CHILIx");
 	for (i = 0; i < 8; i++)
 	{
 		buffer[7] = '0'+(i+1);
@@ -772,21 +775,21 @@ void K_LoadKartHUDGraphics(void)
 	kp_kitchensink[1]       = (patch_t *)W_CachePatchName("K_ISSINK", PU_HUDGFX);
 	kp_sadface[1]           = (patch_t *)W_CachePatchName("K_ISSAD", PU_HUDGFX);
 
-	sprintf(buffer, "K_ITINVx");
+	snprintf(buffer, sizeof(buffer), "K_ITINVx");
 	for (i = 0; i < 7; i++)
 	{
 		buffer[7] = '1'+i;
 		kp_invincibility[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	sprintf(buffer, "K_ITORBx");
+	snprintf(buffer, sizeof(buffer), "K_ITORBx");
 	for (i = 0; i < 4; i++)
 	{
 		buffer[7] = '1'+i;
 		kp_orbinaut[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	sprintf(buffer, "K_ISINVx");
+	snprintf(buffer, sizeof(buffer), "K_ISINVx");
 	for (i = 0; i < 6; i++)
 	{
 		buffer[7] = '1'+i;
@@ -794,7 +797,7 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	// CHECK indicators
-	sprintf(buffer, "K_CHECKx");
+	snprintf(buffer, sizeof(buffer), "K_CHECKx");
 	for (i = 0; i < 6; i++)
 	{
 		buffer[7] = '1'+i;
@@ -802,7 +805,7 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	// Eggman warning numbers
-	sprintf(buffer, "K_EGGNx");
+	snprintf(buffer, sizeof(buffer), "K_EGGNx");
 	for (i = 0; i < 4; i++)
 	{
 		buffer[6] = '0'+i;
@@ -815,7 +818,7 @@ void K_LoadKartHUDGraphics(void)
 	kp_fpview[2] = (patch_t *)W_CachePatchName("VIEWC0E0", PU_HUDGFX);
 
 	// Input UI Wheel
-	sprintf(buffer, "K_WHEELx");
+	snprintf(buffer, sizeof(buffer), "K_WHEELx");
 	for (i = 0; i < 5; i++)
 	{
 		buffer[7] = '0'+i;
@@ -823,7 +826,7 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	// HERE COMES A NEW CHALLENGER
-	sprintf(buffer, "K_CHALxx");
+	snprintf(buffer, sizeof(buffer), "K_CHALxx");
 	for (i = 0; i < 25; i++)
 	{
 		buffer[6] = '0'+((i+1)/10);
@@ -832,14 +835,14 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	// Lap start animation
-	sprintf(buffer, "K_LAP0x");
+	snprintf(buffer, sizeof(buffer), "K_LAP0x");
 	for (i = 0; i < 7; i++)
 	{
 		buffer[6] = '0'+(i+1);
 		kp_lapanim_lap[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	sprintf(buffer, "K_LAPFxx");
+	snprintf(buffer, sizeof(buffer), "K_LAPFxx");
 	for (i = 0; i < 11; i++)
 	{
 		buffer[6] = '0'+((i+1)/10);
@@ -847,7 +850,7 @@ void K_LoadKartHUDGraphics(void)
 		kp_lapanim_final[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	sprintf(buffer, "K_LAPNxx");
+	snprintf(buffer, sizeof(buffer), "K_LAPNxx");
 	for (i = 0; i < 10; i++)
 	{
 		buffer[6] = '0'+i;
@@ -858,14 +861,14 @@ void K_LoadKartHUDGraphics(void)
 		}
 	}
 
-	sprintf(buffer, "K_LAPE0x");
+	snprintf(buffer, sizeof(buffer), "K_LAPE0x");
 	for (i = 0; i < 2; i++)
 	{
 		buffer[7] = '0'+(i+1);
 		kp_lapanim_emblem[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	sprintf(buffer, "K_LAPH0x");
+	snprintf(buffer, sizeof(buffer), "K_LAPH0x");
 	for (i = 0; i < 3; i++)
 	{
 		buffer[7] = '0'+(i+1);
@@ -1974,7 +1977,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 							goto bademblem;
 						}
 
-						snprintf(targettext, 9, "%i'%02i\"%02i",
+						snprintf(targettext, sizeof(targettext), "%i'%02i\"%02i",
 							G_TicsToMinutes(timetoreach, false),
 							G_TicsToSeconds(timetoreach),
 							G_TicsToCentiseconds(timetoreach));
@@ -2294,6 +2297,11 @@ static boolean K_drawKartPositionFaces(void)
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
 
+#if MAXPLAYERS > 16
+			if (pos > 16)
+				V_DrawPingNum(FACE_X+2, Y+10, V_HUDTRANS|V_SNAPTOLEFT, pos, NULL);
+			else
+#endif
 			// Draws the little number over the face
 			V_DrawScaledPatch(FACE_X-5, Y+10, V_HUDTRANS|V_SNAPTOLEFT, kp_facenum[pos]);
 		}
@@ -2385,6 +2393,12 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			INT32 pos = player->kartstuff[k_position];
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
+
+#if MAXPLAYERS > 16
+			if (pos > 16)
+				V_DrawPingNum(x+2, y+10, 0, pos, NULL);
+			else
+#endif
 			// Draws the little number over the face
 			V_DrawScaledPatch(x-5, y+6, 0, kp_facenum[pos]);
 		}
@@ -3581,6 +3595,10 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 #endif
 
 	skin = K_GetMobjSkin(mo);
+
+	if (!skin)
+		return;
+
 	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
 
 	if (minimaphead == NULL)
@@ -3783,6 +3801,9 @@ static void K_drawKartMinimap(void)
 			continue; // this doesn't interest us
 
 		mobj_t *mobj = players[localplayers[i]].mo;
+
+		if (!mobj)
+			continue;
 
 		// dont draw for no contestants
 		boolean playertimedout = (mobj->health <= 0 && players[localplayers[i]].pflags & PF_TIMEOVER);

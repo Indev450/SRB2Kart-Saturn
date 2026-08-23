@@ -277,20 +277,19 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump)
 
 	if (wadfiles[wad]->type == RET_LUA)
 	{
-		name = malloc(len+1);
-		strcpy(name, wadfiles[wad]->filename);
+		name = malloc(len + 1);
+		snprintf(name, len + 1, "%s", wadfiles[wad]->filename);
 	}
 	else // If it's not a .lua file, copy the lump name in too.
 	{
 		lumpinfo_t *lump_p = &wadfiles[wad]->lumpinfo[lump];
 		len += 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-		name = malloc(len+1);
+		name = malloc(len + 1);
 
 		if (!name)
 			I_Error("LUA_LoadLump: Out of memory!\n");
 
-		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
-		name[len] = '\0';
+		snprintf(name, len + 1, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
 	}
 
 	LUA_LoadFile(&f, name); // actually load file!
@@ -592,6 +591,7 @@ void LUA_InvalidateLevel(void)
 
 	for (i = 0; i < numsubsectors; i++)
 		LUA_InvalidateUserdata(&subsectors[i]);
+
 	for (i = 0; i < numsectors; i++)
 	{
 		LUA_InvalidateUserdata(&sectors[i]);
@@ -612,6 +612,7 @@ void LUA_InvalidateLevel(void)
 
 	for (i = 0; i < numsides; i++)
 		LUA_InvalidateUserdata(&sides[i]);
+
 	for (i = 0; i < numvertexes; i++)
 		LUA_InvalidateUserdata(&vertexes[i]);
 

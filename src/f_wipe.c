@@ -111,7 +111,8 @@ static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum)
 		goto freemask;
 
 	// SRB2Kart: This suddenly triggers ERRORMODE now
-	//sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)masknum, (UINT16)scrnnum);
+	//snprintf(&lumpname[4], 3, "%.2hu%.2hu", (UINT16)masknum, (UINT16)scrnnum);
+	//lumpname[8] = 0;
 
 	lumpname[4] = '0'+(masknum/10);
 	lumpname[5] = '0'+(masknum%10);

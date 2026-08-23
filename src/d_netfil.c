@@ -299,10 +299,13 @@ boolean CL_CheckDownloadable(void)
 			{
 				INT32 j;
 				char md5tmp[33];
+
 				for (j = 0; j < 16; j++)
-					sprintf(&md5tmp[j*2], "%02x", fileneeded[i].md5sum[j]);
+					snprintf(&md5tmp[j*2], 3, "%02x", fileneeded[i].md5sum[j]);
+
 				CONS_Printf("%s", md5tmp);
 			}
+
 			CONS_Printf("\n");
 		}
 	}
@@ -1616,8 +1619,7 @@ static void CURLGetFile(void)
 #endif
 }
 
-HTTP_login *
-CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
+HTTP_login *CURLGetLogin(const char *url, HTTP_login ***return_prev_next)
 {
 	HTTP_login  * login;
 	HTTP_login ** prev_next;
@@ -1627,7 +1629,7 @@ CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
 			( login = (*prev_next));
 			prev_next = &login->next
 	){
-		if (fastcmp(login->url, url) != 0)
+		if (fastcmp(login->url, url))
 		{
 			if (return_prev_next)
 				(*return_prev_next) = prev_next;

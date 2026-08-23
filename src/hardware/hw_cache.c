@@ -555,7 +555,8 @@ static void HWR_FreePatchCache(boolean freeall)
 		callback = FreeColormapsCallback;
 
 	//Z_IterateTags(PU_PATCH, PU_PATCH_ROTATED, callback);
-	Z_IterateTags(PU_PATCH, PU_PATCH, callback);
+	//Z_IterateTags(PU_PATCH, PU_PATCH_LOWPRIORITY, callback); // we dont really need to free low priority patches here as P_FreeLevelState takes care of them
+	Z_IterateTag(PU_PATCH, callback);
 	Z_IterateTags(PU_SPRITE, PU_HUDGFX, callback);
 }
 
@@ -998,7 +999,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 		const char *flatname = W_CheckNameForNum(flatlumpnum);
 
 		// hack for gba rainbow roads cyan floors
-		if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
+		if (UNLIKELY(flatname && memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
 		{
 			glMipmap->flags &= ~TF_CHROMAKEYED;
 		}

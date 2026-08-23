@@ -245,12 +245,12 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 {
-	player_t *p = object->player; // will be NULL if not a player
+	player_t *player = object->player; // will be NULL if not a player
 	fixed_t zdist; // distance between bottoms
 	fixed_t speed = spring->info->mass; // conveniently, both fans and gas jets use this for the vertical thrust
 	SINT8 flipval = P_MobjFlip(spring); // virtually everything here centers around the thruster's gravity, not the object's!
 
-	if (p && object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
+	if (player && object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
 		return;
 
 	// is object's top below thruster's position? if not, calculate distance between their bottoms
@@ -276,7 +276,7 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 				break;
 			if (flipval*object->momz >= FixedMul(speed, spring->scale)) // if object's already moving faster than your best, don't bother
 				break;
-			if (p && (p->climbing || p->pflags & PF_GLIDING)) // doesn't affect Knux when he's using his abilities!
+			if (player && (player->climbing || player->pflags & PF_GLIDING)) // doesn't affect Knux when he's using his abilities!
 				break;
 
 			object->momz += flipval*FixedMul(speed/4, spring->scale);
@@ -1828,14 +1828,14 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 			delta1 = abs(thing->z - midheight);
 			delta2 = abs(thingtop - midheight);
 
-			if (topheight > tmfloorz && delta1 < delta2
+			if ((topheight > tmfloorz) && (delta1 < delta2)
 				&& !(rover->flags & FF_REVERSEPLATFORM))
 			{
 				tmfloorz = tmdropoffz = topheight;
 				tmfloorslope = *rover->t_slope;
 			}
 
-			if (bottomheight < tmceilingz && delta1 >= delta2
+			if ((bottomheight < tmceilingz) && (delta1 >= delta2)
 				&& !(rover->flags & FF_PLATFORM)
 				&& !(thing->type == MT_SKIM && (rover->flags & FF_SWIMMABLE)))
 			{
@@ -1890,8 +1890,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 
 						po->validcount = validcount;
 
-						if (!P_BBoxInsidePolyobj(po, tmbbox)
-							|| !(po->flags & POF_SOLID))
+						if (!(po->flags & POF_SOLID) || !P_BBoxInsidePolyobj(po, tmbbox))
 						{
 							plink = (polymaplink_t *)(plink->link.next);
 							continue;
@@ -2136,7 +2135,7 @@ static boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 
 						po->validcount = validcount;
 
-						if (!P_PointInsidePolyobj(po, x, y) || !(po->flags & POF_SOLID))
+						if (!(po->flags & POF_SOLID) || !P_PointInsidePolyobj(po, x, y))
 						{
 							plink = (polymaplink_t *)(plink->link.next);
 							continue;
@@ -3767,7 +3766,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 				delta1 = abs(thing->z - midheight);
 				delta2 = abs(thingtop - midheight);
 
-				if (bottomheight <= thing->ceilingz && delta1 >= delta2)
+				if ((bottomheight <= thing->ceilingz) && (delta1 >= delta2))
 				{
 					if (thing->flags & MF_PUSHABLE)
 					{
@@ -4277,7 +4276,7 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 			delta1 = abs(z - midheight);
 			delta2 = abs(thingtop - midheight);
 
-			if (topheight > floorz && delta1 < delta2)
+			if ((topheight > floorz) && (delta1 < delta2))
 				floorz = topheight;
 		}
 	}

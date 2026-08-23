@@ -186,7 +186,6 @@ typedef struct musicdef_s
 	char title[256];
 	char alttitle[256];
 	char authors[256];
-	boolean use_info;
 	size_t num;
 } musicdef_t;
 
@@ -287,8 +286,8 @@ void S_SetSfxVolume(INT32 volume);
 void S_SetMusicVolume(INT32 volume);
 
 INT32 S_OriginPlaying(void *origin);
-INT32 S_IdPlaying(sfxenum_t id);
-INT32 S_SoundPlaying(void *origin, sfxenum_t id);
+INT32 S_IdPlaying(sfxenum_t sfx_id);
+INT32 S_SoundPlaying(void *origin, sfxenum_t sfx_id);
 
 void S_StartSoundName(void *mo, const  char *soundname);
 

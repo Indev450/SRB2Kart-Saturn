@@ -868,7 +868,7 @@ boolean I_SetSongSpeed(float speed)
 		{
 			// deprecated in 0.5.0
 			char modspd[13];
-			sprintf(modspd, "%g", speed);
+			snprintf(modspd, sizeof(modspd), "%g", speed);
 			openmpt_module_ctl_set(openmpt_mhandle, "play.tempo_factor", modspd);
 		}
 #else

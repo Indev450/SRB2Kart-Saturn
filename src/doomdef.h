@@ -130,8 +130,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v9.3"
-#define VERSIONSTRINGW L"Saturn v9.3"
+#define VERSIONSTRING "Saturn v10"
+#define VERSIONSTRINGW L"Saturn v10"
 
 #define SATURN_TESTING // comment out for saturn release builds!
 
@@ -604,8 +604,8 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 // undefine to enable fixes and features that are not vanilla compatible
 #define COMPAT_VANILLA
-// if we build with 32 player (or more!) support we dont need to care vanilla compat
-#if MAXPLAYERS > 16
+// if we build with 32 player (or more or less!) support we dont need to care about vanilla compat
+#if MAXPLAYERS != 16
 #undef COMPAT_VANILLA
 #endif
 

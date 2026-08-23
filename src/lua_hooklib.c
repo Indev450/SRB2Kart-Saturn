@@ -25,6 +25,7 @@
 #include "lua_libs.h"
 #include "lua_hook.h"
 #include "lua_hud.h" // hud_running errors
+#include "lua_profile.h"
 
 /* =========================================================================
                                   ABSTRACTION
@@ -445,11 +446,54 @@ FUNCINLINE static ATTRINLINE void get_hook_from_table(Hook_State *hook, int n)
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
+static int pcall(Hook_State *hook)
+{
+	return lua_pcall(gL, hook->values, hook->results, EINDEX);
+}
+
+static const char *hook_name(Hook_State *hook)
+{
+	if (hud_running)
+	{
+		return hudHookNames[hook->hook_type];
+	}
+	else if (hook->string)
+	{
+		return stringHookNames[hook->hook_type];
+	}
+	//else if (hook->mobj_type > 0)
+	else if (hook->mobj_type != NONMOHOOK)
+	{
+		return mobjHookNames[hook->hook_type];
+	}
+	else
+	{
+		return hookNames[hook->hook_type];
+	}
+}
+
+static int pcall_timed_or_untimed(Hook_State *hook)
+{
+	if (!hud_running && cv_lua_profile.value > 0)
+	{
+		lua_timer_t *timer = LUA_BeginFunctionTimer(gL, -1 - hook->values, hook_name(hook));
+		int k = pcall(hook);
+		LUA_EndFunctionTimer(timer);
+
+		return k;
+	}
+	else
+	{
+		return pcall(hook);
+	}
+}
+
 static int call_single_hook_no_copy(Hook_State *hook)
 {
 	hook_important = hook->important;
 
-	if (lua_pcall(gL, hook->values, hook->results, EINDEX) == 0)
+	//if (lua_pcall(gL, hook->values, hook->results, EINDEX) == 0)
+	if (pcall_timed_or_untimed(hook) == 0)
 	{
 		if (hook->results > 0)
 		{
@@ -535,16 +579,16 @@ FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype
 	static UINT8 seen = 0; // so we dont have to check all this shit constantly
 	int numCalls = call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
 
-	if (!seen && numCalls > 0 && mobj_type == MT_NULL && (
-		   hook->hook_type == MOBJ_HOOK(MobjThinker    )
+	if (!seen && numCalls > 0 && mobj_type == MT_NULL &&
+	(      hook->hook_type == MOBJ_HOOK(MobjThinker    )
 		|| hook->hook_type == MOBJ_HOOK(MobjCollide    )
 		|| hook->hook_type == MOBJ_HOOK(MobjMoveCollide)
 		|| hook->hook_type == MOBJ_HOOK(MobjFuse       )
-		|| hook->hook_type == MOBJ_HOOK(MobjThinker    )
 		|| hook->hook_type == MOBJ_HOOK(BossThinker    )
 	))
 	{
 		seen = 1;
+
 		CONS_Alert(
 			CONS_WARNING, "%s\n", va(
 			"%s hooks not attached to a specific mobj type may cause performance issues!",
@@ -566,12 +610,10 @@ FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype
 	return numCalls;
 }
 
-/*
-FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
+/*FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
 {
 	return call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
-}
-*/
+}*/
 
 static int call_hooks
 (
@@ -760,7 +802,7 @@ static void hook_think_frame(int type)
 	const hook_t * map = &hookIds[type];
 	int k;
 
-	const boolean perfstats = (cv_perfstats.value >= 3);
+	const boolean perfstats = (cv_perfstats.value >= PS_THINKFRAME);
 
 	if (prepare_hook(&hook, 0, type))
 	{
@@ -856,7 +898,7 @@ int LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT3
 int LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	return damage_hook(target, inflictor, source, damage,
-					   MOBJ_HOOK(MobjDamage), res_true);
+					MOBJ_HOOK(MobjDamage), res_true);
 }
 
 int LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source)
@@ -945,7 +987,7 @@ void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 {
 	Hook_State hook = {};
 	if (prepare_string_hook
-			(&hook, 0, STRING_HOOK(LinedefExecute), line->text))
+		(&hook, 0, STRING_HOOK(LinedefExecute), line->text))
 	{
 		LUA_PushUserdata(gL, line, META_LINE);
 		LUA_PushUserdata(gL, mo, META_MOBJ);
@@ -1018,6 +1060,9 @@ void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save)
 		lua_pushcclosure(gL, archFunc, 2);
 		// stack: tables, savebuffer_t, archFunc
 
+		// Manually set the hook's variables here since we don't call prepare_hook
+		hook.hook_type = HOOK(NetVars);
+		hook.mobj_type = NONMOHOOK; // Force mobj_type to be NONMOHOOK so the mobj_type check get skipped
 		init_hook_call(&hook, 0, res_none);
 		call_mapped(&hook, map);
 

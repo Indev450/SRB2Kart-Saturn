@@ -79,6 +79,7 @@
 #include "core/memory.h"
 
 #include "lua_script.h"
+#include "lua_profile.h"
 
 /* Manually defined asset hashes for non-CMake builds
  * Last updated 2015 / 05 / 03 - SRB2 v2.1.15 - srb2.srb
@@ -643,6 +644,11 @@ static boolean D_Display(void)
 		}
 
 	    CON_Drawer(); // Ha, i LIED!
+
+		if (cv_lua_profile.value > 0)
+		{
+			LUA_RenderTimers();
+		}
 
 		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
@@ -1239,7 +1245,7 @@ static void IdentifyVersion(void)
 #endif
 
 	char tempsrb2path[256] = ".";
-	if (getcwd(tempsrb2path, 256) == NULL)
+	if (I_GetCwd(tempsrb2path, 256) == NULL)
 		strcpy(tempsrb2path, ".");
 
 	// get the current directory (possible problem on NT with "." as current dir)

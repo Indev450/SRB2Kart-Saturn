@@ -788,15 +788,15 @@ static int GLFramebuffer_CheckExt(void)
 	// gl versions from 2.1 may still support framebuffer objects
 
 	// maybe, just maybe, we support the standart extensions
-	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
 		return FBO_ARB;
 
 	// nope, try the older 2.1 extensions
-	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
 	{
 		// perhaps we may even support a stencil attachment
 		if (GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions))

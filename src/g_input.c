@@ -1250,7 +1250,8 @@ const char *G_KeynumToString(INT32 keynum)
 			return keynames[j].name;
 
 	// create a name for unknown keys
-	sprintf(keynamestr, "KEY%d", keynum);
+	snprintf(keynamestr, sizeof(keynamestr), "KEY%d", keynum);
+
 	return keynamestr;
 }
 

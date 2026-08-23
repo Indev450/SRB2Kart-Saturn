@@ -1033,6 +1033,12 @@ INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush)
 		}
 	}
 
+#if MAXPLAYERS > 16
+	// courtesy of fickle from 1.1 battleroyale
+	// battleroyale: limit how much items will scale to try to prevent shit-tier items in shit-huge netames
+	pingame = min(pingame, 12);
+#endif
+
 	if (first != -1 && second != -1) // calculate 2nd's distance from 1st, for SPB
 	{
 		secondist = P_AproxDistance(P_AproxDistance(players[first].mo->x - players[second].mo->x,

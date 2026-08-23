@@ -581,13 +581,19 @@ const char *GetPalette(void)
 
 	if (user && user[0])
 	{
-		if (W_CheckNumForName(user) == LUMPERROR)
+		const lumpnum_t palnum = W_CheckNumForName(user);
+
+		if (palnum == LUMPERROR)
 		{
 			CONS_Alert(CONS_WARNING, "cv_palette %s lump does not exist\n", user);
 		}
+		else if (W_LumpLength(palnum) % (256 * 3) != 0) // not divisable by 768, so most def not a valid palette, idk if theres a better way to check this
+		{
+			CONS_Alert(CONS_WARNING, "cv_palette %s is not a valid palette lump\n", user);
+		}
 		else
 		{
-			return cv_palette.string;
+			return user;
 		}
 	}
 
@@ -609,15 +615,16 @@ void V_ReloadPalette(void)
 void V_SetPalette(INT32 palettenum)
 {
 	RGBA_t *pal = NULL;
+
 	if (!pLocalPalette)
 		V_ReloadPalette();
 
-#ifdef HWRENDER
-	if (rendermode == render_soft ||
-	   (rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
-#endif
+	if (palettenum == 0)
 	{
-		if (palettenum == 0)
+#ifdef HWRENDER
+		if (rendermode == render_soft ||
+			(rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
+#endif
 		{
 			palettenum = cv_palettenum.value;
 		}

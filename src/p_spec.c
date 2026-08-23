@@ -2161,7 +2161,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				newname[1] = 'C';
 				newname[2] = 'R';
 
-				scrnum = sides[line->sidenum[0]].textureoffset>>FRACBITS;
+				scrnum = sides[line->sidenum[0]].textureoffset >> FRACBITS;
 				if (scrnum < 0 || scrnum > 999)
 				{
 					scrnum = 0;
@@ -2169,9 +2169,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				}
 				else
 				{
-					newname[5] = (char)('0' + (char)((scrnum/100)));
-					newname[6] = (char)('0' + (char)((scrnum%100)/10));
-					newname[7] = (char)('0' + (char)(scrnum%10));
+					newname[5] = (char)('0' + (char)((scrnum / 100)));
+					newname[6] = (char)('0' + (char)((scrnum % 100) / 10));
+					newname[7] = (char)('0' + (char)(scrnum % 10));
 				}
 				newname[8] = '\0';
 
@@ -2184,14 +2184,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				else
 				{
 					// W_CacheLumpNum may not have null terminator, so we need to do this :blobcatgooglyholditsheadinitshands:
-					size_t len = W_LumpLength(lumpnum);
-					char *script = Z_Malloc(len+1, PU_STATIC, NULL);
-					memcpy(script, W_CacheLumpNum(lumpnum, PU_CACHE), len);
-					script[len] = 0;
-
-					COM_BufInsertText(script);
-
-					Z_Free(script);
+					COM_BufInsertTextEx(W_CacheLumpNum(lumpnum, PU_CACHE), W_LumpLength(lumpnum));
 				}
 			}
 			break;
@@ -5300,6 +5293,18 @@ static void P_RunLevelLoadExecutors(void)
 		if (lines[i].special == 399 || lines[i].special == 328 || lines[i].special == 323)
 			P_RunTriggerLinedef(&lines[i], NULL, NULL);
 	}
+}
+
+static fixed_t P_GetSectorGravityFactor(sector_t *sec)
+{
+	return FixedDiv(*sec->gravity >> FRACBITS, 1000);
+}
+
+fixed_t P_GetSectorGravity(sector_t *sec)
+{
+	if (sec && sec->gravity)
+		return FixedMul(gravity, P_GetSectorGravityFactor(sec));
+	return gravity;
 }
 
 /** After the map has loaded, scans for specials that spawn 3Dfloors and

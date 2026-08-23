@@ -346,15 +346,15 @@ static void SplitPoly (fdivline_t *dlnp,        // splitting parametric line
 }
 
 // checks if any line is a portal or horizonline, for optimization
-static inline void CheckForPortalsAndHorizonLines(seg_t *lseg, const line_t *line)
+static inline void CheckForPortalsAndHorizonLines(boolean firstside, const line_t *line)
 {
 	// portal check
-	if (!gl_maphasportals && lseg->side == 0 && line->special == PORTALSPECIAL)
+	if (!gl_maphasportals && firstside && line->special == PORTALSPECIAL)
 	{
 		// Find the other side!
 		INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, -1);
 
-		if (line == &lines[line2])
+		if (line2 >= 0 && line == &lines[line2])
 			line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, line2);
 
 		if (line2 >= 0) // found it!
@@ -397,7 +397,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly)
 		if (!line)
 			continue;
 
-		CheckForPortalsAndHorizonLines(lseg, line);
+		CheckForPortalsAndHorizonLines(lseg->side == 0, line);
 
 		if (line->sidenum[1] != NO_INDEX)
 		{
@@ -581,7 +581,8 @@ static void loading_status(void)
 
 	I_OsPolling();
 	CON_Drawer();
-	sprintf(s, "%d%%", (++ls_percent)<<1);
+	snprintf(s, sizeof(s), "%d%%", (++ls_percent)<<1);
+
 	x = BASEVIDWIDTH/2;
 	y = BASEVIDHEIGHT/2;
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol); // Black background to match fade in effect

@@ -47,6 +47,7 @@ struct perfstatrow {
 static ps_metric_t ps_frametime = {0};
 
 ps_metric_t ps_tictime = {0};
+ps_metric_t ps_prevtictime = {0};
 
 ps_metric_t ps_playerthink_time = {0};
 ps_metric_t ps_thinkertime = {0};
@@ -169,14 +170,14 @@ perfstatrow_t gamelogic_rows[] = {
 };
 
 perfstatrow_t thinkercount_rows[] = {
-	{"thnkers", "Thinkers:       ", &ps_thinkercount, PS_LEVEL},
-	{" mobjs  ", " Mobjs:          ", &ps_mobjcount, PS_LEVEL},
+	{"thnkers"  , "Thinkers:       ", &ps_thinkercount, PS_LEVEL},
+	{" mobjs  " , " Mobjs:          ", &ps_mobjcount, PS_LEVEL},
 	{"  regular", "  Regular:        ", &ps_regularcount, PS_LEVEL},
 	{"  scenery", "  Scenery:        ", &ps_scenerycount, PS_LEVEL},
 	{"  nothink", "  Nothink:        ", &ps_nothinkcount, PS_HIDE_ZERO|PS_LEVEL},
-	{" precip ", " Precipitation:  ", &ps_precipcount, PS_LEVEL},
-	{" other  ", " Other:          ", &ps_otherthcount, PS_LEVEL},
-	{" remove ", " Pending removal:", &ps_removecount, PS_LEVEL},
+	{" precip " , " Precipitation:  ", &ps_precipcount, PS_LEVEL},
+	{" other  " , " Other:          ", &ps_otherthcount, PS_LEVEL},
+	{" remove " , " Pending removal:", &ps_removecount, PS_LEVEL},
 	{}
 };
 
@@ -607,7 +608,9 @@ static void PS_CountThinkers(void)
 		else if (thinker->function == (actionf_p1)P_MobjThinker)
 		{
 			mobj_t *mobj = (mobj_t*)thinker;
+
 			ps_mobjcount.value.i++;
+
 			if (mobj->flags & MF_NOTHINK)
 				ps_nothinkcount.value.i++;
 			else if (mobj->flags & MF_SCENERY)
@@ -626,49 +629,17 @@ static void PS_CountThinkers(void)
 
 		ps_precipcount.value.i++;
 	}
-
-	/*for (i = 0; i < NUM_THINKERLISTS; i++)
-	{
-		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
-		{
-			ps_thinkercount.value.i++;
-			if (thinker->function == (actionf_p1)P_RemoveThinkerDelayed)
-				ps_removecount.value.i++;
-			else if (i == THINK_POLYOBJ)
-				ps_polythcount.value.i++;
-			else if (i == THINK_MAIN)
-				ps_mainthcount.value.i++;
-			else if (i == THINK_MOBJ)
-			{
-				if (thinker->function == (actionf_p1)P_MobjThinker)
-				{
-					mobj_t *mobj = (mobj_t*)thinker;
-					ps_mobjcount.value.i++;
-					if (mobj->flags & MF_NOTHINK)
-						ps_nothinkcount.value.i++;
-					else if (mobj->flags & MF_SCENERY)
-						ps_scenerycount.value.i++;
-					else
-						ps_regularcount.value.i++;
-				}
-			}
-			else if (i == THINK_DYNSLOPE)
-				ps_dynslopethcount.value.i++;
-			else if (i == THINK_PRECIP)
-				ps_precipcount.value.i++;
-		}
-	}*/
 }
 
 // Update all metrics that are calculated on every tick.
 void PS_UpdateTickStats(void)
 {
-	if (cv_perfstats.value == 1 && cv_ps_samplesize.value > 1)
+	if (cv_perfstats.value == PS_RENDER && cv_ps_samplesize.value > 1)
 	{
 		PS_UpdateRowHistories(gamelogicbrief_row, false);
 	}
 
-	if (cv_perfstats.value == 2)
+	if (cv_perfstats.value == PS_LOGIC)
 	{
 		if (PS_IsLevelActive())
 		{
@@ -693,25 +664,25 @@ void PS_UpdateTickStats(void)
 
 	if (cv_ps_samplesize.value > 1)
 	{
-		if (cv_perfstats.value >= 3 && PS_IsLevelActive())
+		if (cv_perfstats.value >= PS_THINKFRAME && PS_IsLevelActive())
 		{
 			int i;
 
 			switch (cv_perfstats.value)
 			{
-				case 3:
+				case PS_THINKFRAME:
 					for (i = 0; i < thinkframe_hooks_length; i++)
 					{
 						PS_UpdateMetricHistory(&thinkframe_hooks[i].time_taken, true, false);
 					}
 					break;
-				case 4:
+				case PS_PRETHINKFRAME:
 					for (i = 0; i < prethinkframe_hooks_length; i++)
 					{
 						PS_UpdateMetricHistory(&prethinkframe_hooks[i].time_taken, true, false);
 					}
 					break;
-				case 5:
+				case PS_POSTTHINKFRAME:
 					for (i = 0; i < postthinkframe_hooks_length; i++)
 					{
 						PS_UpdateMetricHistory(&postthinkframe_hooks[i].time_taken, true, false);
@@ -721,6 +692,7 @@ void PS_UpdateTickStats(void)
 					break;
 			}
 		}
+
 		if (cv_perfstats.value)
 		{
 			ps_tick_index++;
@@ -751,7 +723,7 @@ static void PS_DrawDescriptorHeader(void)
 		int samples_left = max(ps_frame_samples_left, ps_tick_samples_left);
 		int x, y;
 
-		if (cv_perfstats.value >= 3)
+		if (cv_perfstats.value >= PS_THINKFRAME)
 		{
 			x = 2;
 			y = 0;
@@ -867,20 +839,19 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 	last_mod_name[0] = '\0';
 	INT32 total = 0;
 
-	//Decide page length based and drawn text on choosen thinker type
+	// Decide page length based and drawn text on choosen thinker type
 	switch (cv_perfstats.value)
 	{
-		case 3:
+		case PS_THINKFRAME:
 			{
 				maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
 				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
 				pagestart = min((page - 1)*PAGE_ENTRIES, thinkframe_hooks_length);
 				pageend   = min(pagestart + PAGE_ENTRIES, thinkframe_hooks_length);
-
 				V_DrawSmallString(MAX_X-50, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "ThinkFrame");
 			}
 			break;
-		case 4:
+		case PS_PRETHINKFRAME:
 			{
 				maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
 				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
@@ -889,7 +860,7 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 				V_DrawSmallString(MAX_X-60, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PreThinkFrame");
 			}
 			break;
-		case 5:
+		case PS_POSTTHINKFRAME:
 			{
 				maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
 				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
@@ -977,7 +948,22 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 
 void PS_ThinkFrame_Page_OnChange(void)
 {
-	int maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+	int maxpage = 0;
+
+	switch (cv_perfstats.value)
+	{
+		case PS_THINKFRAME:
+			maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+			break;
+		case PS_PRETHINKFRAME:
+			maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
+			break;
+		case PS_POSTTHINKFRAME:
+			maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
+			break;
+		default:
+			break;
+	}
 
 	if (cv_ps_thinkframe_page.value > maxpage)
 		CV_StealthSetValue(&cv_ps_thinkframe_page, maxpage);
@@ -1010,18 +996,18 @@ static void PS_DrawPostThinkFrameStats(void)
 
 void M_DrawPerfStats(void)
 {
-	if (cv_perfstats.value == 1) // rendering
+	if (cv_perfstats.value == PS_RENDER) // rendering
 	{
 		PS_UpdateFrameStats();
 		PS_DrawRenderStats();
 	}
-	else if (cv_perfstats.value == 2) // logic
+	else if (cv_perfstats.value == PS_LOGIC) // logic
 	{
 		// PS_UpdateTickStats is called in TryRunTics, since otherwise it would miss
 		// tics when frame skips happen
 		PS_DrawGameLogicStats();
 	}
-	else if (cv_perfstats.value >= 3) // lua thinkframe
+	else if (cv_perfstats.value >= PS_THINKFRAME) // lua thinkframe
 	{
 		if (!PS_IsLevelActive())
 			return;
@@ -1038,13 +1024,13 @@ void M_DrawPerfStats(void)
 
 		switch (cv_perfstats.value)
 		{
-			case 3:
+			case PS_THINKFRAME:
 				PS_DrawThinkFrameStats();
 				break;
-			case 4:
+			case PS_PRETHINKFRAME:
 				PS_DrawPreThinkFrameStats();
 				break;
-			case 5:
+			case PS_POSTTHINKFRAME:
 				PS_DrawPostThinkFrameStats();
 				break;
 			default:

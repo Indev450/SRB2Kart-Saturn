@@ -180,7 +180,7 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 	// don't use va() because the calling function probably uses it
 	char mapnum[10];
 
-	sprintf(mapnum, "%hd", gamemap);
+	snprintf(mapnum, sizeof(mapnum), "%hd", gamemap);
 	CON_LogMessage("Map ");
 	CON_LogMessage(mapnum);
 	CON_LogMessage(" is corrupt: ");
@@ -266,8 +266,8 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->actnum[0] = '\0';
 	mapheaderinfo[num]->typeoflevel = 0;
 	mapheaderinfo[num]->nextlevel = (INT16)(i + 1);
-	snprintf(mapheaderinfo[num]->musname, 7, "%sM", G_BuildMapName(i));
-	mapheaderinfo[num]->musname[6] = 0;
+	snprintf(mapheaderinfo[num]->musname, sizeof(mapheaderinfo[num]->musname), "%sM", G_BuildMapName(i));
+	mapheaderinfo[num]->musname[sizeof(mapheaderinfo[num]->musname)-1] = 0;
 	mapheaderinfo[num]->mustrack = 0;
 	mapheaderinfo[num]->muspos = 0;
 	mapheaderinfo[num]->forcecharacter[0] = '\0';
@@ -318,15 +318,15 @@ void P_AllocMapHeader(INT16 i)
 // Loads the vertexes for a level.
 FUNCINLINE static ATTRINLINE void P_LoadVertices(UINT8 *data)
 {
-	mapvertex_t *ml = (mapvertex_t *)data;
-	vertex_t *li = vertexes;
+	mapvertex_t *mv = (mapvertex_t *)data;
+	vertex_t *v = vertexes;
 	size_t i;
 
 	// Copy and convert vertex coordinates, internal representation as fixed.
-	for (i = 0; i < numvertexes; i++, li++, ml++)
+	for (i = 0; i < numvertexes; i++, v++, mv++)
 	{
-		li->x = SHORT(ml->x)<<FRACBITS;
-		li->y = SHORT(ml->y)<<FRACBITS;
+		v->x = SHORT(mv->x)<<FRACBITS;
+		v->y = SHORT(mv->y)<<FRACBITS;
 	}
 }
 
@@ -479,65 +479,30 @@ static void P_SetupDirectionalLight(void)
 static void P_LoadSegs(UINT8 *data)
 {
 	INT32 rawlinedef, rawside;
-	mapseg_t *ml = (mapseg_t*)data;
-	seg_t *li = segs;
+	mapseg_t *ms = (mapseg_t*)data;
+	seg_t *seg = segs;
 	line_t *ldef;
 	size_t i;
 
 	// Set map lighting settings.
 	P_SetupDirectionalLight();
 
-	for (i = 0; i < numsegs; i++, li++, ml++)
+	for (i = 0; i < numsegs; i++, seg++, ms++)
 	{
 		INT16 v1, v2;
 
-		v1 = SHORT(ml->v1);
-		v2 = SHORT(ml->v2);
+		v1 = SHORT(ms->v1);
+		v2 = SHORT(ms->v2);
 
 		// e6y
-		// check and fix wrong references to non-existent vertexes
-		// see e1m9 @ NIVELES.WAD
-		// http://www.doomworld.com/idgames/index.php?id=12647
-		if ((unsigned)v1 >= numvertexes || (unsigned)v2 >= numvertexes)
-		{
-			if ((unsigned)v1 >= numvertexes)
-				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1));
-			if ((unsigned)v2 >= numvertexes)
-				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2));
+		// moved down for additional checks to avoid overflow
+		// if wrong vertexe's indexes are in SEGS lump
+		// see below for more detailed information
 
-			if (li->sidedef == &sides[li->linedef->sidenum[0]])
-			{
-				li->v1 = lines[ml->linedef].v1;
-				li->v2 = lines[ml->linedef].v2;
-			}
-			else
-			{
-				li->v1 = lines[ml->linedef].v2;
-				li->v2 = lines[ml->linedef].v1;
-			}
-		}
-		else
-		{
-			li->v1 = &vertexes[v1];
-			li->v2 = &vertexes[v2];
-		}
+		seg->angle  = (SHORT(ms->angle)) << FRACBITS;
+		seg->offset = (SHORT(ms->offset)) << FRACBITS;
 
-#ifdef HWRENDER
-		if (rendermode == render_opengl)
-		{
-			li->fv1.x = FixedToFloat(li->v1->x);
-			li->fv1.y = FixedToFloat(li->v1->y);
-			//li->fv1.z = FixedToFloat(li->v1->z); // z is unused in gl
-
-			li->fv2.x = FixedToFloat(li->v2->x);
-			li->fv2.y = FixedToFloat(li->v2->y);
-			//li->fv2.z = FixedToFloat(li->v2->z);
-		}
-#endif
-		li->length = P_SegLength(li);
-		li->angle = (SHORT(ml->angle))<<FRACBITS;
-		li->offset = (SHORT(ml->offset))<<FRACBITS;
-		rawlinedef = SHORT(ml->linedef);
+		rawlinedef = SHORT(ms->linedef);
 
 		//e6y: check for wrong indexes
 		if ((unsigned)rawlinedef >= numlines)
@@ -546,8 +511,8 @@ static void P_LoadSegs(UINT8 *data)
 		}
 
 		ldef = &lines[rawlinedef];
-		li->linedef = ldef;
-		rawside = SHORT(ml->side);
+		seg->linedef = ldef;
+		rawside = SHORT(ms->side);
 
 		//e6y: fix wrong side index
 		if (rawside != 0 && rawside != 1)
@@ -562,9 +527,9 @@ static void P_LoadSegs(UINT8 *data)
 			I_Error("P_LoadSegs: linedef %d for seg %s references a non-existent sidedef %d", rawlinedef, sizeu1(i), ldef->sidenum[rawside]);
 		}
 
-		li->side = rawside;
+		seg->side = rawside;
 
-		li->sidedef = &sides[ldef->sidenum[rawside]];
+		seg->sidedef = &sides[ldef->sidenum[rawside]];
 
 		/* cph 2006/09/30 - our frontsector can be the second side of the
 		 * linedef, so must check for NO_INDEX in case we are incorrectly
@@ -572,11 +537,11 @@ static void P_LoadSegs(UINT8 *data)
 		if (ldef->sidenum[rawside] == NO_INDEX)
 		{
 			CorruptMapWarning(va("P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i)));
-			li->frontsector = NULL;
+			seg->frontsector = NULL;
 		}
 		else
 		{
-			li->frontsector = sides[ldef->sidenum[rawside]].sector;
+			seg->frontsector = sides[ldef->sidenum[rawside]].sector;
 		}
 
 		if (ldef->flags & ML_TWOSIDED)
@@ -584,15 +549,58 @@ static void P_LoadSegs(UINT8 *data)
 			if (ldef->sidenum[rawside^1] == NO_INDEX)
 			{
 				CorruptMapWarning(va("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i)));
-				li->backsector = NULL;
+				seg->backsector = NULL;
 			}
 			else
 			{
-				li->backsector = sides[ldef->sidenum[rawside^1]].sector;
+				seg->backsector = sides[ldef->sidenum[rawside^1]].sector;
 			}
 		}
 
-		P_UpdateSegLightOffset(li);
+		// e6y
+		// check and fix wrong references to non-existent vertexes
+		// see e1m9 @ NIVELES.WAD
+		// http://www.doomworld.com/idgames/index.php?id=12647
+		if ((unsigned)v1 >= numvertexes || (unsigned)v2 >= numvertexes)
+		{
+			if ((unsigned)v1 >= numvertexes)
+				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1));
+			if ((unsigned)v2 >= numvertexes)
+				CorruptMapWarning(va("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2));
+
+			if (seg->sidedef == &sides[seg->linedef->sidenum[0]])
+			{
+				seg->v1 = lines[ms->linedef].v1;
+				seg->v2 = lines[ms->linedef].v2;
+			}
+			else
+			{
+				seg->v1 = lines[ms->linedef].v2;
+				seg->v2 = lines[ms->linedef].v1;
+			}
+		}
+		else
+		{
+			seg->v1 = &vertexes[v1];
+			seg->v2 = &vertexes[v2];
+		}
+
+#ifdef HWRENDER
+		if (rendermode == render_opengl)
+		{
+			seg->fv1.x = FixedToFloat(seg->v1->x);
+			seg->fv1.y = FixedToFloat(seg->v1->y);
+			//seg->fv1.z = FixedToFloat(seg->v1->z); // z is unused in gl
+
+			seg->fv2.x = FixedToFloat(seg->v2->x);
+			seg->fv2.y = FixedToFloat(seg->v2->y);
+			//seg->fv2.z = FixedToFloat(seg->v2->z);
+		}
+#endif
+
+		seg->length = P_SegLength(seg);
+
+		P_UpdateSegLightOffset(seg);
 	}
 }
 
@@ -609,10 +617,6 @@ FUNCINLINE static ATTRINLINE void P_LoadSubsectors(void *data)
 		ss->firstline = (UINT16)SHORT(ms->firstseg);
 	}
 }
-
-//
-// P_LoadSectors
-//
 
 //
 // levelflats
@@ -665,13 +669,17 @@ static void P_CheckCyanFlat(levelflat_t *levelflat)
 	const char *flatname = W_CheckNameForNum(levelflat->lumpnum);
 
 	// hack for gba rainbow roads cyan floors
-	if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
+	if (UNLIKELY(flatname && memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
 	{
 		levelflat->cyan = false;
 		return;
 	}
 
 	const UINT8 *flat = R_GetFlat(levelflat->lumpnum);
+
+	if (!flat)
+		return;
+
 	const size_t size = W_LumpLength(levelflat->lumpnum);
 
 	for (size_t steppy = 0; steppy < size; steppy++)
@@ -790,6 +798,10 @@ INT32 P_CheckLevelFlat(const char *flatname)
 	// level flat id
 	return (INT32)i;
 }
+
+//
+// P_LoadSectors
+//
 
 static const sector_t sector_default = {
 	.nexttag = -1,
@@ -1894,7 +1906,7 @@ static void P_ReadBlockMapLump(INT16 *wadblockmaplump, size_t count)
 // because making both the WAD and PK3 loading code use
 // the same functions is trickier than it looks for blockmap
 // -- Monster Iestyn 09/01/18
-static boolean P_LoadRawBlockMap(UINT8 *data, size_t count)
+static boolean P_LoadBlockMap(UINT8 *data, size_t count)
 {
 	if (!count || count >= 0x20000)
 		return false;
@@ -2120,7 +2132,7 @@ static void P_LoadMapLUT(const virtres_t* virt)
 		rejectmatrix = NULL;
 	}
 
-	if (!(virtblockmap && P_LoadRawBlockMap(virtblockmap->data, virtblockmap->size)))
+	if (!(virtblockmap && P_LoadBlockMap(virtblockmap->data, virtblockmap->size)))
 		P_CreateBlockMap();
 }
 
@@ -2193,7 +2205,7 @@ void P_SetupLevelSky(INT32 skynum, boolean global)
 {
 	char skytexname[12];
 
-	sprintf(skytexname, "SKY%d", skynum);
+	snprintf(skytexname, sizeof(skytexname), "SKY%d", skynum);
 	skytexture = R_TextureNumForName(skytexname);
 	levelskynum = skynum;
 
@@ -2413,7 +2425,8 @@ static void P_RunLevelScript(const char *scriptname)
 		lumpnum_t lumpnum;
 		char newname[9];
 
-		strlcpy(newname, scriptname, sizeof(newname));
+		strncpy(newname, scriptname, sizeof(newname)-1);
+		newname[sizeof(newname)-1] = '\0';
 
 		lumpnum = W_CheckNumForName(newname);
 
@@ -2423,7 +2436,7 @@ static void P_RunLevelScript(const char *scriptname)
 			return;
 		}
 
-		COM_BufInsertText(W_CacheLumpNum(lumpnum, PU_CACHE));
+		COM_BufInsertTextEx(W_CacheLumpNum(lumpnum, PU_CACHE), W_LumpLength(lumpnum));
 	}
 	else
 	{
@@ -2438,23 +2451,26 @@ static void P_ForceCharacter(const char *forcecharskin)
 	if (netgame)
 	{
 		char skincmd[33];
+
 		if (splitscreen)
 		{
-			sprintf(skincmd, "skin2 %s\n", forcecharskin);
+			snprintf(skincmd, sizeof(skincmd), "skin2 %s\n", forcecharskin);
 			CV_Set(&cv_skin2, forcecharskin);
+
 			if (splitscreen > 1)
 			{
-				sprintf(skincmd, "skin3 %s\n", forcecharskin);
+				snprintf(skincmd, sizeof(skincmd), "skin3 %s\n", forcecharskin);
 				CV_Set(&cv_skin3, forcecharskin);
+
 				if (splitscreen > 2)
 				{
-					sprintf(skincmd, "skin4 %s\n", forcecharskin);
+					snprintf(skincmd, sizeof(skincmd), "skin4 %s\n", forcecharskin);
 					CV_Set(&cv_skin4, forcecharskin);
 				}
 			}
 		}
 
-		sprintf(skincmd, "skin %s\n", forcecharskin);
+		snprintf(skincmd, sizeof(skincmd), "skin %s\n", forcecharskin);
 		COM_BufAddText(skincmd);
 	}
 	else
@@ -2511,7 +2527,7 @@ static void P_LoadRecordGhosts(void)
 
 	const char *mapname = G_BuildMapName(gamemap);
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, mapname);
+	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, mapname);
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
@@ -2867,7 +2883,8 @@ static void P_SetupPlayer(void)
 	if (!demo.playback && multiplayer && D_NumPlayers())
 	{
 		static char buf[256];
-		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int)(time(NULL)), G_BuildMapName(gamemap));
+
+		snprintf(buf, sizeof(buf), "replay"PATHSEP"online"PATHSEP"%d-%s", (int)(time(NULL)), G_BuildMapName(gamemap));
 
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
@@ -3049,7 +3066,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		// Don't include these in the fade!
 		char tx[64];
 		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
-		snprintf(tx, 63, "%s%s%s",
+		snprintf(tx, sizeof(tx)-1, "%s%s%s",
 			mapheader->lvlttl,
 			(strlen(mapheader->zonttl) > 0) ? va(" %s",mapheader->zonttl) : // SRB2kart
 			((mapheader->levelflags & LF_NOZONE) ? "" : " Zone"),
