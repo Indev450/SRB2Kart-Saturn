@@ -820,25 +820,28 @@ retry:
 			//I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
 				//SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 
-		CONS_Alert(CONS_ERROR, "SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
-				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
+		// no need to spam this on retries
+		if (retrycount == 0)
+			CONS_Alert(CONS_ERROR, "SOCK_Send, error sending to node %d (%s) #%u, %s\n", doomcom->remotenode,
+					SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 
+		// retry sending it
 		if (retrycount <= 3)
 		{
-			CONS_Printf("SOCK_Send: retrying... Attempt %d", retrycount);
+			CONS_Printf("SOCK_Send: retrying... Attempt %d\n", retrycount);
 			retrycount++;
 			// wait quarter of a second or smth
 			I_Sleep(250);
 			goto retry;
 		}
 
-		// no recovery
+		// no recovery, guess we die
 		I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
 				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 	}
 
 	if (retrycount > 0)
-		CONS_Alert(CONS_NOTICE, "SOCK_Send: successfully reconnected on Attempt %d", retrycount);
+		CONS_Alert(CONS_NOTICE, "SOCK_Send: successfully reconnected on Attempt %d\n", retrycount);
 }
 #undef ALLOWEDERROR
 
