@@ -2662,11 +2662,13 @@ static void HWR_AddPolyObjectPlanes(void)
 
 		polyobjsector = po_ptrs[i]->lines[0]->backsector; // the in-level polyobject sector
 
-		if (polyobjsector->floorheight <= gl_frontsector->ceilingheight
-			&& polyobjsector->floorheight >= gl_frontsector->floorheight
-			&& (viewz < polyobjsector->floorheight))
+		if (polyobjsector->floorheight <= gl_frontsector->ceilingheight &&
+			polyobjsector->floorheight >= gl_frontsector->floorheight &&
+			(viewz < polyobjsector->floorheight))
 		{
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->floorheight, true);
+			const INT16 llevel = (light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel);
+			extracolormap_t *colmap = (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap);
 
 			if (po_ptrs[i]->translucency > 0)
 			{
@@ -2674,22 +2676,24 @@ static void HWR_AddPolyObjectPlanes(void)
 				FBITFIELD blendmode;
 				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(levelflats[polyobjsector->floorpic].lumpnum, po_ptrs[i], false, polyobjsector->floorheight,
-												(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap));
+													llevel, Surf.PolyColor.s.alpha, polyobjsector, blendmode, colmap);
 			}
 			else
 			{
 				HWR_GetFlat(levelflats[polyobjsector->floorpic].lumpnum, R_NoEncore(polyobjsector, false));
 				HWR_RenderPolyObjectPlane(po_ptrs[i], false, polyobjsector->floorheight, PF_Occlude,
-											(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), levelflats[polyobjsector->floorpic].lumpnum,
-											polyobjsector, 255, (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap));
+											llevel, levelflats[polyobjsector->floorpic].lumpnum,
+											polyobjsector, 255, colmap);
 			}
 		}
 
-		if (polyobjsector->ceilingheight >= gl_frontsector->floorheight
-			&& polyobjsector->ceilingheight <= gl_frontsector->ceilingheight
-			&& (viewz > polyobjsector->ceilingheight))
+		if (polyobjsector->ceilingheight >= gl_frontsector->floorheight &&
+			polyobjsector->ceilingheight <= gl_frontsector->ceilingheight &&
+			(viewz > polyobjsector->ceilingheight))
 		{
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->ceilingheight, true);
+			const INT16 llevel = (light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel);
+			extracolormap_t *colmap = (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap);
 
 			if (po_ptrs[i]->translucency > 0)
 			{
@@ -2697,14 +2701,14 @@ static void HWR_AddPolyObjectPlanes(void)
 				FBITFIELD blendmode;
 				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(levelflats[polyobjsector->ceilingpic].lumpnum, po_ptrs[i], true, polyobjsector->ceilingheight,
-												(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap));
+													llevel, Surf.PolyColor.s.alpha, polyobjsector, blendmode, colmap);
 			}
 			else
 			{
 				HWR_GetFlat(levelflats[polyobjsector->ceilingpic].lumpnum, R_NoEncore(polyobjsector, true));
 				HWR_RenderPolyObjectPlane(po_ptrs[i], true, polyobjsector->ceilingheight, PF_Occlude,
-										(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), levelflats[polyobjsector->ceilingpic].lumpnum,
-										polyobjsector, 255, (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap));
+											llevel, levelflats[polyobjsector->ceilingpic].lumpnum,
+											polyobjsector, 255, colmap);
 			}
 		}
 	}
@@ -3717,7 +3721,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 		Surf.PolyColor.s.alpha = alpha;
 
-		HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false); // sprite shader
+		HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 
 		top = bot;
 		endtop = endbot;
@@ -3744,7 +3748,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	Surf.PolyColor.s.alpha = alpha;
 
-	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false); // sprite shader
+	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 }
 
 // -----------------+
