@@ -580,6 +580,10 @@ void Z_CheckHeap(INT32 tag)
 				HeapError(" has the wrong ID");
 			}
 #endif
+			if (block->tag != j)
+			{
+				HeapError(va(" block is contained in the wrong headlist (got: %d expected: %zu)", block->tag, j));
+			}
 		}
 	}
 }
@@ -615,6 +619,14 @@ void Z_ChangeTag(void *ptr, INT32 tag)
 	if (tag >= PU_PURGELEVEL && block->user == NULL)
 		I_Error("Internal memory management error: "
 			"tried to make block purgable but it has no owner");
+
+	block->prev->next = block->next;
+	block->next->prev = block->prev;
+
+	block->next = headlist[tag].next;
+	block->prev = &headlist[tag];
+	headlist[tag].next = block;
+	block->next->prev = block;
 
 	block->tag = tag;
 }
