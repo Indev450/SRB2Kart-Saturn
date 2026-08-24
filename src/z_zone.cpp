@@ -513,6 +513,16 @@ void Z_CheckHeap(INT32 tag)
 	(void)tag;
 #endif
 
+#ifdef ZDEBUG
+#define HeapError(msg) \
+	I_Error("Z_CheckHeap : %s:%d, block %u (owned by %s:%d) %s", \
+		file, line, blocknumon, block->ownerfile, block->ownerline, msg)
+#else
+#define HeapError(msg) \
+	I_Error("Z_CheckHeap : block %u (owned by %s:%d) %s", \
+			blocknumon, block->ownerfile, block->ownerline, msg)
+#endif
+
 	for (block = head.next; block != &head; block = block->next)
 	{
 		blocknumon++;
@@ -524,105 +534,27 @@ void Z_CheckHeap(INT32 tag)
 #ifdef VALGRIND_MEMPOOL_EXISTS
 		if (!VALGRIND_MEMPOOL_EXISTS(block))
 		{
-			I_Error("Z_CheckHeap :"
-#ifdef ZDEBUG
-				" %s %d"
-#endif
-				" block %u"
-#ifdef ZDEBUG
-				" (owned by %s:%d)"
-#endif
-				" should not exist"
-#ifdef ZDEBUG
-				, file, line
-#endif
-				, blocknumon
-#ifdef ZDEBUG
-				, block->ownerfile, block->ownerline
-#endif
-				);
+			HeapError(" should not exist");
 		}
 #endif
 		if (block->user != NULL && *(block->user) != given)
 		{
-			I_Error("Z_CheckHeap :"
-#ifdef ZDEBUG
-				" %s %d"
-#endif
-				" block %u"
-#ifdef ZDEBUG
-				" (owned by %s:%d)"
-#endif
-				" doesn't have a proper user"
-#ifdef ZDEBUG
-				, file, line
-#endif
-				, blocknumon
-#ifdef ZDEBUG
-				, block->ownerfile, block->ownerline
-#endif
-				);
+			HeapError(" doesn't have a proper user");
 		}
+
 		if (block->next->prev != block)
 		{
-			I_Error("Z_CheckHeap :"
-#ifdef ZDEBUG
-				" %s %d"
-#endif
-				" block %u"
-#ifdef ZDEBUG
-				" (owned by %s:%d)"
-#endif
-				" lacks proper backlink"
-#ifdef ZDEBUG
-				, file, line
-#endif
-				, blocknumon
-#ifdef ZDEBUG
-				, block->ownerfile, block->ownerline
-#endif
-				);
+			HeapError(" lacks proper backlink");
 		}
+
 		if (block->prev->next != block)
 		{
-			I_Error("Z_CheckHeap :"
-#ifdef ZDEBUG
-				" %s %d"
-#endif
-				" block %u"
-#ifdef ZDEBUG
-				" (owned by %s:%d)"
-#endif
-				" lacks proper forward link"
-#ifdef ZDEBUG
-				, file, line
-#endif
-				, blocknumon
-#ifdef ZDEBUG
-				, block->ownerfile, block->ownerline
-#endif
-				);
+			HeapError(" lacks proper forward link");
 		}
 #ifdef PARANOIA
 		if (block->id != ZONEID)
 		{
-			I_Error("Z_CheckHeap :"
-#ifdef ZDEBUG
-				" %s %d"
-#endif
-				" block %u"
-#ifdef ZDEBUG
-				" (owned by %s:%d)"
-#endif
-				" have the wrong ID"
-#ifdef ZDEBUG
-				, file, line
-#endif
-				, blocknumon
-#ifdef ZDEBUG
-				, block->ownerfile, block->ownerline
-#endif
-				);
+			HeapError(" has the wrong ID");
 		}
 #endif
 	}
