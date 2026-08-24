@@ -828,7 +828,7 @@ retry:
 		// retry sending it
 		if (retrycount <= 3)
 		{
-			CONS_Printf("SOCK_Send: retrying... Attempt %d\n", retrycount);
+			CONS_Printf("SOCK_Send: retrying... Attempt %d\n", retrycount+1);
 			retrycount++;
 			// wait quarter of a second or smth
 			I_Sleep(250);
