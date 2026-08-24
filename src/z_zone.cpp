@@ -764,7 +764,7 @@ static void Command_Memdump_f(void)
 		for (block = headlist[i].next; block != &headlist[i]; block = block->next)
 		{
 			const char *filename = strrchr(block->ownerfile, PATHSEP[0]);
-			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d\n", block->tag, sizeu1(block->size + sizeof(memblock_t)), sizeu2(block->size), filename ? filename + 1 : block->ownerfile, block->ownerline);
+			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d tag: %d (%d)\n", block->tag, sizeu1(block->size + sizeof(memblock_t)), sizeu2(block->size), filename ? filename + 1 : block->ownerfile, block->ownerline, block->tag, i);
 		}
 	}
 }
