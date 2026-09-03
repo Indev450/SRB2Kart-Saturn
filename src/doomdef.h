@@ -616,6 +616,9 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #undef MAXPLAYERS
 #define MAXPLAYERS 32
 
+// raise skinlimit to 1024
+#undef MAXSKINS
+#define MAXSKINS 1024
 
 // overwrite some of those
 // when not compiling in vanilla compat mode

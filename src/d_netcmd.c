@@ -1689,7 +1689,8 @@ static void SendNameAndColor(UINT8 splitplayer)
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, playername->zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)playercolor->value);
-	WRITEUINT8(p, (UINT8)playerskin->value);
+	WRITESKIN(p, (skinnum_t)playerskin->value);
+
 	SendNetXCmdForPlayer(splitplayer, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
@@ -1697,7 +1698,8 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 {
 	player_t *player;
 	char name[MAXPLAYERNAME+1] = {};
-	UINT8 color, skin;
+	UINT8 color;
+	skinnum_t skin;
 
 #ifdef PARANOIA
 	if (playernum < 0 || playernum > MAXPLAYERS)
@@ -1719,7 +1721,7 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
 	color = READUINT8(*cp);
-	skin = READUINT8(*cp);
+	skin = READSKIN(*cp);
 
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)

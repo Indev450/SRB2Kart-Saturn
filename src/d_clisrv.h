@@ -339,13 +339,17 @@ typedef struct
 	UINT8 clientnode;
 	UINT8 gamestate;
 
+#ifndef PHOBOS_BUILD
 	// 0xFF == not in game; else player skin num
 	UINT8 playerskins[MAXPLAYERS];
 	UINT8 playercolor[MAXPLAYERS];
+#endif
 
 	UINT8 gametype;
 	UINT8 modifiedgame;
+#ifndef PHOBOS_BUILD
 	SINT8 adminplayers[MAXPLAYERS]; // Needs to be signed
+#endif
 
 	char server_context[8]; // Unique context id, generated at server startup.
 
@@ -354,7 +358,9 @@ typedef struct
 	boolean allownewplayer;
 	boolean discordinvites;
 
+#ifndef PHOBOS_BUILD
 	UINT8 varlengthinputs[0]; // Playernames and netvars
+#endif
 } ATTRPACK serverconfig_pak;
 
 typedef struct {
@@ -444,7 +450,7 @@ typedef struct
 	char name[MAXPLAYERNAME+1];
 	UINT8 address[4]; // sending another string would run us up against MAXPACKETLENGTH
 	UINT8 team;
-	UINT8 skin;
+	skinnum_t skin;
 	UINT8 data; // Color is first four bits, hasflag, isit and issuper have one bit each, the last is unused.
 	UINT32 score;
 	UINT16 timeinserver; // In seconds.
@@ -454,7 +460,7 @@ typedef struct
 typedef struct
 {
 	char name[MAXPLAYERNAME+1];
-	UINT8 skin;
+	skinnum_t skin;
 	UINT8 color;
 	UINT32 pflags;
 	UINT32 score;

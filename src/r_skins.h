@@ -71,9 +71,9 @@ extern INT32 numskins;
 extern INT32 numlocalskins;
 extern INT32 numallskins;
 extern skin_t skins[MAXSKINS];
-extern UINT8 skinstats[9][9][MAXSKINS];
-extern UINT8 skinstatscount[9][9];
-extern UINT8 skinsorted[MAXSKINS];
+extern skinnum_t skinstats[9][9][MAXSKINS];
+extern skinnum_t skinstatscount[9][9];
+extern skinnum_t skinsorted[MAXSKINS];
 
 extern skin_t localskins[MAXLOCALSKINS];
 extern skin_t allskins[MAXSKINS+MAXLOCALSKINS];
