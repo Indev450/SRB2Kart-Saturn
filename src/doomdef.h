@@ -130,8 +130,17 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v10"
-#define VERSIONSTRINGW L"Saturn v10"
+
+#ifdef PHOBOS_BUILD
+#define CLIENTNAME  "Phobos"
+#define CLIENTNAMEW L"Phobos"
+#else
+#define CLIENTNAME  "Saturn"
+#define CLIENTNAMEW L"Saturn"
+#endif
+
+#define VERSIONSTRING  CLIENTNAME  " v10"
+#define VERSIONSTRINGW CLIENTNAMEW L" v10"
 
 #define SATURN_TESTING // comment out for saturn release builds!
 
@@ -602,11 +611,20 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
-// undefine to enable fixes and features that are not vanilla compatible
-#define COMPAT_VANILLA
-// if we build with 32 player (or more or less!) support we dont need to care about vanilla compat
-#if MAXPLAYERS != 16
-#undef COMPAT_VANILLA
+// TODO: make this a compile flag!
+// define to enable fixes and features that are not vanilla compatible
+//#define PHOBOS_BUILD
+
+#ifdef PHOBOS_BUILD
+// compiler cries otherwise :chaosleep:
+#undef MAXPLAYERS
+// we want 32 players yesss
+#define MAXPLAYERS 32
+
+// overwrite some of those
+// when not compiling in vanilla compat mode
+#define SATURNJOIN
+#define SATURNPAK
 #endif
 
 //-- SATURN __
@@ -671,13 +689,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #endif
 #else
 #undef UPDATE_ALERT
-#endif
-
-// overwrite some of those
-// when not compiling in vanilla compat mode
-#ifndef COMPAT_VANILLA
-	#define SATURNJOIN
-	#define SATURNPAK
 #endif
 
 #ifdef __cplusplus

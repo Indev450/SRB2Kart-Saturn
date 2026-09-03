@@ -1108,10 +1108,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	diff2 = 0;
 
 	// not the default but the most probable
-#ifdef COMPAT_VANILLA
-	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0)
-#else
+#ifdef PHOBOS_BUILD
 	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0 || mobj->pmomz !=0)
+#else
+	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0)
 #endif
 		diff |= MD_MOM;
 	if (mobj->radius != mobj->info->radius)
@@ -1240,7 +1240,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		WRITEFIXED(save->p, mobj->momx);
 		WRITEFIXED(save->p, mobj->momy);
 		WRITEFIXED(save->p, mobj->momz);
-#ifndef COMPAT_VANILLA
+#ifdef PHOBOS_BUILD
 		WRITEFIXED(save->p, mobj->pmomz);
 #endif
 	}
@@ -2062,7 +2062,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->momx = READFIXED(save->p);
 		mobj->momy = READFIXED(save->p);
 		mobj->momz = READFIXED(save->p);
-#ifndef COMPAT_VANILLA
+#ifdef PHOBOS_BUILD
 		mobj->pmomz = READFIXED(save->p);
 #endif
 	} // otherwise they're zero, and the memset took care of it
