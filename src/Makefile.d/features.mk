@@ -9,6 +9,7 @@ passthru_opts+=\
 	HAVE_DISCORDRPC DEVELOP\
 	NOHOLEPUNCH\
 	HAVE_IPV6\
+	PHOBOS_BUILD\
 
 # build with debugging information
 ifdef DEBUGMODE

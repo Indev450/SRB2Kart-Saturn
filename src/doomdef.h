@@ -611,15 +611,11 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
-// TODO: make this a compile flag!
-// define to enable fixes and features that are not vanilla compatible
-//#define PHOBOS_BUILD
-
 #ifdef PHOBOS_BUILD
-// compiler cries otherwise :chaosleep:
-#undef MAXPLAYERS
 // we want 32 players yesss
+#undef MAXPLAYERS
 #define MAXPLAYERS 32
+
 
 // overwrite some of those
 // when not compiling in vanilla compat mode
