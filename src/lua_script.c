@@ -62,14 +62,6 @@ static lua_CFunction liblist[] = {
 	NULL
 };
 
-// Lua asks for memory using this.
-static void *LUA_Alloc(void *ud, void *ptr, size_t osize, size_t nsize)
-{
-	(void)ud;
-	(void)osize;
-	return Z_Realloc(ptr, nsize, PU_LUA, NULL);
-}
-
 // Panic function Lua calls when there's an unprotected error.
 // This function cannot return. Lua would kill the application anyway if it did.
 FUNCNORETURN static int LUA_Panic(lua_State *L)
@@ -197,7 +189,7 @@ void LUA_ClearState(void)
 	CONS_Printf(M_GetText("Pardon me while I initialize the Lua scripting interface...\n"));
 
 	// allocate state
-	L = lua_newstate(LUA_Alloc, NULL);
+	L = luaL_newstate();
 	lua_atpanic(L, LUA_Panic);
 
 	// open base libraries
@@ -373,7 +365,7 @@ void LUA_DumpFile(const char *filename)
 
 static void createMathLibState(void)
 {
-	mL = lua_newstate(LUA_Alloc, NULL);
+	mL = luaL_newstate();
 	lua_atpanic(mL, LUA_Panic);
 
 	// open only enum lib
@@ -1464,4 +1456,17 @@ int Lua_CreateFieldTable(lua_State *L, const char *const lst[])
 	}
 
 	return luaL_ref(L, LUA_REGISTRYINDEX);
+}
+
+size_t LUA_MemoryUsage(void)
+{
+	size_t usage = 0;
+
+	if (gL)
+		usage += lua_gc(gL, LUA_GCCOUNT, 0);
+
+	if (mL)
+		usage += lua_gc(mL, LUA_GCCOUNT, 0);
+
+	return usage;
 }
