@@ -82,6 +82,9 @@ int Lua_optoption(lua_State *L, int narg, int def, int list_ref);
 int Lua_CreateFieldTable(lua_State *L, const char *const lst[]);
 void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save);
 
+// Returns lua memory usage in kbytes
+size_t LUA_MemoryUsage(void);
+
 // Console wrapper
 void COM_Lua_f(void);
 
