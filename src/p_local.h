@@ -295,10 +295,10 @@ FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 // so can only check if its not NULL in vanilla compat mode
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemovedCompat(const mobj_t *mobj)
 {
-#ifdef COMPAT_VANILLA
-	return (!mobj);
-#else
+#ifdef PHOBOS_BUILD
 	return P_MobjWasRemoved(mobj);
+#else
+	return !mobj;
 #endif
 }
 

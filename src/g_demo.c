@@ -2335,7 +2335,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	while (READUINT8(extrainfo_p) == DW_STANDING) // Assume standings are always first in the extrainfo
 	{
 		INT32 i;
-		char temp[16];
+		char temp[17];
 
 		pdemo->standings[count].ranking = READUINT8(extrainfo_p);
 
@@ -2345,6 +2345,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 		// Skin
 		memcpy(temp, extrainfo_p, 16);
+		temp[16] = '\0';
 		extrainfo_p += 16;
 		pdemo->standings[count].skin = UINT8_MAX;
 
@@ -2359,6 +2360,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 		// Color
 		memcpy(temp, extrainfo_p, 16);
+		temp[16] = '\0';
 		extrainfo_p += 16;
 
 		for (i = 0; i < MAXSKINCOLORS; i++)

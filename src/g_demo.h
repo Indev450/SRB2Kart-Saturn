@@ -82,7 +82,8 @@ typedef struct menudemo_s {
 	struct {
 		UINT8 ranking;
 		char name[17];
-		UINT8 skin, color;
+		skinnum_t skin;
+		UINT8 color;
 		UINT32 timeorscore;
 	} standings[MAXPLAYERS];
 } menudemo_t;

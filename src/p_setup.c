@@ -2074,14 +2074,14 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 		if (rejectsize < neededsize)
 		{
 			CorruptMapWarning(va("P_LoadReject: REJECT is %s byte%s too small. REJECT might be invalid!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s"));
-#ifdef COMPAT_VANILLA
+#ifdef PHOBOS_BUILD
+			rejectmatrix = NULL;
+			return;
+#else
 			// we can pad this and somewhat prevent desyncs
 			// probs not cool if the reject is from a completely different map
 			// but whatever
 			allocsize = neededsize;
-#else
-			rejectmatrix = NULL;
-			return;
 #endif
 		}
 

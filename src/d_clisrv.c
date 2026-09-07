@@ -1125,7 +1125,7 @@ static cl_mode_t cl_mode = CL_SEARCHING;
 static UINT16 cl_lastcheckedfilecount = 0; // used for full file list
 
 // Player name send/load
-
+#ifndef PHOBOS_BUILD
 static void CV_SavePlayerNames(UINT8 **p)
 {
 	INT32 i = 0;
@@ -1161,6 +1161,7 @@ static void CV_LoadPlayerNames(UINT8 **p)
 		memcpy(player_names[i], tmp_name, MAXPLAYERNAME+1);
 	}
 }
+#endif
 
 static void CL_DrawAddonTypes(void)
 {
@@ -1772,7 +1773,7 @@ static void SV_SendPlayerInfo(INT32 node)
 		// doesent really matter what we put here lel
 		netbuffer->u.playerinfo[0].score = LONG(42069);
 		netbuffer->u.playerinfo[0].timeinserver = SHORT(42069);
-		netbuffer->u.playerinfo[0].skin = (UINT8)1; // no clue wtf skin 1 is, tails maybe?
+		netbuffer->u.playerinfo[0].skin = (skinnum_t)1; // no clue wtf skin 1 is, tails maybe?
 
 		netbuffer->u.playerinfo[0].data = 0;
 
@@ -1817,7 +1818,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
 		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
-		netbuffer->u.playerinfo[i].skin = (UINT8)players[i].skin;
+		netbuffer->u.playerinfo[i].skin = (skinnum_t)players[i].skin;
 
 		// Extra data
 		// Kart has extra skincolors, so we can't use this
@@ -1927,8 +1928,10 @@ static void SV_SendMapIcon(INT32 node)
   */
 static boolean SV_SendServerConfig(INT32 node)
 {
+#ifndef PHOBOS_BUILD
 	INT32 i;
 	UINT8 *p, *op;
+#endif
 	boolean waspacketsent;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -1946,6 +1949,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	netbuffer->u.servercfg.gametype = (UINT8)gametype;
 	netbuffer->u.servercfg.modifiedgame = (UINT8)modifiedgame;
 
+#ifndef PHOBOS_BUILD
 	// we fill these structs with FFs so that any players not in game get sent as 0xFFFF
 	// which is nice and easy for us to detect
 	memset(netbuffer->u.servercfg.playerskins, 0xFF, sizeof(netbuffer->u.servercfg.playerskins));
@@ -1961,6 +1965,7 @@ static boolean SV_SendServerConfig(INT32 node)
 		netbuffer->u.servercfg.playerskins[i] = (UINT8)players[i].skin;
 		netbuffer->u.servercfg.playercolor[i] = (UINT8)players[i].skincolor;
 	}
+#endif
 
 	netbuffer->u.servercfg.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 	netbuffer->u.servercfg.allownewplayer = cv_allownewplayer.value;
@@ -1968,12 +1973,16 @@ static boolean SV_SendServerConfig(INT32 node)
 
 	memcpy(netbuffer->u.servercfg.server_context, server_context, 8);
 
+#ifdef PHOBOS_BUILD
+	const size_t len = sizeof(serverconfig_pak);
+#else
 	op = p = netbuffer->u.servercfg.varlengthinputs;
 
 	CV_SavePlayerNames(&p);
 	CV_SaveNetVars(&p, false);
 
 	const size_t len = sizeof (serverconfig_pak) + (size_t)(p - op);
+#endif
 
 #ifdef DEBUGFILE
 	if (debugfile)
@@ -5414,8 +5423,10 @@ static void PT_ServerRefuse(SINT8 node)
 // Positive response of client join request
 static void PT_ServerCFG(SINT8 node)
 {
+#ifndef PHOBOS_BUILD
 	INT32 j;
 	UINT8 *scp;
+#endif
 
 	if (server && serverrunning && node != servernode)
 	{ // but wait I thought I'm the server?
@@ -5438,8 +5449,10 @@ static void PT_ServerCFG(SINT8 node)
 		if ((gametype = netbuffer->u.servercfg.gametype) >= NUMGAMETYPES)
 			I_Error("Bad gametype %d in cliserv!", gametype);
 		modifiedgame = netbuffer->u.servercfg.modifiedgame;
+#ifndef PHOBOS_BUILD
 		for (j = 0; j < MAXPLAYERS; j++)
 			adminplayers[j] = netbuffer->u.servercfg.adminplayers[j];
+#endif
 		memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
 	}
 
@@ -5465,6 +5478,7 @@ static void PT_ServerCFG(SINT8 node)
 	SendSaturnInfo(node);
 #endif
 
+#ifndef PHOBOS_BUILD
 	memset(playeringame, 0, sizeof(playeringame));
 
 	for (j = 0; j < MAXPLAYERS; j++)
@@ -5481,6 +5495,7 @@ static void PT_ServerCFG(SINT8 node)
 	scp = netbuffer->u.servercfg.varlengthinputs;
 	CV_LoadPlayerNames(&scp);
 	scp += CV_LoadNetVars(scp);
+#endif
 
 	/// \note Wait. What if a Lua script uses some global custom variables synched with the NetVars hook?
 	///       Shouldn't them be downloaded even at intermission time?

@@ -238,8 +238,8 @@ void M_TextInputClear(textinput_t *input)
 
 void M_TextInputSetString(textinput_t *input, const char *c)
 {
-	memset(input->buffer, 0, input->buffer_size);
-	strncpy(input->buffer, c, input->buffer_size);
+	strncpy(input->buffer, c, input->buffer_size-1);
+	input->buffer[input->buffer_size-1] = '\0';
 	input->cursor = input->select = input->length = strlen(input->buffer);
 }
 
