@@ -651,7 +651,7 @@ void P_Ticker(boolean run)
 	if (run)
 	{
 		// Dynamic slopeness
-#ifdef COMPAT_VANILLA
+#ifndef PHOBOS_BUILD
 		if (midgamejoin) // only run here if we joined midgame to fix some desynchs
 #endif
 			P_RunDynamicSlopes();

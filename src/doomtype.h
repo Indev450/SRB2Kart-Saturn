@@ -42,6 +42,12 @@ extern "C" {
 #define INT64  int64_t
 #define UINT64 uint64_t
 
+#ifdef PHOBOS_BUILD
+typedef uint16_t skinnum_t;
+#else
+typedef uint8_t skinnum_t;
+#endif
+
 #ifdef __APPLE_CC__
 #define DEBUG_LOG
 #define NOIPX

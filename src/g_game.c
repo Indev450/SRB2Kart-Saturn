@@ -64,7 +64,7 @@ gameaction_t gameaction = 0;
 gamestate_t gamestate = GS_NULL;
 
 boolean botingame = false;
-UINT8 botskin = 0;
+skinnum_t botskin = 0;
 UINT8 botcolor = 0;
 
 // SRB2kart

@@ -435,10 +435,18 @@ consvar_t cv_pointlimit = {"pointlimit", "0", CV_NETVAR|CV_CALL|CV_NOINIT, point
 static CV_PossibleValue_t timelimit_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_timelimit = {"timelimit", "0", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t,
 	TimeLimit_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#ifdef PHOBOS_BUILD
+static CV_PossibleValue_t numlaps_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
+#else
 static CV_PossibleValue_t numlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, NULL}};
+#endif
 consvar_t cv_numlaps = {"numlaps", "3", CV_NETVAR|CV_CALL|CV_NOINIT, numlaps_cons_t,
 	NumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#ifdef PHOBOS_BUILD
+static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, "Map default"}, {0, NULL}};
+#else
 static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, "Map default"}, {0, NULL}};
+#endif
 consvar_t cv_basenumlaps = {"basenumlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, basenumlaps_cons_t, BaseNumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_forceskin = {"forceskin", "Off", CV_NETVAR|CV_CALL|CV_CHEAT, Forceskin_cons_t, ForceSkin_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -1681,7 +1689,8 @@ static void SendNameAndColor(UINT8 splitplayer)
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, playername->zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)playercolor->value);
-	WRITEUINT8(p, (UINT8)playerskin->value);
+	WRITESKIN(p, (skinnum_t)playerskin->value);
+
 	SendNetXCmdForPlayer(splitplayer, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
@@ -1689,7 +1698,8 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 {
 	player_t *player;
 	char name[MAXPLAYERNAME+1] = {};
-	UINT8 color, skin;
+	UINT8 color;
+	skinnum_t skin;
 
 #ifdef PARANOIA
 	if (playernum < 0 || playernum > MAXPLAYERS)
@@ -1711,7 +1721,7 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
 	color = READUINT8(*cp);
-	skin = READUINT8(*cp);
+	skin = READSKIN(*cp);
 
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)

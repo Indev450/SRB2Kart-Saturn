@@ -206,6 +206,15 @@ FUNCINLINE static ATTRINLINE UINT32 readulong(void *ptr)
 	p += n;                   \
 } while (0)
 
+
+#ifdef PHOBOS_BUILD
+#define WRITESKIN(p,b) WRITEUINT16(p,b)
+#define READSKIN(p) READUINT16(p)
+#else
+#define WRITESKIN(p,b) WRITEUINT8(p,b)
+#define READSKIN(p) READUINT8(p)
+#endif
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

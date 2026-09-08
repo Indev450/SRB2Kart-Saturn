@@ -65,6 +65,10 @@
 # DEBUGMODE=1 - Enable various debugging capabilities.
 #               Also disables optimizations.
 #
+# PHOBOS_BUILD=1 - Compile the Phobos client.
+#                  Contains things not compatible with vanilla.
+#                  such as raised skinlimits, 32 player support, bugfixes, etc.
+#
 # Development flags:
 #
 # VALGRIND=1 - Enable Valgrind memory debugging support.

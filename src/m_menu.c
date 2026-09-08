@@ -6453,7 +6453,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 	else
 		G_RecordDemo(nameofdemo);
 
-	G_DeferedInitNew(false, mapname, (UINT8)(cv_chooseskin.value-1), 0, false);
+	G_DeferedInitNew(false, mapname, (skinnum_t)(cv_chooseskin.value-1), 0, false);
 }
 
 static void M_HandleStaffReplay(INT32 choice)
@@ -7682,7 +7682,7 @@ static void M_DrawMPMainMenu(void)
 #define iconwidth 32
 #define spacingwidth 32
 #define incrwidth (iconwidth + spacingwidth)
-		UINT8 i = 0, pskin, pcol;
+		UINT16 i = 0, pskin, pcol;
 		// player arrangement width, but there's also a chance i'm a furry, shhhhhh
 		const INT32 paw = iconwidth + 3*incrwidth;
 		INT32 trans = 0;
@@ -7935,16 +7935,16 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	patch_t *patch;
-	UINT8 frame;
-	UINT8 speed;
-	UINT8 weight;
-	UINT8 i;
-	UINT8 s, w;
+	UINT16 frame;
+	UINT16 speed;
+	UINT16 weight;
+	UINT16 i;
+	UINT16 s, w;
 	INT32 skinnum = 0;
 	INT32 statx, staty;
 	UINT32 speenframe;
 	INT32 sltw, actw, hetw;
-	UINT8 skintodisplay;
+	skinnum_t skintodisplay;
 	INT32 nameboxaddy = 0;
 
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
@@ -8001,7 +8001,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 		case SKINMENUTYPE_2D:
 
-			skintodisplay = setupm_fakeskin;
+			skintodisplay = (skinnum_t)setupm_fakeskin;
 			if (setupm_skinlockedselect) //show the skin we are trying to select
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][setupm_skinselect];
 			else if (skinstatscount[setupm_skinxpos][setupm_skinypos] && itemOn == 1)
@@ -8381,7 +8381,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			colwidth = colwidth - 10;
 
 		INT32 j = -colwidth;
-		INT16 col = setupm_fakecolor - colwidth;
+		INT32 col = setupm_fakecolor - colwidth;
 		INT32 x = mx;
 		INT32 cw = indexwidth;
 		UINT8 ch;
@@ -8409,7 +8409,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	{
 		const INT32 icons = 4;
 		INT32 k = -icons;
-		INT16 col = setupm_fakeskin - icons;
+		INT32 col = setupm_fakeskin - icons;
 		INT32 x = BASEVIDWIDTH/2 - ((icons+1)*24) - 4;
 		fixed_t scale = FRACUNIT/2;
 		INT32 offx = 8, offy = 8;
@@ -8472,7 +8472,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_2D:
-			skintodisplay = (UINT8)setupm_fakeskin;
+			skintodisplay = (skinnum_t)setupm_fakeskin;
 			if (setupm_skinlockedselect) // show the skin we are trying to select
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][setupm_skinselect];
 			else if (skinstatscount[setupm_skinxpos][setupm_skinypos] && itemOn == 1)
@@ -8480,10 +8480,10 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 		case SKINMENUTYPE_EXTENDED:
 		case SKINMENUTYPE_GRID:
-			skintodisplay = ((itemOn == 1 && (setupm_skinselect < numskins)) ? skinsorted[setupm_skinselect] : (UINT8)setupm_fakeskin);
+			skintodisplay = ((itemOn == 1 && (setupm_skinselect < numskins)) ? skinsorted[setupm_skinselect] : (skinnum_t)setupm_fakeskin);
 			break;
 		default:
-			skintodisplay = (UINT8)setupm_fakeskin;
+			skintodisplay = (skinnum_t)setupm_fakeskin;
 			break;
 	}
 
