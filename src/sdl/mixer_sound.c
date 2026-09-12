@@ -169,9 +169,10 @@ void I_StartupSound(void)
 	if (sound_started)
 		return;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !SDL_VERSION_ATLEAST(2,26,5)
 	// Force DirectSound instead of WASAPI
 	// SDL 2.0.6+ defaults to the latter and it screws up our sound effects
+	// SDL 2.26.5 brought imrovements to resampling so this just screws up other stuff now
 	SDL_setenv("SDL_AUDIODRIVER", "directsound", 1);
 #endif
 
@@ -198,7 +199,7 @@ void I_StartupSound(void)
 	Mix_Init(MIX_INIT_FLAC|MIX_INIT_MP3|MIX_INIT_OGG|MIX_INIT_MOD);
 #endif
 
-	if (Mix_OpenAudio(SAMPLERATE, AUDIO_S16SYS, 2, cv_audbuffersize.value) < 0)
+	if (Mix_OpenAudioDevice(SAMPLERATE, AUDIO_S16SYS, 2, cv_audbuffersize.value, NULL, 0) < 0)
 	{
 		CONS_Alert(CONS_ERROR, "Error starting SDL_Mixer: %s\n", Mix_GetError());
 		// call to start audio failed -- we do not have it
