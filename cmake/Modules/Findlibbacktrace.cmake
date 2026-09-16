@@ -1,0 +1,33 @@
+include(LibFindMacros)
+
+libfind_pkg_check_modules(LIBBACKTRACE_PKGCONF LIBBACKTRACE)
+
+find_path(LIBBACKTRACE_INCLUDE_DIR
+	NAMES backtrace.h
+	PATHS
+		${LIBBACKTRACE_PKGCONF_INCLUDE_DIRS}
+		"/usr/include"
+		"/usr/local/include"
+)
+
+find_library(LIBBACKTRACE_LIBRARY
+	NAMES backtrace
+	PATHS
+		${LIBBACKTRACE_PKGCONF_LIBRARY_DIRS}
+		"/usr/lib"
+		"/usr/local/lib"
+)
+
+set(LIBBACKTRACE_PROCESS_INCLUDES LIBBACKTRACE_INCLUDE_DIR)
+set(LIBBACKTRACE_PROCESS_LIBS LIBBACKTRACE_LIBRARY)
+libfind_process(LIBBACKTRACE)
+
+if(LIBBACKTRACE_FOUND AND NOT TARGET libbacktrace)
+	add_library(libbacktrace UNKNOWN IMPORTED)
+	set_target_properties(
+		libbacktrace
+		PROPERTIES
+		IMPORTED_LOCATION "${LIBBACKTRACE_LIBRARY}"
+		INTERFACE_INCLUDE_DIRECTORIES "${LIBBACKTRACE_INCLUDE_DIR}"
+	)
+endif()

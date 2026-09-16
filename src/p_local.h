@@ -14,10 +14,6 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "command.h"
 #include "d_player.h"
 #include "d_think.h"
@@ -28,9 +24,11 @@ extern "C" {
 #include "p_maputl.h"
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 
-#define FLOATSPEED (FRACUNIT*4)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-//#define VIEWHEIGHTS "41"
+#define FLOATSPEED (FRACUNIT*4)
 
 // Maximum player score.
 #define MAXSCORE 999999990
@@ -61,8 +59,12 @@ extern "C" {
 
 #define AIMINGTOSLOPE(aiming) FINESINE((aiming>>ANGLETOFINESHIFT) & FINEMASK)
 
-#define mariomode (maptol & TOL_MARIO)
-#define twodlevel (maptol & TOL_2D)
+// unused modes, kept for compat
+#define nightsmode           (UNLIKELY(maptol & TOL_NIGHTS))
+#define nightsplayer(player) (UNLIKELY((player)->pflags & PF_NIGHTSMODE))
+#define mariomode            (UNLIKELY(maptol & TOL_MARIO))
+#define twodlevel            (UNLIKELY(maptol & TOL_2D))
+#define twodmo(mobj)         (UNLIKELY(twodlevel || ((mobj)->flags2 & MF2_TWOD)))
 
 //
 // P_TICK
@@ -101,10 +103,6 @@ typedef struct camera_s
 	// Hold up/down to pan the camera vertically
 	SINT8 dpad_y_held;
 
-	// Things used by FS cameras.
-	fixed_t viewheight;
-	angle_t startangle;
-
 	// Camera demobjerization
 	// Info for drawing: position.
 	fixed_t x, y, z;
@@ -122,8 +120,6 @@ typedef struct camera_s
 	// For movement checking.
 	fixed_t radius;
 	fixed_t height;
-
-	fixed_t relativex;
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
@@ -214,7 +210,6 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj);
 void P_GivePlayerRings(player_t *player, INT32 num_rings);
 void P_GivePlayerLives(player_t *player, INT32 numlives);
 UINT8 P_GetNextEmerald(void);
-void P_GiveEmerald(boolean spawnObj);
 void P_ResetScore(player_t *player);
 boolean P_AutoPause(void);
 
@@ -222,7 +217,6 @@ void P_DoJumpShield(player_t *player);
 void P_BlackOw(player_t *player);
 void P_ElementalFireTrail(player_t *player);
 
-//void P_DoPityCheck(player_t *player);
 void P_PlayerThink(player_t *player);
 void P_PlayerAfterThink(player_t *player);
 void P_DoPlayerExit(player_t *player);
@@ -239,14 +233,10 @@ void P_InstaThrustEvenIn2D(mobj_t *mo, angle_t angle, fixed_t move);
 boolean P_LookForEnemies(player_t *player);
 void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius);
 void P_HomingAttack(mobj_t *source, mobj_t *enemy); /// \todo doesn't belong in p_user
-//boolean P_SuperReady(player_t *player);
 boolean P_AnalogMove(player_t *player);
-/*boolean P_TransferToNextMare(player_t *player);
-UINT8 P_FindLowestMare(void);*/
 UINT8 P_FindLowestLap(void);
 UINT8 P_FindHighestLap(void);
 void P_FindEmerald(void);
-//void P_TransferToAxis(player_t *player, INT32 axisnum);
 boolean P_PlayerMoving(INT32 pnum);
 void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range);
 
@@ -272,6 +262,9 @@ extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
 
+extern mobjtype_t g_doomednum_to_mobjtype[MAXDOOMEDNUM+1];
+void CalculateDoomednumToMobjtype(void);
+
 mobj_t *P_AllocateMobj(void);
 mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 
@@ -284,7 +277,6 @@ void P_RemoveMobj(mobj_t *th);
 void P_RemoveSavegameMobj(mobj_t *th);
 boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state);
 boolean P_SetMobjState(mobj_t *mobj, statenum_t state);
-//void P_RunShields(void);
 void P_RunOverlays(void);
 void P_RunShadows(void);
 void P_MobjThinker(mobj_t *mobj);
@@ -297,6 +289,17 @@ void P_SceneryThinker(mobj_t *mobj);
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
 	return (!mobj || mobj->thinker.function != (actionf_p1)P_MobjThinker);
+}
+
+// stupid, but kart allows mobjs that are marked to be removed to be accessed and modified in many cases
+// so can only check if its not NULL in vanilla compat mode
+FUNCINLINE static ATTRINLINE boolean P_MobjWasRemovedCompat(const mobj_t *mobj)
+{
+#ifdef PHOBOS_BUILD
+	return P_MobjWasRemoved(mobj);
+#else
+	return !mobj;
+#endif
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);

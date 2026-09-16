@@ -50,7 +50,7 @@ extern fixed_t windowtop;
 extern fixed_t windowbottom;
 extern INT32 lengthcol;
 
-FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
+FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(const mobj_t* thing)
 {
 	return (INT32)thing->lightlevel;
 }
@@ -88,6 +88,11 @@ boolean R_CheckPrecipMobjInterpDist(precipmobj_t *thing);
 boolean R_CheckMobjInterpDist(mobj_t *thing);
 fixed_t R_DoPlayerFade(mobj_t *thing);
 
+boolean R_ThingHorizontallyFlipped(mobj_t *thing);
+boolean R_ThingVerticallyFlipped(mobj_t *thing);
+boolean R_ThingIsPaperSprite(mobj_t *thing);
+
+boolean R_PrecipThingIsFullBright(precipmobj_t *thing);
 boolean R_ThingIsFullBright(mobj_t *thing);
 boolean R_ThingIsSemiBright(mobj_t *thing);
 boolean R_ThingIsFullDark(mobj_t *thing);

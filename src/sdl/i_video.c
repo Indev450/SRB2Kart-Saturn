@@ -108,7 +108,6 @@ static void KeyboardLayout_OnChange(void)
 {
 	if (cv_keyboardlayout.value != 2)
 		SDL_StopTextInput();
-	HU_Shiftform();
 }
 
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
@@ -155,9 +154,12 @@ static      SDL_bool    usesdl2soft = SDL_FALSE;
 static      SDL_bool    borderlesswindow = SDL_FALSE;
 
 // SDL2 vars
-SDL_Window   *window = NULL;
-SDL_Renderer *renderer = NULL;
+static SDL_Window   *window = NULL;
+static SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
+#ifdef HWRENDER
+static SDL_GLContext sdlglcontext = NULL;
+#endif
 static SDL_bool      havefocus = SDL_TRUE;
 static const char *fallback_resolution_name = "Fallback";
 
@@ -452,7 +454,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 			return 0;
 	}
 
-	if (Joystick[pid].bGamepadStyle)
+	if (DigitalGamepadStyle(pid))
 	{
 		// gamepad control type, on or off, live or die
 		if (raxis < -(JOYAXISRANGE/2))
@@ -464,7 +466,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	}
 	else
 	{
-		raxis = JoyInfo[pid].scale!=1?((raxis/JoyInfo[pid].scale)*JoyInfo[pid].scale):raxis;
+		raxis = JoyInfo[pid].scale != 1 ? ((raxis/JoyInfo[pid].scale)*JoyInfo[pid].scale) : raxis;
 
 #ifdef SDL_JDEADZONE
 		if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
@@ -781,7 +783,11 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.type = ev_joystick + i;
 			break;
@@ -841,7 +847,11 @@ static void Impl_HandleControllerHatEvent(SDL_ControllerButtonEvent evt, Uint32 
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.data1 = hat_buttons_base[i];
 			break;
@@ -903,7 +913,11 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.data1 = buttons_base[i];
 			break;
@@ -1149,8 +1163,8 @@ void I_GetEvent(void)
 		SDL_GetWindowSize(window, &wwidth, &wheight);
 		event.type = ev_mouse;
 		event.data1 = 0;
-		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)realwidth));
-		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)realheight));
+		event.data2 = (INT32)lroundf(mousemovex * ((float)wwidth / (float)realwidth));
+		event.data3 = (INT32)lroundf(mousemovey * ((float)wheight / (float)realheight));
 		D_PostEvent(&event);
 	}
 
@@ -1426,7 +1440,7 @@ void I_FinishUpdate(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		OglSdlFinishUpdate(cv_vidwait.value);
+		OglSdlFinishUpdate(window);
 		return;
 	}
 #endif
@@ -1524,9 +1538,9 @@ const char *VID_GetModeName(INT32 modeNum)
 	if (modeNum > MAXWINMODES)
 		return NULL;
 
-	sprintf(&vidModeName[modeNum][0], "%dx%d",
-		windowedModes[modeNum][0],
-		windowedModes[modeNum][1]);
+	snprintf(&vidModeName[modeNum][0], sizeof(vidModeName[modeNum]), "%dx%d",
+			  windowedModes[modeNum][0],
+			  windowedModes[modeNum][1]);
 
 	return &vidModeName[modeNum][0];
 }
@@ -1802,15 +1816,18 @@ void I_StartupGraphics(void)
 			framebuffer = SDL_TRUE;
 	}
 
+	// Choose Software renderer
 	if (M_CheckParm("-software"))
 		rendermode = render_soft;
 #ifdef HWRENDER
+	// Choose OpenGL renderer
 	else if (M_CheckParm("-opengl"))
 		rendermode = render_opengl;
 
 	msaa = 0; boolean msaa_set = false;
 	a2c = false; boolean a2c_set = false;
 
+	// MSAA antialiasing
 	if (M_CheckParm("-msaa") && M_IsNextParm())
 	{
 		const char* str = M_GetNextParm();
@@ -1840,6 +1857,9 @@ void I_StartupGraphics(void)
 			while (fgets(line, sizeof line, file) != NULL)
 			{
 				word = strtok(line, " \n");
+
+				if (!word)
+					continue;
 
 				if (rendermode == render_none)
 				{
@@ -2012,7 +2032,8 @@ void I_ShutdownGraphics(void)
 		SDL_DestroyWindow(window);
 	window = NULL;
 
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO)
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;
 }
 
@@ -2028,16 +2049,16 @@ UINT32 I_GetRefreshRate(void)
 
 static void Impl_SetVsync(void)
 {
-#if SDL_VERSION_ATLEAST(2,0,18)
-	if (renderer)
-		SDL_RenderSetVSync(renderer, cv_vidwait.value);
-#endif
 #ifdef HWRENDER
-	if (!renderer && rendermode == render_opengl &&
-		 sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+	if (rendermode == render_opengl &&
+		sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}
+#endif
+#if SDL_VERSION_ATLEAST(2,0,18)
+	if (renderer)
+		SDL_RenderSetVSync(renderer, cv_vidwait.value);
 #endif
 }
 

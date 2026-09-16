@@ -35,11 +35,13 @@ extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
 extern consvar_t cv_highresportrait;
 extern consvar_t cv_showstats;
+extern consvar_t cv_showstats_skinname;
 extern consvar_t cv_fancyroulette;
 extern consvar_t cv_showlaptimes;
 extern consvar_t cv_battlespeedo;
 extern consvar_t cv_multiitemicon;
 extern consvar_t cv_huditemamount;
+extern consvar_t cv_roulettecolor;
 
 // for use in timeattack menu
 extern patch_t *kp_facenum[MAXPLAYERS+1];

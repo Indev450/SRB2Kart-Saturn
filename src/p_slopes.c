@@ -76,8 +76,8 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 		 */
 
 		light = FixedMul(nX, FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
-		+ FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
-		light = (light + FRACUNIT) / 2;
+			  + FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+				light = (light + FRACUNIT) / 2;
 	}
 	else
 	{
@@ -166,7 +166,8 @@ static void P_ReconfigureVertexSlope(pslope_t *slope)
 	slope->real_xydirection = R_PointToAngle2(0, 0, slope->d.x, slope->d.y)+ANGLE_180;
 	slope->real_zangle = InvAngle(R_PointToAngle2(0, 0, FRACUNIT, slope->zdelta));
 
-	if (slope->normal.x == 0 && slope->normal.y == 0) // Set some defaults for a non-sloped "slope"
+	// Set some defaults for a non-sloped "slope"
+	if (slope->normal.x == 0 && slope->normal.y == 0)
 	{
 		slope->zangle = slope->xydirection = 0;
 		slope->zdelta = slope->d.x = slope->d.y = 0;
@@ -663,8 +664,10 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 	for (i = 0; i < 3; i++)
 	{
 		mt = ret->vertices[i];
+
 		if (!mt) // If a vertex wasn't found, it's game over. There's nothing you can do to recover (except maybe try and kill the slope instead - TODO?)
 			I_Error("P_NewVertexSlope: Slope vertex %s (for linedef tag %d) not found!", sizeu1(i), tag1);
+
 		if (mt->extrainfo)
 			mt->z = mt->options;
 		else
@@ -898,6 +901,11 @@ void P_SlopeLaunch(mobj_t *mo)
 
 	//CONS_Printf("Launched off of slope.\n");
 	mo->standingslope = NULL;
+
+	if (mo->player)
+	{
+		mo->player->stairjank = 0; // fuck you
+	}
 }
 
 // Function to help handle landing on slopes

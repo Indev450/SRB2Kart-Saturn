@@ -21,10 +21,7 @@ extern "C" {
 
 #include "command.h"
 
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
+void SendWeaponPref(UINT8 splitplayer);
 
 // console vars
 extern consvar_t cv_playername;
@@ -54,10 +51,6 @@ extern consvar_t cv_mousevisible;
 //WTF
 extern consvar_t cv_mouseturn;
 extern consvar_t cv_usejoystick[4]; //MAXSPLITSCREENPLAYERS
-#ifdef LJOYSTICK
-extern consvar_t cv_joyport;
-extern consvar_t cv_joyport2;
-#endif
 extern consvar_t cv_joyscale[4]; //MAXSPLITSCREENPLAYERS
 
 // normally in p_mobj but the .h is not read
@@ -95,11 +88,6 @@ extern consvar_t cv_pause;
 
 extern consvar_t cv_restrictskinchange, cv_allowteamchange, cv_ingamecap, cv_respawntime;
 extern consvar_t cv_spectatorreentry, cv_antigrief;
-
-/*extern consvar_t cv_teleporters, cv_superring, cv_supersneakers, cv_invincibility;
-extern consvar_t cv_jumpshield, cv_watershield, cv_ringshield, cv_forceshield, cv_bombshield;
-extern consvar_t cv_1up, cv_eggmanbox;
-extern consvar_t cv_recycler;*/
 
 // SRB2kart items
 extern consvar_t cv_sneaker, cv_rocketsneaker, cv_invincibility, cv_banana;
@@ -158,8 +146,10 @@ extern consvar_t cv_pingstyle;
 
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;
+extern consvar_t cv_showminimapfinished;
 extern consvar_t cv_minihead;
 extern consvar_t cv_showminimapangle;
+extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_showlapemblem;
 
@@ -198,6 +188,8 @@ extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_thinkframe_page;
 extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
+
+extern consvar_t cv_lua_profile;
 
 extern consvar_t cv_director, cv_kartdebugdirector, cv_showdirectorhud;
 
@@ -295,7 +287,7 @@ typedef union {
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);
 void D_RegisterClientCommands(void);
-void D_SendPlayerConfig(void);
+void D_SendPlayerConfig(UINT8 splitplayer);
 void Command_ExitGame_f(void);
 void Command_Retry_f(void);
 void D_GameTypeChanged(INT32 lastgametype); // not a real _OnChange function anymore

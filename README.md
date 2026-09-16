@@ -22,13 +22,13 @@ We also have a Flatpak available on [Flathub](https://flathub.org/en/apps/org.sr
 
 See [SRB2 Wiki/Source code compiling](http://wiki.srb2.org/wiki/Source_code_compiling). The compiling process for SRB2Kart is largely identical to SRB2.
 
-Currently only the Makefile build system with GCC or Clang compiler is supported.
-CMake is NOT supported at the moment, but will be availible again soon.
-
+For Windows only the Makefile build system with GCC or Clang compiler is supported.
 Visual C++ (MSVC) is unsupported.
 
 64-bit Windows builds are supported and recommended over 32-bit builds, they will build automatically when using the MSYS2 MinGW 64-bit executable (requires the mingw-w64-x86_64-gcc package), no extra flags needed!
 The specific DLLs can be found under /libs/dll-binaries/(i686 for 32bit/x86_64 for 64-bit)/ or in the Release packages
+
+MacOS and Linux can be build with CMake, but it is recommended to use the Makefile for Linux over CMake
 
 Alternatively the [srb2bld](https://github.com/Bijman/srb2bld) script by Bijman can be used aswell!
 

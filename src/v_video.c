@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "d_main.h"
+#include "g_game.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "v_video.h"
@@ -90,6 +91,7 @@ consvar_t cv_menucaps = {"menucaps", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NUL
 // local copy of the palette for V_GetColor()
 RGBA_t *pLocalPalette = NULL;
 RGBA_t *pGammaCorrectedPalette = NULL;
+static RGBA_t *pFallbackFlashPal = NULL;
 
 static size_t currentPaletteSize;
 
@@ -408,6 +410,61 @@ UINT32 V_GammaCorrect(UINT32 input, double power)
 	return result.rgba;
 }
 
+#include "v_paldeltas.h"
+// remaps a palette with given "deltas"
+// this is used with premade deltas between the srb2 palette and its both flashpals
+// so we may approximate generate our own, should the current palette miss them
+static void ApplyPaletteDelta(const RGBA_t *pal_in, RGBA_t *pal_out, const INT16 pal_delta[][3])
+{
+	size_t i;
+
+	for (i = 0; i < 256; i++)
+	{
+		INT16 r = (INT16)pal_in[i].s.red   + pal_delta[i][0];
+		INT16 g = (INT16)pal_in[i].s.green + pal_delta[i][1];
+		INT16 b = (INT16)pal_in[i].s.blue  + pal_delta[i][2];
+		pal_out[i].s.red   = (UINT8)CLAMP(r, 0, 255);
+		pal_out[i].s.green = (UINT8)CLAMP(g, 0, 255);
+		pal_out[i].s.blue  = (UINT8)CLAMP(b, 0, 255);
+		pal_out[i].s.alpha = 0xFF; // pal_in[i].s.alpha
+	}
+}
+
+static void GenerateFlashPalettes(void)
+{
+	size_t i;
+	static const size_t palsize = (2*256); // two flashpals
+	RGBA_t *pFlashPalGammaCorrectedPalette = NULL;
+
+	// generate flashpalettes if the current palette does not provide any subpalettes
+	if (currentPaletteSize >= (14 * (256 * 3))) // 14 palettes are in playpal
+	{
+		return;
+	}
+
+	CONS_Debug(DBG_RENDER, "Current palette does not provide enough subpalettes for flashpalettes to work!\nCreating fallback palettes...\n");
+
+	pFallbackFlashPal = Z_Malloc(sizeof(*pFallbackFlashPal)*palsize, PU_STATIC, NULL);
+	pFlashPalGammaCorrectedPalette = Z_Malloc(sizeof (*pFlashPalGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
+
+	// apply our deltas to the palettes to get the white and red "flashes"
+	ApplyPaletteDelta(pLocalPalette, pFallbackFlashPal, pPaletteDeltaFlash);
+	ApplyPaletteDelta(pLocalPalette, pFallbackFlashPal+256, pPaletteDeltaNuke);
+
+	// apply colour and gamma correction if needed
+	if (Cubeapply)
+	{
+		for (i = 0; i < palsize; i++)
+		{
+			pFlashPalGammaCorrectedPalette[i].rgba = V_GammaDecode(pFallbackFlashPal[i].rgba);
+			V_CubeApply(&pFlashPalGammaCorrectedPalette[i]);
+			pFallbackFlashPal[i].rgba = V_GammaEncode(pFlashPalGammaCorrectedPalette[i].rgba);
+		}
+	}
+
+	Z_Free(pFlashPalGammaCorrectedPalette);
+}
+
 // keep a copy of the palette so that we can get the RGB value for a color index at any time.
 static void LoadPalette(const char *lumpname)
 {
@@ -427,6 +484,8 @@ static void LoadPalette(const char *lumpname)
 
 	Z_Free(pLocalPalette);
 	Z_Free(pGammaCorrectedPalette);
+	Z_Free(pFallbackFlashPal);
+	pFallbackFlashPal = NULL;
 
 	pLocalPalette = Z_Malloc(sizeof (*pLocalPalette)*palsize, PU_STATIC, NULL);
 	pGammaCorrectedPalette = Z_Malloc(sizeof (*pGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
@@ -446,12 +505,19 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette[i].s.alpha = 0xFF;
 
 		pGammaCorrectedPalette[i].rgba = V_GammaDecode(pLocalPalette[i].rgba);
+	}
 
-		if (!Cubeapply)
-			continue;
+	GenerateFlashPalettes();
 
-		V_CubeApply(&pGammaCorrectedPalette[i]);
-		pLocalPalette[i].rgba = V_GammaEncode(pGammaCorrectedPalette[i].rgba);
+	// gotta apply any colour and gamma adjustments afterwards
+	// so we dont double apply it to the generated flashpals
+	if (Cubeapply)
+	{
+		for (i = 0; i < palsize; i++)
+		{
+			V_CubeApply(&pGammaCorrectedPalette[i]);
+			pLocalPalette[i].rgba = V_GammaEncode(pGammaCorrectedPalette[i].rgba);
+		}
 	}
 }
 
@@ -464,7 +530,7 @@ void V_CubeApply(RGBA_t *input)
 	if (!Cubeapply)
 		return;
 
-	linear = ((*input).s.red/255.0);
+	linear = ((*input).s.red/255.0f);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -474,21 +540,21 @@ void V_CubeApply(RGBA_t *input)
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
 
-	linear = ((*input).s.green/255.0);
+	linear = ((*input).s.green/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
 
-	linear = ((*input).s.blue/255.0);
+	linear = ((*input).s.blue/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
 		if (working[0][q] > 255.0f)
 			working[0][q] = 255.0f;
 		else if (working[0][q] < 0.0f)
-			working[0][q] = 0.0;
+			working[0][q] = 0.0f;
 	}
 #undef dolerp
 
@@ -515,13 +581,19 @@ const char *GetPalette(void)
 
 	if (user && user[0])
 	{
-		if (W_CheckNumForName(user) == LUMPERROR)
+		const lumpnum_t palnum = W_CheckNumForName(user);
+
+		if (palnum == LUMPERROR)
 		{
 			CONS_Alert(CONS_WARNING, "cv_palette %s lump does not exist\n", user);
 		}
+		else if (W_LumpLength(palnum) % (256 * 3) != 0) // not divisable by 768, so most def not a valid palette, idk if theres a better way to check this
+		{
+			CONS_Alert(CONS_WARNING, "cv_palette %s is not a valid palette lump\n", user);
+		}
 		else
 		{
-			return cv_palette.string;
+			return user;
 		}
 	}
 
@@ -542,35 +614,60 @@ void V_ReloadPalette(void)
 // -------------+
 void V_SetPalette(INT32 palettenum)
 {
+	RGBA_t *pal = NULL;
+
 	if (!pLocalPalette)
 		V_ReloadPalette();
 
-#ifdef HWRENDER
-	if (rendermode == render_soft ||
-	   (rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
-#endif
+	if (palettenum == 0)
 	{
-		if (palettenum == 0)
+#ifdef HWRENDER
+		if (rendermode == render_soft ||
+			(rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
+#endif
 		{
 			palettenum = cv_palettenum.value;
-
-			if (palettenum * 256U > currentPaletteSize - 256)
-			{
-				CONS_Alert(CONS_WARNING, "cv_palettenum %d out of range\n", palettenum);
-				palettenum = 0;
-			}
 		}
+	}
+
+	// in many cases custom palettes do not provide the needed subpalettes for flashpals to work
+	// before this would mean the renderer gets passed random data out of allocated memory bounds
+	// which was not very cool :chonkbuncle:
+	// gladly 2.1 only actually has 2 different subpalettes
+	// one for "white flash" and one red/pinkish one for nuke
+	// since we checked the palette earlier we should have generated those ourselves
+	if (((size_t)palettenum >= currentPaletteSize / (256 * 3)))
+	{
+		CONS_Debug(DBG_RENDER, "palettenum %d out of range\n", palettenum);
+
+		// if for some reason we did not generate flashpals
+		// just fall back to the main palette i guess?
+		if (pFallbackFlashPal != NULL)
+		{
+			if (palettenum == PAL_NUKE)
+				pal = &pFallbackFlashPal[256];
+			else
+				pal = pFallbackFlashPal;
+		}
+		else
+		{
+			pal = pLocalPalette;
+		}
+	}
+	else
+	{
+		pal = &pLocalPalette[palettenum*256];
 	}
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
-		HWR_SetPalette(&pLocalPalette[palettenum*256]);
+		HWR_SetPalette(pal);
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	else
 #endif
 #endif
 	if (rendermode != render_none)
-		I_SetPalette(&pLocalPalette[palettenum*256]);
+		I_SetPalette(pal);
 }
 
 void V_SetPaletteLump(const char *pal)
@@ -586,6 +683,7 @@ static void CV_palette_OnChange(void)
 {
 	if (!loaded_config)
 		return;
+
 	// reload palette
 	// recalculate Color Cube
 	V_ReloadPalette();
@@ -1473,8 +1571,8 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	{ // mpc 12-04-2018
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
 #define clip(x,y) (x>y) ? y : x
-		w = clip(w,vid.width);
-		h = clip(h,vid.height);
+		w = clip(w, vid.width);
+		h = clip(h, vid.height);
 #undef clip
 		for (v = 0; v < h; v++, dest += vid.width)
 		{
@@ -1741,6 +1839,7 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 void V_DrawVhsEffect(boolean rewind)
 {
 	fixed_t uby, dby;
+	// upbary is the bar going from top to bottom for some reason
 	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
 
 	UINT8 barsize, updistort, downdistort;
@@ -1755,20 +1854,27 @@ void V_DrawVhsEffect(boolean rewind)
 #endif
 	SINT8 offs;
 
-	barsize = vid.dup << 5;
-	updistort = vid.dup << (rewind ? 5 : 3);
+	if (cv_reducevfx.value)
+		return;
+
+	barsize = vid.udup << 5;
+	updistort = vid.udup << (rewind ? 5 : 3);
 	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (vid.dup * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (vid.dup * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (fixed_t)(vid.udup * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (vid.udup * (rewind ? 2 : 1));
 
 	if (upbary < -barsize*FRACUNIT)
 		upbary = vid.height << FRACBITS;
+	if (upbary > vid.height << FRACBITS)
+		upbary = -barsize*FRACUNIT;
 	if (downbary > vid.height << FRACBITS)
 		downbary = -barsize*FRACUNIT;
+	if (downbary < -barsize*FRACUNIT)
+		downbary = vid.height << FRACBITS;
 
 	uby = upbary >> FRACBITS;
 	dby = downbary >> FRACBITS;
@@ -2105,6 +2211,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2115,6 +2222,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2149,6 +2257,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2206,6 +2315,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2216,6 +2326,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2250,6 +2361,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2324,6 +2436,7 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2334,6 +2447,7 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2442,6 +2556,7 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2452,6 +2567,7 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2610,6 +2726,7 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
 	INT32 spacewidth = 2, charwidth = 0;
+
 	INT32 lowercase = (option & V_ALLOWLOWERCASE);
 	option &= ~V_FLIP; // which is also shared with V_ALLOWLOWERCASE...
 
@@ -2630,6 +2747,7 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 		scrwidth *= vid.dup;
 
 	charflags = (option & V_CHARCOLORMASK);
+	colormap = V_GetStringColormap(charflags);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2654,7 +2772,11 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 		{
 			// manually set flags override color codes
 			if (!(option & V_CHARCOLORMASK))
+			{
 				charflags = ((*ch & 0x7f) << V_CHARCOLORSHIFT) & V_CHARCOLORMASK;
+				colormap = V_GetStringColormap(charflags);
+			}
+
 			continue;
 		}
 
@@ -2698,7 +2820,6 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 			continue;
 		}
 
-		colormap = V_GetStringColormap(charflags);
 		V_DrawFixedPatch(cx + (center<<FRACBITS), cy, FRACUNIT/2, option, hu_font[c], colormap);
 		cx += w<<FRACBITS;
 	}
@@ -2710,6 +2831,13 @@ void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const 
 	V_DrawSmallStringAtFixed(x, y, option, string);
 }
 
+void V_DrawRightAlignedSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
+{
+	x -= V_SmallStringWidth(string, option)<<FRACBITS;
+	V_DrawSmallStringAtFixed(x, y, option, string);
+}
+
+// Draws a thin string at a fixed_t location.
 void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
 	fixed_t cx = x, cy = y;
@@ -2992,7 +3120,9 @@ INT32 V_CreditStringWidth(const char *string)
 	if (!string)
 		return 0;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - CRED_FONTSTART;
 		if (c < 0 || c >= CRED_FONTSIZE)
@@ -3070,7 +3200,9 @@ INT32 V_LevelNameWidth(const char *string)
 	INT32 c, w = 0;
 	size_t i;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - LT_FONTSTART;
 		if (c < 0 || c >= LT_FONTSIZE || !lt_font[c])
@@ -3089,7 +3221,9 @@ INT32 V_LevelNameHeight(const char *string)
 	INT32 c, w = 0;
 	size_t i;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - LT_FONTSTART;
 		if (c < 0 || c >= LT_FONTSIZE || !lt_font[c])
@@ -3131,7 +3265,7 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3176,7 +3310,7 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3225,7 +3359,7 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3292,167 +3426,6 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
 	}
 
 	return max(i-1, 0);
-}
-
-char V_GetSkincolorChar(INT32 color)
-{
-	char cstart = 0x80;
-
-	switch (color)
-	{
-		case SKINCOLOR_WHITE:
-		case SKINCOLOR_SILVER:
-		case SKINCOLOR_SLATE:
-			cstart = 0x80; // White
-			break;
-
-		case SKINCOLOR_GREY:
-		case SKINCOLOR_NICKEL:
-		case SKINCOLOR_BLACK:
-		case SKINCOLOR_SKUNK:
-		case SKINCOLOR_JET:
-			cstart = 0x86; // V_GRAYMAP
-			break;
-
-		case SKINCOLOR_SEPIA:
-		case SKINCOLOR_BEIGE:
-		case SKINCOLOR_WALNUT:
-		case SKINCOLOR_BROWN:
-		case SKINCOLOR_LEATHER:
-		case SKINCOLOR_RUST:
-		case SKINCOLOR_WRISTWATCH:
-			cstart = 0x8e; // V_BROWNMAP
-			break;
-
-		case SKINCOLOR_FAIRY:
-		case SKINCOLOR_SALMON:
-		case SKINCOLOR_PINK:
-		case SKINCOLOR_ROSE:
-		case SKINCOLOR_BRICK:
-		case SKINCOLOR_LEMONADE:
-		case SKINCOLOR_BUBBLEGUM:
-		case SKINCOLOR_LILAC:
-			cstart = 0x8d; // V_PINKMAP
-			break;
-
-		case SKINCOLOR_CINNAMON:
-		case SKINCOLOR_RUBY:
-		case SKINCOLOR_RASPBERRY:
-		case SKINCOLOR_CHERRY:
-		case SKINCOLOR_RED:
-		case SKINCOLOR_CRIMSON:
-		case SKINCOLOR_MAROON:
-		case SKINCOLOR_FLAME:
-		case SKINCOLOR_SCARLET:
-		case SKINCOLOR_KETCHUP:
-			cstart = 0x85; // V_REDMAP
-			break;
-
-		case SKINCOLOR_DAWN:
-		case SKINCOLOR_SUNSET:
-		case SKINCOLOR_CREAMSICLE:
-		case SKINCOLOR_ORANGE:
-		case SKINCOLOR_PUMPKIN:
-		case SKINCOLOR_ROSEWOOD:
-		case SKINCOLOR_BURGUNDY:
-		case SKINCOLOR_TANGERINE:
-			cstart = 0x87; // V_ORANGEMAP
-			break;
-
-		case SKINCOLOR_PEACH:
-		case SKINCOLOR_CARAMEL:
-		case SKINCOLOR_CREAM:
-			cstart = 0x8f; // V_PEACHMAP
-			break;
-
-		case SKINCOLOR_GOLD:
-		case SKINCOLOR_ROYAL:
-		case SKINCOLOR_BRONZE:
-		case SKINCOLOR_COPPER:
-		case SKINCOLOR_THUNDER:
-			cstart = 0x8a; // V_GOLDMAP
-			break;
-
-		case SKINCOLOR_POPCORN:
-		case SKINCOLOR_QUARRY:
-		case SKINCOLOR_YELLOW:
-		case SKINCOLOR_MUSTARD:
-		case SKINCOLOR_CROCODILE:
-		case SKINCOLOR_OLIVE:
-			cstart = 0x82; // V_YELLOWMAP
-			break;
-
-		case SKINCOLOR_ARTICHOKE:
-		case SKINCOLOR_VOMIT:
-		case SKINCOLOR_GARDEN:
-		case SKINCOLOR_TEA:
-		case SKINCOLOR_PISTACHIO:
-			cstart = 0x8b; // V_TEAMAP
-			break;
-
-		case SKINCOLOR_LIME:
-		case SKINCOLOR_HANDHELD:
-		case SKINCOLOR_MOSS:
-		case SKINCOLOR_CAMOUFLAGE:
-		case SKINCOLOR_ROBOHOOD:
-		case SKINCOLOR_MINT:
-		case SKINCOLOR_GREEN:
-		case SKINCOLOR_PINETREE:
-		case SKINCOLOR_EMERALD:
-		case SKINCOLOR_SWAMP:
-		case SKINCOLOR_DREAM:
-		case SKINCOLOR_PLAGUE:
-		case SKINCOLOR_ALGAE:
-			cstart = 0x83; // V_GREENMAP
-			break;
-
-		case SKINCOLOR_CARIBBEAN:
-		case SKINCOLOR_AZURE:
-		case SKINCOLOR_AQUA:
-		case SKINCOLOR_TEAL:
-		case SKINCOLOR_CYAN:
-		case SKINCOLOR_JAWZ:
-		case SKINCOLOR_CERULEAN:
-		case SKINCOLOR_NAVY:
-		case SKINCOLOR_SAPPHIRE:
-			cstart = 0x88; // V_SKYMAP
-			break;
-
-		case SKINCOLOR_PIGEON:
-		case SKINCOLOR_PLATINUM:
-		case SKINCOLOR_STEEL:
-			cstart = 0x8c; // V_STEELMAP
-			break;
-
-		case SKINCOLOR_PERIWINKLE:
-		case SKINCOLOR_BLUE:
-		case SKINCOLOR_BLUEBERRY:
-		case SKINCOLOR_NOVA:
-			cstart = 0x84; // V_BLUEMAP
-			break;
-
-		case SKINCOLOR_ULTRAVIOLET:
-		case SKINCOLOR_PURPLE:
-		case SKINCOLOR_FUCHSIA:
-			cstart = 0x81; // V_PURPLEMAP
-			break;
-
-		case SKINCOLOR_PASTEL:
-		case SKINCOLOR_MOONSLAM:
-		case SKINCOLOR_DUSK:
-		case SKINCOLOR_TOXIC:
-		case SKINCOLOR_MAUVE:
-		case SKINCOLOR_LAVENDER:
-		case SKINCOLOR_BYZANTIUM:
-		case SKINCOLOR_POMEGRANATE:
-			cstart = 0x89; // V_LAVENDERMAP
-			break;
-
-		default:
-			break;
-	}
-
-	return cstart;
 }
 
 INT32 V_SkinColorToHighlightcolor(skincolors_t color)
@@ -3633,127 +3606,128 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	UINT8 *tmpscr = vid.screens[4];
 	UINT8 *srcscr = vid.screens[0];
 
-	if (thiscam->postimg & POSTIMG_WATER)
+	if (!cv_reducevfx.value)
 	{
-		INT32 y;
-		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
-		angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
-		INT32 newpix;
-		INT32 sine;
-		//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
+		if (thiscam->postimg & POSTIMG_WATER)
 		{
-			sine = (FINESINE(disStart)*5)>>FRACBITS;
-			newpix = abs(sine);
+			INT32 y;
+			// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
+			angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
+			INT32 newpix;
+			INT32 sine;
+			//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
 
-			if (sine < 0)
+			for (y = yoffset; y < yoffset+viewheight; y++)
 			{
-				memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
+				sine = (FINESINE(disStart)*5)>>FRACBITS;
+				newpix = abs(sine);
 
-				// Cleanup edge
-				while (newpix)
+				if (sine < 0)
 				{
-					tmpscr[(y*vid.width)+xoffset+newpix] = srcscr[(y*vid.width)+xoffset];
-					newpix--;
-				}
-			}
-			else
-			{
-				memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+					memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
 
-				// Cleanup edge
-				while (newpix)
+					// Cleanup edge
+					while (newpix)
+					{
+						tmpscr[(y*vid.width)+xoffset+newpix] = srcscr[(y*vid.width)+xoffset];
+						newpix--;
+					}
+				}
+				else
 				{
-					tmpscr[(y*vid.width)+xoffset+viewwidth-newpix] = srcscr[(y*vid.width)+xoffset+(viewwidth-1)];
-					newpix--;
+					memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+
+					// Cleanup edge
+					while (newpix)
+					{
+						tmpscr[(y*vid.width)+xoffset+viewwidth-newpix] = srcscr[(y*vid.width)+xoffset+(viewwidth-1)];
+						newpix--;
+					}
 				}
+
+				/*
+				Unoptimized version
+				for (x = 0; x < vid.width; x++)
+				{
+					newpix = (x + sine);
+
+					if (newpix < 0)
+						newpix = 0;
+					else if (newpix >= vid.width)
+						newpix = vid.width-1;
+
+					tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
+				}*/
+
+				disStart += 22;//the offset into the displacement map, increment each game loop
+				disStart &= FINEMASK; //clip it to FINEMASK
 			}
 
-			/*
-			 Unoptimized version
-			 for (x = 0; x < vid.width; x++)
-			 {
-			 	newpix = (x + sine);
-
-			 	if (newpix < 0)
-			 		newpix = 0;
-			 	else if (newpix >= vid.width)
-			 		newpix = vid.width-1;
-
-			 	tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
-			 }*/
-
-			disStart += 22;//the offset into the displacement map, increment each game loop
-			disStart &= FINEMASK; //clip it to FINEMASK
+			UINT8 *tmp = tmpscr;
+			tmpscr = srcscr;
+			srcscr = tmp;
 		}
-
-		UINT8 *tmp = tmpscr;
-		tmpscr = srcscr;
-		srcscr = tmp;
-	}
-	else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
-	{
-		INT32 y;
-
-		// Make sure table is built
-		if (heatshifter == NULL || lastheight != viewheight)
+		else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
 		{
-			if (heatshifter)
+			INT32 y;
+
+			// Make sure table is built
+			if (heatshifter == NULL || lastheight != viewheight)
+			{
 				Z_Free(heatshifter);
+				heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
 
-			heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
+				for (y = 0; y < viewheight; y++)
+				{
+					if (M_RandomChance(FRACUNIT/8)) // 12.5%
+						heatshifter[y] = true;
+				}
 
-			for (y = 0; y < viewheight; y++)
-			{
-				if (M_RandomChance(FRACUNIT/8)) // 12.5%
-					heatshifter[y] = true;
+				heatindex[0] = heatindex[1] = heatindex[2] = heatindex[3] = 0;
+				lastheight = viewheight;
 			}
 
-			heatindex[0] = heatindex[1] = heatindex[2] = heatindex[3] = 0;
-			lastheight = viewheight;
-		}
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
-		{
-			if (heatshifter[heatindex[view]++])
+			for (y = yoffset; y < yoffset+viewheight; y++)
 			{
-				// Shift this row of pixels to the right by 2
-				tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
-				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				if (heatshifter[heatindex[view]++])
+				{
+					// Shift this row of pixels to the right by 2
+					tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
+					memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				}
+				else
+					memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+
+				heatindex[view] %= viewheight;
 			}
-			else
-				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
 
-			heatindex[view] %= viewheight;
+			if (renderisnewtic) // This isn't interpolated... but how do you interpolate a one-pixel shift?
+			{
+				heatindex[view]++;
+				heatindex[view] %= vid.height;
+			}
+
+			UINT8 *tmp = tmpscr;
+			tmpscr = srcscr;
+			srcscr = tmp;
 		}
-
-		if (renderisnewtic) // This isn't interpolated... but how do you interpolate a one-pixel shift?
-		{
-			heatindex[view]++;
-			heatindex[view] %= vid.height;
-		}
-
-		UINT8 *tmp = tmpscr;
-		tmpscr = srcscr;
-		srcscr = tmp;
-	}
 
 #ifdef MOTIONBLUR
-	if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
-	{
-		INT32 x, y;
-
-		// TODO: Add a postimg_param so that we can pick the translucency level...
-		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
+		if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
 		{
-			for (x = xoffset; x < xoffset+viewwidth; x++)
-				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+			INT32 x, y;
+
+			// TODO: Add a postimg_param so that we can pick the translucency level...
+			UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
+
+			for (y = yoffset; y < yoffset+viewheight; y++)
+			{
+				for (x = xoffset; x < xoffset+viewwidth; x++)
+					tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+			}
 		}
-	}
 #endif
+	}
 
 	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
@@ -3808,7 +3782,7 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 		lut->init = true;
 		memcpy(lut->palette, palette, palsize);
 
-		for (i = 0; i < 0xFFFF; i++)
+		for (i = 0; i < 0x10000; i++)
 			lut->table[i] = 0xFFFF;
 
 		if (makecolors)
@@ -3821,7 +3795,9 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 				{
 					for (b = 0; b < 0xFF; b++)
 					{
-						lut->table[i] = GetColorLUT(lut, r, g, b);
+						i = CLUTINDEX(r, g, b);
+						if (lut->table[i] == 0xFFFF)
+							lut->table[i] = NearestPaletteColor(r, g, b, palette);
 					}
 				}
 			}
@@ -3899,14 +3875,16 @@ void V_Recalc(void)
 	// Set dup based on width or height, whichever is less
 	if (((vid.width*FRACUNIT) / BASEVIDWIDTH) < ((vid.height*FRACUNIT) / BASEVIDHEIGHT))
 	{
-		vid.dup = vid.width / BASEVIDWIDTH;
+		vid.dup = max(vid.width / BASEVIDWIDTH, 1);
 		vid.fdup = (vid.width*FRACUNIT) / BASEVIDWIDTH;
 	}
 	else
 	{
-		vid.dup = vid.height / BASEVIDHEIGHT;
+		vid.dup = max(vid.height / BASEVIDHEIGHT, 1);
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
+
+	vid.udup = vid.dup;
 
 	if (loaded_config // this could use a better name, since it is more and indicator that early startup is done and its safe to do sketchy shit now :chaosleep:
 	&& (vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead

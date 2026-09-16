@@ -80,7 +80,7 @@ static UINT8 cheatf_warp(void)
 	if (success)
 	{
 		G_SaveGameData(true); //G_SetGameModified(false);
-		S_StartSound(0, sfx_kc42);
+		S_StartSound(NULL, sfx_kc42);
 	}
 
 	// Refresh secrets menu existing.
@@ -117,13 +117,13 @@ static UINT8 cheatf_devmode(void)
 #endif
 
 static cheatseq_t cheat_warp = {
-	0, cheatf_warp,
+	NULL, cheatf_warp,
 	//{ SCRAMBLE('r'), SCRAMBLE('e'), SCRAMBLE('d'), SCRAMBLE('x'), SCRAMBLE('v'), SCRAMBLE('i'), 0xff }
 	{ SCRAMBLE('b'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), 0xff }
 };
 
 static cheatseq_t cheat_warp_joy = {
-	0, cheatf_warp,
+	NULL, cheatf_warp,
 	/*{ SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_UPARROW),
 	  SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_UPARROW),
 	  SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_UPARROW),
@@ -136,7 +136,7 @@ static cheatseq_t cheat_warp_joy = {
 
 #ifdef DEVELOP
 static cheatseq_t cheat_devmode = {
-	0, cheatf_devmode,
+	NULL, cheatf_devmode,
 	{ SCRAMBLE('d'), SCRAMBLE('e'), SCRAMBLE('v'), SCRAMBLE('m'), SCRAMBLE('o'), SCRAMBLE('d'), SCRAMBLE('e'), 0xff }
 };
 #endif
@@ -249,9 +249,6 @@ boolean cht_Responder(event_t *ev)
 #define REQUIRE_SINGLEPLAYER if (netgame || multiplayer)\
 { CONS_Printf(M_GetText("This only works in single player.\n")); return; }
 
-#define REQUIRE_NOULTIMATE if (ultimatemode)\
-{ CONS_Printf(M_GetText("You're too good to be cheating!\n")); return; }
-
 // command that can be typed at the console!
 void Command_CheatNoClip_f(void)
 {
@@ -259,7 +256,6 @@ void Command_CheatNoClip_f(void)
 
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	plyr = &players[consoleplayer];
 	plyr->pflags ^= PF_NOCLIP;
@@ -274,7 +270,6 @@ void Command_CheatGod_f(void)
 
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	plyr = &players[consoleplayer];
 	plyr->pflags ^= PF_GODMODE;
@@ -289,7 +284,6 @@ void Command_CheatNoTarget_f(void)
 
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	plyr = &players[consoleplayer];
 	plyr->pflags ^= PF_INVIS;
@@ -301,7 +295,7 @@ void Command_CheatNoTarget_f(void)
 void Command_Scale_f(void)
 {
 	const double scaled = atof(COM_Argv(1));
-	fixed_t scale = FLOAT_TO_FIXED(scaled);
+	fixed_t scale = DoubleToFixed(scaled);
 
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
@@ -593,7 +587,6 @@ void Command_Devmode_f(void)
 #ifndef _DEBUG
 	REQUIRE_SINGLEPLAYER;
 #endif
-	REQUIRE_NOULTIMATE;
 
 	if (COM_Argc() > 1)
 	{
@@ -773,7 +766,7 @@ boolean OP_FreezeObjectplace(void)
 	if (!objectplacing)
 		return false;
 
-	if ((maptol & TOL_NIGHTS) && (players[consoleplayer].pflags & PF_NIGHTSMODE))
+	if (nightsmode && nightsplayer(&players[consoleplayer]))
 		return false;
 
 	return true;
@@ -1048,7 +1041,6 @@ void Command_ObjectPlace_f(void)
 {
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	G_SetGameModified(multiplayer, true);
 
@@ -1057,7 +1049,7 @@ void Command_ObjectPlace_f(void)
 	{
 		objectplacing = true;
 
-		if ((players[0].pflags & PF_NIGHTSMODE))
+		if (nightsplayer(&players[0]))
 			return;
 
 		if (!COM_CheckParm("-silent"))
@@ -1128,7 +1120,7 @@ void Command_ObjectPlace_f(void)
 
 		// Don't touch the NiGHTS Objectplace stuff.
 		// ... or if the mo mysteriously vanished.
-		if (!players[0].mo || (players[0].pflags & PF_NIGHTSMODE))
+		if (!players[0].mo || nightsplayer(&players[0]))
 			return;
 
 		// If still in dummy state, get out of it.

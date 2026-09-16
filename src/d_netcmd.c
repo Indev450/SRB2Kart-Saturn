@@ -47,12 +47,16 @@
 #include "z_zone.h"
 #include "lua_script.h"
 #include "lua_hook.h"
+#include "lua_profile.h"
 #include "m_cond.h"
 #include "m_anigif.h"
 #include "k_kart.h" // SRB2kart
 #include "y_inter.h"
 #include "fastcmp.h"
 #include "m_perfstats.h"
+
+#include "r_data.h"
+#include "r_skins.h"
 
 #ifdef NETGAME_DEVMODE
 #define CV_RESTRICT CV_NETVAR
@@ -147,6 +151,7 @@ static void Command_ListWADS_f(void);
 static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_ListUnusedSprites_f(void);
+static void Command_ListUnusedMapSlots_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -249,7 +254,7 @@ consvar_t cv_competitionboxes = {"competitionboxes", "Random", CV_NETVAR|CV_CHEA
 
 #ifdef SEENAMES
 static CV_PossibleValue_t seenames_cons_t[] = {{0, "Off"}, {1, "Colorless"}, {2, "Team"}, {3, "Ally/Foe"}, {0, NULL}};
-consvar_t cv_seenames = {"seenames", "Off", CV_SAVE, seenames_cons_t, 0, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_seenames = {"seenames", "Off", CV_SAVE, seenames_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowseenames = {"allowseenames", "No", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
@@ -430,10 +435,18 @@ consvar_t cv_pointlimit = {"pointlimit", "0", CV_NETVAR|CV_CALL|CV_NOINIT, point
 static CV_PossibleValue_t timelimit_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_timelimit = {"timelimit", "0", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t,
 	TimeLimit_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#ifdef PHOBOS_BUILD
+static CV_PossibleValue_t numlaps_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
+#else
 static CV_PossibleValue_t numlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, NULL}};
+#endif
 consvar_t cv_numlaps = {"numlaps", "3", CV_NETVAR|CV_CALL|CV_NOINIT, numlaps_cons_t,
 	NumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#ifdef PHOBOS_BUILD
+static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, "Map default"}, {0, NULL}};
+#else
 static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, "Map default"}, {0, NULL}};
+#endif
 consvar_t cv_basenumlaps = {"basenumlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, basenumlaps_cons_t, BaseNumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_forceskin = {"forceskin", "Off", CV_NETVAR|CV_CALL|CV_CHEAT, Forceskin_cons_t, ForceSkin_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -458,16 +471,16 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_pingicon = {"pingicon", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_pingicon = {"pingicon", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t cv_pingstyle_cons_t[] = {{0, "New"}, {1, "Old"}, {0, NULL}};
-consvar_t cv_pingstyle = {"pingstyle", "New", CV_SAVE, cv_pingstyle_cons_t, 0, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_pingstyle = {"pingstyle", "New", CV_SAVE, cv_pingstyle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_showdownloadprompt = {"showdownloadprompt", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showdownloadprompt = {"showdownloadprompt", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Intermission time Tails 04-19-2002
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
@@ -501,6 +514,9 @@ consvar_t cv_ps_samplesize = {"ps_samplesize", "1", CV_CALL, ps_samplesize_cons_
 static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+//consvar_t cv_lua_profile = {"lua_profile", "0").values(CV_Unsigned).onchange(lua_profile_OnChange).description("Show hook timings over an average of N tics");
+consvar_t cv_lua_profile = {"lua_profile", "0", CV_CALL, CV_Unsigned, lua_profile_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // only there to better keep track of it globally
 consvar_t cv_director = {"director", "Off", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -562,6 +578,7 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"MODIFYVOTE",
 	"PICKVOTE",
 	"REMOVEPLAYER",
+	"DISCORD",
 	"LUACMD",
 	"LUAVAR"
 };
@@ -595,6 +612,12 @@ void D_RegisterServerCommands(void)
 		Forceskin_cons_t[i].value = 0;
 		Forceskin_cons_t[i].strvalue = NULL;
 	}
+
+	// Set default player names
+	// Monster Iestyn (12/08/19): not sure where else I could have actually put this, but oh well
+	for (i = 0; i < MAXPLAYERS; i++)
+		snprintf(player_names[i], sizeof(player_names[i]), "Player %d", 1 + i);
+
 	RegisterNetXCmd(XD_NAMEANDCOLOR, Got_NameAndColor);
 	RegisterNetXCmd(XD_WEAPONPREF, Got_WeaponPref);
 	RegisterNetXCmd(XD_MAP, Got_Mapcmd);
@@ -642,6 +665,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("locatelump", Command_LocateLump_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
+	COM_AddCommand("listunusedmapslots", Command_ListUnusedMapSlots_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
@@ -897,6 +921,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_mindelay);
 	CV_RegisterVar(&cv_gentlemens);
 	CV_RegisterVar(&cv_serverinfoscreen);
+	CV_RegisterVar(&cv_serveraddoninfo);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);
@@ -924,10 +949,10 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
-	CV_RegisterVar(&cv_audbuffersize);
-
 	CV_RegisterVar(&cv_palette);
 	CV_RegisterVar(&cv_palettenum);
+
+	CV_RegisterVar(&cv_lua_profile);
 
 	// m_menu.c
 	CV_RegisterVar(&cv_chatheight);
@@ -936,6 +961,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatspamprotection);
 	CV_RegisterVar(&cv_consolechat);
 	CV_RegisterVar(&cv_chatnotifications);
+	CV_RegisterVar(&cv_chat_xoffset);
+	CV_RegisterVar(&cv_chat_yoffset);
+	CV_RegisterVar(&cv_chat_showlimit);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_chatcentertext);
 	CV_RegisterVar(&cv_songcredits);
@@ -997,12 +1025,26 @@ void D_RegisterClientCommands(void)
 
 		CV_RegisterVar(&cv_litesteer[i]);
 
+		CV_RegisterVar(&cv_autoaccel[i]);
+
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
-		CV_RegisterVar(&cv_rumble[i]);
-		CV_RegisterVar(&cv_rumblestrength[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
+
+		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_rumble_strength[i]);
+		CV_RegisterVar(&cv_rumble_spinout[i]);
+		CV_RegisterVar(&cv_rumble_sneakerboost[i]);
+		CV_RegisterVar(&cv_rumble_offroad[i]);
+		CV_RegisterVar(&cv_rumble_bananadrag[i]);
+		CV_RegisterVar(&cv_rumble_stairjank[i]);
+		CV_RegisterVar(&cv_rumble_brakedrift[i]);
+		CV_RegisterVar(&cv_rumble_driftcharge[i]);
 	}
+
+	CV_RegisterVar(&cv_gamepadifunfocused);
+	CV_RegisterVar(&cv_gamepadledifunfocused);
+	CV_RegisterVar(&cv_rumbleifunfocused);
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_invertmouse);
@@ -1017,6 +1059,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_midimusicvolume);
 #endif
 	CV_RegisterVar(&cv_numChannels);
+	CV_RegisterVar(&cv_audbuffersize);
 
 #ifdef HAVE_OPENMPT
 	CV_RegisterVar(&cv_modfilter);
@@ -1200,16 +1243,25 @@ static boolean AllowedPlayerNameChar(char ch)
 
 static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 {
-	INT32 ix;
+	size_t ix, len = strlen(name);
 
-	if (strlen(name) == 0 || strlen(name) > MAXPLAYERNAME)
+	if (len == 0 || len > MAXPLAYERNAME)
 		return false; // Empty or too long.
-	if (name[0] == ' ' || name[strlen(name)-1] == ' ')
-		return false; // Starts or ends with a space.
+	if (name[0] == ' ')
+		return false; // Starts with a space.
 	if (isdigit(name[0]))
 		return false; // Starts with a digit.
 	if (name[0] == '@' || name[0] == '~')
 		return false; // Starts with an admin symbol.
+
+	// Clean up trailing whitespace.
+	while (len && name[len-1] == ' ')
+	{
+		name[len-1] = '\0';
+		len--;
+	}
+	if (len == 0)
+		return false;
 
 	// Check if it contains a non-printing character.
 	// Note: ANSI C isprint() considers space a printing character.
@@ -1218,20 +1270,19 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 
 	// Also, anything over 0x80 is disallowed too, since compilers love to
 	// differ on whether they're printable characters or not.
-	for (ix = 0; name[ix] != '\0'; ix++)
+	for (ix = 0; ix < len; ix++)
 		if (!AllowedPlayerNameChar(name[ix]))
 			return false;
 
 	// Check if a player is currently using the name, case-insensitively.
 	for (ix = 0; ix < MAXPLAYERS; ix++)
 	{
-		if (ix != playernum && playeringame[ix]
+		if (ix != (size_t)playernum && playeringame[ix]
 			&& fasticmp(name, player_names[ix]))
 		{
 			// We shouldn't kick people out just because
 			// they joined the game with the same name
 			// as someone else -- modify the name instead.
-			size_t len = strlen(name);
 
 			// Recursion!
 			// Slowly strip characters off the end of the
@@ -1245,7 +1296,8 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 			else if (len == 1) // Agh!
 			{
 				// Last ditch effort...
-				sprintf(name, "%d", M_RandomKey(10));
+				snprintf(name, MAXPLAYERNAME+1, "%d", M_RandomKey(10));
+
 				if (!EnsurePlayerNameIsGood(name, playernum))
 					return false;
 			}
@@ -1264,7 +1316,8 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
   * is restored to what it was before.
   *
   * We assume that if playernum is ::consoleplayer or ::secondarydisplayplayer
-  * the console variable ::cv_playername or ::cv_playername2 respectively is
+  * (unless clientjoin is true, a necessary evil)
+  * the console variable ::cv_playername to ::cv_playername4 respectively is
   * already set to newname. However, the player name table is assumed to
   * contain the old name.
   *
@@ -1284,6 +1337,10 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 	char *tmpname = NULL;
 	INT32 i;
 	boolean namefailed = true;
+	boolean clientjoin = !!(playernum >= MAXPLAYERS);
+
+	if (clientjoin)
+		playernum -= MAXPLAYERS;
 
 	buf = Z_StrDup(newname);
 
@@ -1340,17 +1397,20 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 		}
 
 		// no stealing another player's name
-		for (i = 0; i < MAXPLAYERS; i++)
+		if (!clientjoin)
 		{
-			if (i != playernum && playeringame[i]
-				&& fasticmp(tmpname, player_names[i]))
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				break;
+				if (i != playernum && playeringame[i]
+				 && fasticmp(tmpname, player_names[i]))
+				{
+					break;
+				}
 			}
-		}
 
-		if (i < MAXPLAYERS)
-			break;
+			if (i < MAXPLAYERS)
+				break;
+		}
 
 		// name is okay then
 		namefailed = false;
@@ -1361,15 +1421,23 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 
 	// set consvars whether namefailed or not, because even if it succeeded,
 	// spaces may have been removed
-	if (playernum == consoleplayer)
-		CV_StealthSet(&cv_playername, tmpname);
-	else if (playernum == displayplayers[1] || (!netgame && playernum == 1))
-		CV_StealthSet(&cv_playername2, tmpname);
-	else if (playernum == displayplayers[2] || (!netgame && playernum == 2))
-		CV_StealthSet(&cv_playername3, tmpname);
-	else if (playernum == displayplayers[3] || (!netgame && playernum == 3))
-		CV_StealthSet(&cv_playername4, tmpname);
-	else I_Assert(((void)"CleanupPlayerName used on non-local player", 0));
+	if (clientjoin)
+	{
+		consvar_t *namevars[]  = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
+		CV_StealthSet(namevars[playernum], tmpname);
+	}
+	else
+	{
+		if (playernum == consoleplayer)
+			CV_StealthSet(&cv_playername, tmpname);
+		else if (playernum == displayplayers[1] || (!netgame && playernum == 1))
+			CV_StealthSet(&cv_playername2, tmpname);
+		else if (playernum == displayplayers[2] || (!netgame && playernum == 2))
+			CV_StealthSet(&cv_playername3, tmpname);
+		else if (playernum == displayplayers[3] || (!netgame && playernum == 3))
+			CV_StealthSet(&cv_playername4, tmpname);
+		else I_Assert(((void)"CleanupPlayerName used on non-local player", 0));
+	}
 
 	Z_Free(buf);
 }
@@ -1450,7 +1518,9 @@ UINT8 CanChangeSkin(INT32 playernum)
 				return true;
 		}
 
-		if (players[playernum].spectator || players[playernum].playerstate == PST_DEAD || players[playernum].playerstate == PST_REBORN)
+		if (players[playernum].spectator ||
+			players[playernum].playerstate == PST_DEAD ||
+			players[playernum].playerstate == PST_REBORN)
 			return true;
 
 		return false;
@@ -1484,470 +1554,174 @@ static void ForceAllSkins(INT32 forcedskin)
 	}
 }
 
-static INT32 snacpending = 0, snac2pending = 0, snac3pending = 0, snac4pending = 0, chmappending = 0;
+static INT32 chmappending;
+#ifdef PARANOIA
+static INT32 snacpending[MAXSPLITSCREENPLAYERS];
+#endif
+
+// wonky compat, idk if anything uses this....
+#define playerisbot (splitplayer == 1 && botingame)
 
 // name, color, or skin has changed
 //
-static void SendNameAndColor(void)
+static void SendNameAndColor(UINT8 splitplayer)
 {
 	char buf[MAXPLAYERNAME+2];
 	char *p;
 
 	p = buf;
 
+	// splitscreen
+	if (splitscreen < splitplayer && !playerisbot)
+		return;
+
+	const INT32 pnum = P_GetLocalPlayerNumForNum(splitplayer);
+
+	player_t *player = &players[pnum];
+
+	// TODO: make those cvars arrays
+	consvar_t *playercolor, *playername, *playerskin;
+	consvar_t *colorvars[] = {&cv_playercolor, &cv_playercolor2, &cv_playercolor3, &cv_playercolor4};
+	consvar_t *namevars[]  = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
+	consvar_t *skinvars[]  = {&cv_skin, &cv_skin2, &cv_skin3, &cv_skin4};
+
+	playercolor = colorvars[splitplayer];
+	playername  = namevars[splitplayer];
+	playerskin  = skinvars[splitplayer];
+
 	// normal player colors
 	if (G_GametypeHasTeams())
 	{
-		if (players[consoleplayer].ctfteam == 1 && cv_playercolor.value != skincolor_redteam)
-			CV_StealthSetValue(&cv_playercolor, skincolor_redteam);
-		else if (players[consoleplayer].ctfteam == 2 && cv_playercolor.value != skincolor_blueteam)
-			CV_StealthSetValue(&cv_playercolor, skincolor_blueteam);
+		if (player->ctfteam == 1 && playercolor->value != skincolor_redteam)
+			CV_StealthSetValue(playercolor, skincolor_redteam);
+		else if (player->ctfteam == 2 && playercolor->value != skincolor_blueteam)
+			CV_StealthSetValue(playercolor, skincolor_blueteam);
 	}
 
 	// never allow the color "none"
-	if (!cv_playercolor.value)
+	if (!playercolor->value)
 	{
-		if (players[consoleplayer].skincolor)
-			CV_StealthSetValue(&cv_playercolor, players[consoleplayer].skincolor);
-		else if (skins[players[consoleplayer].skin].prefcolor)
-			CV_StealthSetValue(&cv_playercolor, skins[players[consoleplayer].skin].prefcolor);
+		if (player->skincolor)
+			CV_StealthSetValue(playercolor, player->skincolor);
+		else if (skins[player->skin].prefcolor)
+			CV_StealthSetValue(playercolor, skins[player->skin].prefcolor);
 		else
-			CV_StealthSet(&cv_playercolor, cv_playercolor.defaultvalue);
+			CV_StealthSet(playercolor, playercolor->defaultvalue);
 	}
-
-	if (fastcmp(cv_playername.string, player_names[consoleplayer])
-		&& cv_playercolor.value == players[consoleplayer].skincolor
-		&& fastcmp(cv_skin.string, skins[players[consoleplayer].skin].name))
-		return;
 
 	// We'll handle it later if we're not playing.
 	if (!Playing())
 		return;
+
+	if (fastcmp(playername->string, player_names[pnum])
+		&& playercolor->value == player->skincolor
+		&& fastcmp(playerskin->string, skins[player->skin].name))
+		return;
+
+	if (playerisbot)
+	{
+		players[pnum].skincolor = botcolor;
+		if (players[pnum].mo)
+			players[pnum].mo->color = players[pnum].skincolor;
+		SetPlayerSkinByNum(pnum, botskin-1);
+		return;
+	}
 
 	// If you're not in a netgame, merely update the skin, color, and name.
 	if (!netgame)
 	{
 		INT32 foundskin;
 
-		CleanupPlayerName(consoleplayer, cv_playername.zstring);
-		strcpy(player_names[consoleplayer], cv_playername.zstring);
+		CleanupPlayerName(pnum, playername->zstring);
+		strcpy(player_names[pnum], playername->zstring);
 
-		players[consoleplayer].skincolor = cv_playercolor.value;
+		player->skincolor = playercolor->value;
 
-		if (players[consoleplayer].mo)
-			players[consoleplayer].mo->color = players[consoleplayer].skincolor;
+		if (player->mo)
+			player->mo->color = player->skincolor;
 
-		if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
+		if ((foundskin = R_SkinAvailable(playerskin->string)) != -1)
 		{
-			cv_skin.value = foundskin;
-			SetPlayerSkin(consoleplayer, cv_skin.string);
-			CV_StealthSet(&cv_skin, skins[cv_skin.value].name);
+			playerskin->value = foundskin;
+			SetPlayerSkin(pnum, playerskin->string);
+			CV_StealthSet(playerskin, skins[playerskin->value].name);
 		}
 		else
 		{
-			cv_skin.value = players[consoleplayer].skin;
-			CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin].name);
+			playerskin->value = player->skin;
+			CV_StealthSet(playerskin, skins[player->skin].name);
 			// will always be same as current
-			SetPlayerSkin(consoleplayer, cv_skin.string);
+			SetPlayerSkin(pnum, playerskin->string);
 		}
 
 		return;
 	}
 
-	snacpending++;
+#ifdef PARANOIA
+	snacpending[splitplayer]++;
+#endif
 
 	// Don't change name if muted
-	if (player_name_changes[consoleplayer] >= MAXNAMECHANGES)
+	if (player_name_changes[pnum] >= MAXNAMECHANGES)
 	{
-		CV_StealthSet(&cv_playername, player_names[consoleplayer]);
+		CV_StealthSet(playername, player_names[pnum]);
 		HU_AddChatText("\x85*You must wait to change your name again", false);
 	}
-	else if (cv_mute.value && !(server || IsPlayerAdmin(consoleplayer)))
-		CV_StealthSet(&cv_playername, player_names[consoleplayer]);
+	else if (cv_mute.value && !(server || IsPlayerAdmin(pnum)))
+		CV_StealthSet(playername, player_names[pnum]);
 	else // Cleanup name if changing it
-		CleanupPlayerName(consoleplayer, cv_playername.zstring);
+		CleanupPlayerName(pnum, playername->zstring);
 
 	// Don't change skin if the server doesn't want you to.
-	if (!CanChangeSkin(consoleplayer))
-		CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin].name);
+	if (!CanChangeSkin(pnum))
+		CV_StealthSet(playerskin, skins[player->skin].name);
 
 	// check if player has the skin loaded (cv_skin may have
 	// the name of a skin that was available in the previous game)
-	cv_skin.value = R_SkinAvailable(cv_skin.string);
-	if (cv_skin.value < 0)
+	playerskin->value = R_SkinAvailable(playerskin->string);
+	if (playerskin->value < 0)
 	{
-		INT32 skinnum = players[consoleplayer].skin;
-		CV_StealthSet(&cv_skin, skins[skinnum].name);
-		cv_skin.value = skinnum;
+		INT32 skinnum = player->skin;
+		CV_StealthSet(playerskin, skins[skinnum].name);
+		playerskin->value = skinnum;
 	}
 
 	// Finally write out the complete packet and send it off.
-	WRITESTRINGN(p, cv_playername.zstring, MAXPLAYERNAME);
-	WRITEUINT8(p, (UINT8)cv_playercolor.value);
-	WRITEUINT8(p, (UINT8)cv_skin.value);
-	SendNetXCmdForPlayer(0, XD_NAMEANDCOLOR, buf, p - buf);
-}
+	WRITESTRINGN(p, playername->zstring, MAXPLAYERNAME);
+	WRITEUINT8(p, (UINT8)playercolor->value);
+	WRITESKIN(p, (skinnum_t)playerskin->value);
 
-// splitscreen
-static void SendNameAndColor2(void)
-{
-	INT32 secondplaya = -1;
-	char buf[MAXPLAYERNAME+2];
-	char *p;
-
-	if (splitscreen < 1 && !botingame)
-		return; // can happen if skin2/color2/name2 changed
-
-	if (displayplayers[1] != consoleplayer)
-		secondplaya = displayplayers[1];
-	else if (!netgame) // HACK
-		secondplaya = 1;
-
-	if (secondplaya == -1)
-		return;
-
-	p = buf;
-
-	// normal player colors
-	if (G_GametypeHasTeams())
-	{
-		if (players[secondplaya].ctfteam == 1 && cv_playercolor2.value != skincolor_redteam)
-			CV_StealthSetValue(&cv_playercolor2, skincolor_redteam);
-		else if (players[secondplaya].ctfteam == 2 && cv_playercolor2.value != skincolor_blueteam)
-			CV_StealthSetValue(&cv_playercolor2, skincolor_blueteam);
-	}
-
-	// never allow the color "none"
-	if (!cv_playercolor2.value)
-	{
-		if (players[secondplaya].skincolor)
-			CV_StealthSetValue(&cv_playercolor2, players[secondplaya].skincolor);
-		else if (skins[players[secondplaya].skin].prefcolor)
-			CV_StealthSetValue(&cv_playercolor2, skins[players[secondplaya].skin].prefcolor);
-		else
-			CV_StealthSet(&cv_playercolor2, cv_playercolor2.defaultvalue);
-	}
-
-	// We'll handle it later if we're not playing.
-	if (!Playing())
-		return;
-
-	// If you're not in a netgame, merely update the skin, color, and name.
-	if (botingame)
-	{
-		players[secondplaya].skincolor = botcolor;
-		if (players[secondplaya].mo)
-			players[secondplaya].mo->color = players[secondplaya].skincolor;
-		SetPlayerSkinByNum(secondplaya, botskin-1);
-		return;
-	}
-	else if (!netgame)
-	{
-		INT32 foundskin;
-
-		CleanupPlayerName(secondplaya, cv_playername2.zstring);
-		strcpy(player_names[secondplaya], cv_playername2.zstring);
-
-		// don't use displayplayers[1]: the second player must be 1
-		players[secondplaya].skincolor = cv_playercolor2.value;
-		if (players[secondplaya].mo)
-			players[secondplaya].mo->color = players[secondplaya].skincolor;
-
-		if ((foundskin = R_SkinAvailable(cv_skin2.string)) != -1)
-		{
-			cv_skin2.value = foundskin;
-			SetPlayerSkin(secondplaya, cv_skin2.string);
-		}
-		else
-		{
-			cv_skin2.value = players[secondplaya].skin;
-			CV_StealthSet(&cv_skin2, skins[players[secondplaya].skin].name);
-			// will always be same as current
-			SetPlayerSkin(secondplaya, cv_skin2.string);
-		}
-		return;
-	}
-
-	snac2pending++;
-
-	// Don't change name if muted
-	if (player_name_changes[displayplayers[1]] >= MAXNAMECHANGES)
-	{
-		CV_StealthSet(&cv_playername2, player_names[displayplayers[1]]);
-		HU_AddChatText("\x85*You must wait to change your name again", false);
-	}
-	else if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[1])))
-		CV_StealthSet(&cv_playername2, player_names[displayplayers[1]]);
-	else // Cleanup name if changing it
-		CleanupPlayerName(displayplayers[1], cv_playername2.zstring);
-
-	// Don't change skin if the server doesn't want you to.
-	if (!CanChangeSkin(displayplayers[1]))
-		CV_StealthSet(&cv_skin2, skins[players[displayplayers[1]].skin].name);
-
-	// check if player has the skin loaded (cv_skin2 may have
-	// the name of a skin that was available in the previous game)
-	cv_skin2.value = R_SkinAvailable(cv_skin2.string);
-	if (cv_skin2.value < 0)
-	{
-		INT32 skinnum = players[displayplayers[1]].skin;
-		CV_StealthSet(&cv_skin2, skins[skinnum].name);
-		cv_skin2.value = skinnum;
-	}
-
-	// Finally write out the complete packet and send it off.
-	WRITESTRINGN(p, cv_playername2.zstring, MAXPLAYERNAME);
-	WRITEUINT8(p, (UINT8)cv_playercolor2.value);
-	WRITEUINT8(p, (UINT8)cv_skin2.value);
-	SendNetXCmdForPlayer(1, XD_NAMEANDCOLOR, buf, p - buf);
-}
-
-static void SendNameAndColor3(void)
-{
-	INT32 thirdplaya = -1;
-	char buf[MAXPLAYERNAME+2];
-	char *p;
-
-	if (splitscreen < 2)
-		return; // can happen if skin3/color3/name3 changed
-
-	if (displayplayers[2] != consoleplayer)
-		thirdplaya = displayplayers[2];
-	else if (!netgame) // HACK
-		thirdplaya = 2;
-
-	if (thirdplaya == -1)
-		return;
-
-	p = buf;
-
-	// normal player colors
-	if (G_GametypeHasTeams())
-	{
-		if (players[thirdplaya].ctfteam == 1 && cv_playercolor3.value != skincolor_redteam)
-			CV_StealthSetValue(&cv_playercolor3, skincolor_redteam);
-		else if (players[thirdplaya].ctfteam == 2 && cv_playercolor3.value != skincolor_blueteam)
-			CV_StealthSetValue(&cv_playercolor3, skincolor_blueteam);
-	}
-
-	// never allow the color "none"
-	if (!cv_playercolor3.value)
-	{
-		if (players[thirdplaya].skincolor)
-			CV_StealthSetValue(&cv_playercolor3, players[thirdplaya].skincolor);
-		else if (skins[players[thirdplaya].skin].prefcolor)
-			CV_StealthSetValue(&cv_playercolor3, skins[players[thirdplaya].skin].prefcolor);
-		else
-			CV_StealthSet(&cv_playercolor3, cv_playercolor3.defaultvalue);
-	}
-
-	// We'll handle it later if we're not playing.
-	if (!Playing())
-		return;
-
-	// If you're not in a netgame, merely update the skin, color, and name.
-	if (!netgame)
-	{
-		INT32 foundskin;
-
-		CleanupPlayerName(thirdplaya, cv_playername3.zstring);
-		strcpy(player_names[thirdplaya], cv_playername3.zstring);
-
-		// don't use displayplayers[2]: the third player must be 2
-		players[thirdplaya].skincolor = cv_playercolor3.value;
-		if (players[thirdplaya].mo)
-			players[thirdplaya].mo->color = players[thirdplaya].skincolor;
-
-		if ((foundskin = R_SkinAvailable(cv_skin3.string)) != -1)
-		{
-			cv_skin3.value = foundskin;
-			SetPlayerSkin(thirdplaya, cv_skin3.string);
-		}
-		else
-		{
-			cv_skin3.value = players[thirdplaya].skin;
-			CV_StealthSet(&cv_skin3, skins[players[thirdplaya].skin].name);
-			// will always be same as current
-			SetPlayerSkin(thirdplaya, cv_skin3.string);
-		}
-		return;
-	}
-
-	snac3pending++;
-
-	// Don't change name if muted
-	if (player_name_changes[displayplayers[2]] >= MAXNAMECHANGES)
-	{
-		CV_StealthSet(&cv_playername3, player_names[displayplayers[2]]);
-		HU_AddChatText("\x85*You must wait to change your name again", false);
-	}
-	else if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[2])))
-		CV_StealthSet(&cv_playername3, player_names[displayplayers[2]]);
-	else // Cleanup name if changing it
-		CleanupPlayerName(displayplayers[2], cv_playername3.zstring);
-
-	// Don't change skin if the server doesn't want you to.
-	if (!CanChangeSkin(displayplayers[2]))
-		CV_StealthSet(&cv_skin3, skins[players[displayplayers[2]].skin].name);
-
-	// check if player has the skin loaded (cv_skin3 may have
-	// the name of a skin that was available in the previous game)
-	cv_skin3.value = R_SkinAvailable(cv_skin3.string);
-	if (cv_skin3.value < 0)
-	{
-		INT32 skinnum = players[displayplayers[2]].skin;
-		CV_StealthSet(&cv_skin3, skins[skinnum].name);
-		cv_skin3.value = skinnum;
-	}
-
-	// Finally write out the complete packet and send it off.
-	WRITESTRINGN(p, cv_playername3.zstring, MAXPLAYERNAME);
-	WRITEUINT8(p, (UINT8)cv_playercolor3.value);
-	WRITEUINT8(p, (UINT8)cv_skin3.value);
-	SendNetXCmdForPlayer(2, XD_NAMEANDCOLOR, buf, p - buf);
-}
-
-static void SendNameAndColor4(void)
-{
-	INT32 fourthplaya = -1;
-	char buf[MAXPLAYERNAME+2];
-	char *p;
-
-	if (splitscreen < 3)
-		return; // can happen if skin4/color4/name4 changed
-
-	if (displayplayers[3] != consoleplayer)
-		fourthplaya = displayplayers[3];
-	else if (!netgame) // HACK
-		fourthplaya = 3;
-
-	if (fourthplaya == -1)
-		return;
-
-	p = buf;
-
-	// normal player colors
-	if (G_GametypeHasTeams())
-	{
-		if (players[fourthplaya].ctfteam == 1 && cv_playercolor4.value != skincolor_redteam)
-			CV_StealthSetValue(&cv_playercolor4, skincolor_redteam);
-		else if (players[fourthplaya].ctfteam == 2 && cv_playercolor4.value != skincolor_blueteam)
-			CV_StealthSetValue(&cv_playercolor4, skincolor_blueteam);
-	}
-
-	// never allow the color "none"
-	if (!cv_playercolor4.value)
-	{
-		if (players[fourthplaya].skincolor)
-			CV_StealthSetValue(&cv_playercolor4, players[fourthplaya].skincolor);
-		else if (skins[players[fourthplaya].skin].prefcolor)
-			CV_StealthSetValue(&cv_playercolor4, skins[players[fourthplaya].skin].prefcolor);
-		else
-			CV_StealthSet(&cv_playercolor4, cv_playercolor4.defaultvalue);
-	}
-
-	// We'll handle it later if we're not playing.
-	if (!Playing())
-		return;
-
-	// If you're not in a netgame, merely update the skin, color, and name.
-	if (botingame)
-	{
-		players[fourthplaya].skincolor = botcolor;
-		if (players[fourthplaya].mo)
-			players[fourthplaya].mo->color = players[fourthplaya].skincolor;
-		SetPlayerSkinByNum(fourthplaya, botskin-1);
-		return;
-	}
-	else if (!netgame)
-	{
-		INT32 foundskin;
-
-		CleanupPlayerName(fourthplaya, cv_playername4.zstring);
-		strcpy(player_names[fourthplaya], cv_playername4.zstring);
-
-		// don't use displayplayers[3]: the second player must be 4
-		players[fourthplaya].skincolor = cv_playercolor4.value;
-		if (players[fourthplaya].mo)
-			players[fourthplaya].mo->color = players[fourthplaya].skincolor;
-
-		if ((foundskin = R_SkinAvailable(cv_skin4.string)) != -1)
-		{
-			cv_skin4.value = foundskin;
-			SetPlayerSkin(fourthplaya, cv_skin4.string);
-		}
-		else
-		{
-			cv_skin4.value = players[fourthplaya].skin;
-			CV_StealthSet(&cv_skin4, skins[players[fourthplaya].skin].name);
-			// will always be same as current
-			SetPlayerSkin(fourthplaya, cv_skin4.string);
-		}
-		return;
-	}
-
-	snac4pending++;
-
-	// Don't change name if muted
-	if (player_name_changes[displayplayers[3]] >= MAXNAMECHANGES)
-	{
-		CV_StealthSet(&cv_playername4, player_names[displayplayers[3]]);
-		HU_AddChatText("\x85*You must wait to change your name again", false);
-	}
-	else if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[3])))
-		CV_StealthSet(&cv_playername4, player_names[displayplayers[3]]);
-	else // Cleanup name if changing it
-		CleanupPlayerName(displayplayers[3], cv_playername4.zstring);
-
-	// Don't change skin if the server doesn't want you to.
-	if (!CanChangeSkin(displayplayers[3]))
-		CV_StealthSet(&cv_skin4, skins[players[displayplayers[3]].skin].name);
-
-	// check if player has the skin loaded (cv_skin4 may have
-	// the name of a skin that was available in the previous game)
-	cv_skin4.value = R_SkinAvailable(cv_skin4.string);
-	if (cv_skin4.value < 0)
-	{
-		INT32 skinnum = players[displayplayers[3]].skin;
-		CV_StealthSet(&cv_skin4, skins[skinnum].name);
-		cv_skin4.value = skinnum;
-	}
-
-	// Finally write out the complete packet and send it off.
-	WRITESTRINGN(p, cv_playername4.zstring, MAXPLAYERNAME);
-	WRITEUINT8(p, (UINT8)cv_playercolor4.value);
-	WRITEUINT8(p, (UINT8)cv_skin4.value);
-	SendNetXCmdForPlayer(3, XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(splitplayer, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 {
-	player_t *p = &players[playernum];
-	char name[MAXPLAYERNAME+1];
-	UINT8 color, skin;
+	player_t *player;
+	char name[MAXPLAYERNAME+1] = {};
+	UINT8 color;
+	skinnum_t skin;
 
 #ifdef PARANOIA
 	if (playernum < 0 || playernum > MAXPLAYERS)
 		I_Error("There is no player %d!", playernum);
 #endif
 
-	if (playernum == consoleplayer)
-		snacpending--; // TODO: make snacpending an array instead of 4 separate vars?
-	else if (playernum == displayplayers[1])
-		snac2pending--;
-	else if (playernum == displayplayers[2])
-		snac3pending--;
-	else if (playernum == displayplayers[3])
-		snac4pending--;
+	player = &players[playernum];
 
 #ifdef PARANOIA
-	if (snacpending < 0 || snac2pending < 0 || snac3pending < 0 || snac4pending < 0)
-		I_Error("snacpending negative!");
+	if (P_IsLocalPlayer(player))
+	{
+		const INT32 localpnum = P_GetLocalPlayerNumForPlayer(player);
+		snacpending[localpnum]--;
+
+		if (snacpending[localpnum] < 0)
+			I_Error("snacpending negative for player %d!", localpnum);
+	}
 #endif
 
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
 	color = READUINT8(*cp);
-	skin = READUINT8(*cp);
+	skin = READSKIN(*cp);
 
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)
@@ -1957,33 +1731,32 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 	}
 
 	// set color
-	p->skincolor = color % MAXSKINCOLORS;
-	if (p->mo)
-		p->mo->color = (UINT8)p->skincolor;
+	player->skincolor = color % MAXSKINCOLORS;
+	if (player->mo)
+		player->mo->color = (UINT8)player->skincolor;
 	demo_extradata[playernum] |= DXD_COLOR;
 
 	// normal player colors
-	if (server && (p != &players[consoleplayer] && p != &players[displayplayers[1]]
-		&& p != &players[displayplayers[2]] && p != &players[displayplayers[3]]))
+	if (server && !P_IsLocalPlayer(player))
 	{
 		boolean kick = false;
 
 		// team colors
 		if (G_GametypeHasTeams())
 		{
-			if (p->ctfteam == 1 && p->skincolor != skincolor_redteam)
+			if (player->ctfteam == 1 && player->skincolor != skincolor_redteam)
 				kick = true;
-			else if (p->ctfteam == 2 && p->skincolor != skincolor_blueteam)
+			else if (player->ctfteam == 2 && player->skincolor != skincolor_blueteam)
 				kick = true;
 		}
 
 		// don't allow color "none"
-		if (!p->skincolor)
+		if (!player->skincolor)
 			kick = true;
 
 		if (kick)
 		{
-			CONS_Alert(CONS_WARNING, M_GetText("Illegal color change received from %s (team: %d), color: %d)\n"), player_names[playernum], p->ctfteam, p->skincolor);
+			CONS_Alert(CONS_WARNING, M_GetText("Illegal color change received from %s (team: %d), color: %d)\n"), player_names[playernum], player->ctfteam, player->skincolor);
 			SendKick(playernum, KICK_MSG_CON_FAIL);
 			return;
 		}
@@ -1995,6 +1768,7 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 		const INT32 forcedskin = cv_forceskin.value;
 		SetPlayerSkinByNum(playernum, forcedskin);
 
+		// TODO: make cv_skin an array
 		if (playernum == consoleplayer)
 			CV_StealthSet(&cv_skin, skins[forcedskin].name);
 		else if (playernum == displayplayers[1])
@@ -2008,44 +1782,16 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 		SetPlayerSkinByNum(playernum, skin);
 }
 
-void SendWeaponPref(void)
+void SendWeaponPref(UINT8 splitplayer)
 {
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam[0].value)
+
+	if (cv_flipcam[splitplayer].value)
 		buf[0] |= 1;
-	SendNetXCmdForPlayer(0, XD_WEAPONPREF, buf, 1);
-}
 
-void SendWeaponPref2(void)
-{
-	UINT8 buf[1];
-
-	buf[0] = 0;
-	if (cv_flipcam[1].value)
-		buf[0] |= 1;
-	SendNetXCmdForPlayer(1, XD_WEAPONPREF, buf, 1);
-}
-
-void SendWeaponPref3(void)
-{
-	UINT8 buf[1];
-
-	buf[0] = 0;
-	if (cv_flipcam[2].value)
-		buf[0] |= 1;
-	SendNetXCmdForPlayer(2, XD_WEAPONPREF, buf, 1);
-}
-
-void SendWeaponPref4(void)
-{
-	UINT8 buf[1];
-
-	buf[0] = 0;
-	if (cv_flipcam[3].value)
-		buf[0] |= 1;
-	SendNetXCmdForPlayer(3, XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(splitplayer, XD_WEAPONPREF, buf, 1);
 }
 
 static void Got_WeaponPref(const UINT8 **cp, INT32 playernum)
@@ -2061,23 +1807,10 @@ static void Got_WeaponPref(const UINT8 **cp, INT32 playernum)
 		player->pflags |= PF_ANALOGMODE;
 }
 
-void D_SendPlayerConfig(void)
+void D_SendPlayerConfig(UINT8 splitplayer)
 {
-	SendNameAndColor();
-	if (splitscreen || botingame)
-		SendNameAndColor2();
-	if (splitscreen > 1)
-		SendNameAndColor3();
-	if (splitscreen > 2)
-		SendNameAndColor4();
-
-	SendWeaponPref();
-	if (splitscreen)
-		SendWeaponPref2();
-	if (splitscreen > 1)
-		SendWeaponPref3();
-	if (splitscreen > 2)
-		SendWeaponPref4();
+	SendNameAndColor(splitplayer);
+	SendWeaponPref(splitplayer);
 }
 
 // Only works for displayplayer, sorry!
@@ -2096,14 +1829,16 @@ INT32 D_LookupPlayer(const char *s)
 
 	if ((playernum = atoi(s)))
 	{
-		playernum = max(min(playernum, MAXPLAYERS-1), 0);/* not out of range */
+		playernum = max(min(playernum, MAXPLAYERS-1), 0); /* not out of range */
 		return playernum;
 	}
+
+	const size_t len = strlen(s);
 
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
 	{
 		/* Match name case-insensitively: fully, or partially the start. */
-		if (playeringame[playernum] && (strnicmp(player_names[playernum], s, strlen(s)) == 0))
+		if (playeringame[playernum] && (strnicmp(player_names[playernum], s, len) == 0))
 		{
 			return playernum;
 		}
@@ -2143,13 +1878,15 @@ static void GetViewablePlayerPlaceRange(INT32 *first, INT32 *last)
 	(*last) = 0;
 
 	for (i = 0; i < MAXPLAYERS; ++i)
-		if (G_CouldView(i))
 	{
-		place = players[i].kartstuff[k_position];
-		if (place < (*first))
-			(*first) = place;
-		if (place > (*last))
-			(*last) = place;
+		if (G_CouldView(i))
+		{
+			place = players[i].kartstuff[k_position];
+			if (place < (*first))
+				(*first) = place;
+			if (place > (*last))
+				(*last) = place;
+		}
 	}
 }
 
@@ -2483,7 +2220,7 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 				displayplayers[1] = 1;
 				playeringame[1] = true;
 				players[1].bot = 1;
-				SendNameAndColor2();
+				SendNameAndColor(1);
 			}
 		}
 
@@ -2520,7 +2257,6 @@ void D_SetupVote(void)
 		WRITEUINT8(p, gt);
 	WRITEUINT8(p, secondgt);
 	secondgt &= ~0x80;
-
 
 	for (i = 0; i < 4; i++)
 	{
@@ -2617,11 +2353,12 @@ static char *ConcatCommandArgv(int start, int end)
 	if (!p)
 		I_Error("ConcatCommandArgv: Out of memory!\n");
 
-	--end;/* handle the final argument separately */
+	--end; /* handle the final argument separately */
 
 	for (i = start; i < end; ++i)
 	{
-		p += sprintf(p, "%s ", COM_Argv(i));
+		if (size - (p - final) > 0)
+			p += snprintf(p, size - (p - final), "%s ", COM_Argv(i));
 	}
 
 	/* at this point "end" is actually the last argument's position */
@@ -2649,7 +2386,6 @@ static void Command_Map_f(void)
 		CONS_Alert(CONS_WARNING, "Map command is used too frequently!\n");
 		return;
 	}
-
 
 	last_map_cmd = I_GetTime();
 
@@ -2787,7 +2523,7 @@ static void Command_Map_f(void)
 	// G_TOLFlag handles both multiplayer gametype and ignores it for !multiplayer
 	else
 	{
-		if (!mapheaderinfo[newmapnum-1])
+		if (mapheaderinfo[newmapnum-1] == NULL)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Invalid mapheaderinfo for Course %s (%s)\n"), realmapname, G_BuildMapName(newmapnum));
 			return;
@@ -3036,11 +2772,11 @@ static void Command_ReplayMarker(void)
 
 		if (title)
 		{
-			snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+			snprintf(demo.titlename, sizeof(demo.titlename)-1, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 			Z_Free(title);
 		}
 		else
-			snprintf(demo.titlename, 64, "[%i:%02d/%.5s]", G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+			snprintf(demo.titlename, sizeof(demo.titlename)-1, "[%i:%02d/%.5s]", G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 
 		CONS_Printf("Replay will be saved!\n");
 	}
@@ -4637,13 +4373,13 @@ static void Got_RequestAddfilecmd(const UINT8 **cp, INT32 playernum)
 		char message[275];
 
 		if (toomany)
-			sprintf(message, M_GetText("Too many files loaded to add %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Too many files loaded to add %s\n"), filename);
 		else if (ncs == FS_NOTFOUND)
-			sprintf(message, M_GetText("The server doesn't have %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("The server doesn't have %s\n"), filename);
 		else if (ncs == FS_MD5SUMBAD)
-			sprintf(message, M_GetText("Checksum mismatch on %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Checksum mismatch on %s\n"), filename);
 		else
-			sprintf(message, M_GetText("Unknown error finding wad file (%s)\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Unknown error finding wad file (%s)\n"), filename);
 
 		CONS_Printf("%s",message);
 
@@ -4748,8 +4484,6 @@ static void Command_LocateLump_f(void)
 		CONS_Printf("%s - %s\n", name, wadname);
 	}
 }
-
-#define MAXDOOMEDNUM 4095
 
 static void Command_ListDoomednums_f(void)
 {
@@ -4893,6 +4627,23 @@ void Command_ListUnusedSprites_f(void)
 		break;
 	}
 }
+
+void Command_ListUnusedMapSlots_f(void)
+{
+	INT32 i;
+
+	CONS_Printf("\x82Printing map slot non-usage...\n");
+
+	for (i = 0; i < NUMMAPS; i++)
+	{
+		// is checking this enough?
+		if (mapheaderinfo[i])
+			continue;
+
+		CONS_Printf("%s\n", G_BuildMapName(i+1));
+	}
+}
+
 
 // =========================================================================
 //                            MISC. COMMANDS
@@ -5462,8 +5213,10 @@ static void Command_Mapmd5_f(void)
 	{
 		INT32 i;
 		char md5tmp[33];
+
 		for (i = 0; i < 16; ++i)
-			sprintf(&md5tmp[i*2], "%02x", mapmd5[i]);
+			snprintf(&md5tmp[i*2], 3, "%02x", mapmd5[i]);
+
 		CONS_Printf("%s: %s\n", G_BuildMapName(gamemap), md5tmp);
 	}
 	else
@@ -5763,50 +5516,53 @@ static void ForceSkin_OnChange(void)
 	}
 }
 
-//Allows the player's name to be changed if cv_mute is off.
+// Allows the player's name to be changed if cv_mute is off.
 static void Name_OnChange(void)
 {
 	if (cv_mute.value && !(server || IsPlayerAdmin(consoleplayer)))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You may not change your name when chat is muted.\n"));
 		CV_StealthSet(&cv_playername, player_names[consoleplayer]);
+		return;
 	}
-	else
-		SendNameAndColor();
 
+	SendNameAndColor(0);
 }
 
 static void Name2_OnChange(void)
 {
-	if (cv_mute.value) //Secondary player can't be admin.
+	if (cv_mute.value) // Secondary player can't be admin.
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You may not change your name when chat is muted.\n"));
 		CV_StealthSet(&cv_playername2, player_names[displayplayers[1]]);
+		return;
 	}
-	else
-		SendNameAndColor2();
+
+	SendNameAndColor(1);
 }
 
 static void Name3_OnChange(void)
 {
-	if (cv_mute.value) //Third player can't be admin.
+	if (cv_mute.value) // Third player can't be admin.
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You may not change your name when chat is muted.\n"));
 		CV_StealthSet(&cv_playername3, player_names[displayplayers[2]]);
+		return;
 	}
-	else
-		SendNameAndColor3();
+
+	SendNameAndColor(2);
 }
 
 static void Name4_OnChange(void)
 {
-	if (cv_mute.value) //Secondary player can't be admin.
+	if (cv_mute.value) // Secondary player can't be admin.
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You may not change your name when chat is muted.\n"));
 		CV_StealthSet(&cv_playername4, player_names[displayplayers[3]]);
+		return;
 	}
-	else
-		SendNameAndColor4();
+
+	SendNameAndColor(3);
 }
 
 /** Sends a skin change for the console player, unless that player is moving.
@@ -5828,7 +5584,7 @@ static void Skin_OnChange(void)
 	}
 
 	if (CanChangeSkin(consoleplayer) && !P_PlayerMoving(consoleplayer))
-		SendNameAndColor();
+		SendNameAndColor(0);
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
@@ -5849,7 +5605,7 @@ static void Skin2_OnChange(void)
 		return; // do whatever you want
 
 	if (CanChangeSkin(displayplayers[1]) && !P_PlayerMoving(displayplayers[1]))
-		SendNameAndColor2();
+		SendNameAndColor(1);
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
@@ -5865,7 +5621,7 @@ static void Skin3_OnChange(void)
 		return; // do whatever you want
 
 	if (CanChangeSkin(displayplayers[2]) && !P_PlayerMoving(displayplayers[2]))
-		SendNameAndColor3();
+		SendNameAndColor(2);
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
@@ -5881,7 +5637,7 @@ static void Skin4_OnChange(void)
 		return; // do whatever you want
 
 	if (CanChangeSkin(displayplayers[3]) && !P_PlayerMoving(displayplayers[3]))
-		SendNameAndColor4();
+		SendNameAndColor(3);
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
@@ -5961,19 +5717,22 @@ static void Command_SkinSearch(void)
 	size_t i;
 	UINT16 s;
 	UINT16 ic = 0;
-	//skin_t *skininput = &skins[s];
-	for (i = 1; i < COM_Argc(); i++){
-		for( s = 0 ; s <  numallskins ; s++ )
+
+	for (i = 1; i < COM_Argc(); i++)
+	{
+		for (s = 0; s < numskins; s++)
 		{
 			skin_t *skininput = &skins[s];
-			if (strcasestr(skininput->realname,COM_Argv(i)))
+
+			if (strcasestr(skininput->realname, COM_Argv(i)))
 			{
 				ic++;
-				CONS_Printf("%d. %s%s:\x80 %s\n", ic,HU_SkinColorToConsoleColor(skininput->prefcolor),skininput->realname,skininput->name);
+				CONS_Printf("%d. %s%s:\x80 %s\n", ic, HU_SkinColorToConsoleColor(skininput->prefcolor), skininput->realname, skininput->name);
 			}
 		}
 	}
-				CONS_Printf("Total %d skins.\n", ic);
+
+	CONS_Printf("Total %d skins.\n", ic);
 }
 
 /** Sends a color change for the console player, unless that player is moving.
@@ -5994,7 +5753,7 @@ static void Color_OnChange(void)
 	if (!P_PlayerMoving(consoleplayer))
 	{
 		// Color change menu scrolling fix is no longer necessary
-		SendNameAndColor();
+		SendNameAndColor(0);
 	}
 	else
 	{
@@ -6016,7 +5775,7 @@ static void Color2_OnChange(void)
 	if (!P_PlayerMoving(displayplayers[1]))
 	{
 		// Color change menu scrolling fix is no longer necessary
-		SendNameAndColor2();
+		SendNameAndColor(1);
 	}
 	else
 	{
@@ -6033,7 +5792,7 @@ static void Color3_OnChange(void)
 	if (!P_PlayerMoving(displayplayers[2]))
 	{
 		// Color change menu scrolling fix is no longer necessary
-		SendNameAndColor3();
+		SendNameAndColor(2);
 	}
 	else
 	{
@@ -6050,7 +5809,7 @@ static void Color4_OnChange(void)
 	if (!P_PlayerMoving(displayplayers[3]))
 	{
 		// Color change menu scrolling fix is no longer necessary
-		SendNameAndColor4();
+		SendNameAndColor(3);
 	}
 	else
 	{
@@ -6146,7 +5905,6 @@ static void BaseNumLaps_OnChange(void)
 			CONS_Printf(M_GetText("Number of laps will be changed to map defaults next round.\n"));
 	}
 }
-
 
 static void KartFrantic_OnChange(void)
 {

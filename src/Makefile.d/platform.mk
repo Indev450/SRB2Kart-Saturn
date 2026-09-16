@@ -42,8 +42,6 @@ include Makefile.d/haiku.mk
 else ifdef SOLARIS # FIXME: UNTESTED
 UNIX=1
 platform=solaris
-else ifdef CYGWIN32 # FIXME: UNTESTED
-platform=cygwin
 else ifdef MINGW
 ifdef MINGW64
 NONX86=1

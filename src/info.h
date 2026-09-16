@@ -19,6 +19,8 @@
 #include "sounds.h"
 #include "m_fixed.h"
 
+#define MAXDOOMEDNUM 4095
+
 // dehacked.c now has lists for the more named enums! PLEASE keep them up to date!
 // For great modding!!
 
@@ -450,7 +452,11 @@ void A_SpawnFreshCopy(void *actor);
 extern boolean actionsoverridden[NUMACTIONS];
 
 // ratio of states to sprites to mobj types is roughly 6 : 1 : 1
+#ifdef PHOBOS_BUILD
+#define NUMMOBJFREESLOTS 4096 // should be sufficient
+#else
 #define NUMMOBJFREESLOTS 1024
+#endif
 #define NUMSPRITEFREESLOTS NUMMOBJFREESLOTS
 #define NUMSTATEFREESLOTS (NUMMOBJFREESLOTS*8)
 

@@ -62,6 +62,9 @@ FUNCMATH fixed_t FixedHypot(fixed_t x, fixed_t y)
 	angle_t angle;
 	fixed_t dist;
 
+	I_Assert(x != INT32_MIN);
+	I_Assert(y != INT32_MIN);
+
 	x = abs(x);
 	y = abs(y);
 
@@ -76,6 +79,10 @@ FUNCMATH fixed_t FixedHypot(fixed_t x, fixed_t y)
 
 	if (!y)
 		return x;
+
+	// prevent underflow
+	if (y == INT32_MIN)
+		return INT32_MAX;
 
 	angle = (tantoangle[FixedDiv(y, x)>>DBITS] + ANGLE_90) >> ANGLETOFINESHIFT;
 

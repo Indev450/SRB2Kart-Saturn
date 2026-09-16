@@ -8,6 +8,8 @@ passthru_opts+=\
 	HAVE_MINIUPNPC\
 	HAVE_DISCORDRPC DEVELOP\
 	NOHOLEPUNCH\
+	HAVE_IPV6\
+	PHOBOS_BUILD\
 
 # build with debugging information
 ifdef DEBUGMODE
@@ -85,7 +87,7 @@ ifdef VALGRIND
 VALGRIND_PKGCONFIG?=valgrind
 VALGRIND_LDFLAGS=
 $(eval $(call Use_pkg_config,VALGRIND))
-ZDEBUG=1
+#ZDEBUG=1 we enable this by default
 opts+=-DHAVE_VALGRIND
 endif
 

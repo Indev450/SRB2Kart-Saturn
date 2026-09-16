@@ -1110,14 +1110,6 @@ void F_TitleScreenTicker(boolean run)
 			return;
 		}
 
-		// Replay intro when done cycling through demos
-		/*if (curDemo == numDemos) -- uuuh... we have a LOT of maps AND a big devteam... probably not gonna see a repeat unless you're super unlucky :V
-		{
-			curDemo = 0;
-			F_StartIntro();
-			return;
-		}*/
-
 		mapname = G_BuildMapName(G_RandMap(TOL_RACE, -2, false, 0, false, NULL)+1);
 
 		numstaff = 1;
@@ -1172,9 +1164,7 @@ void F_StartWaitingPlayers(void)
 	randskin = M_RandomKey(numskins);
 	boolean waithires = skins[randskin].flags && SF_HIRES;
 
-	if (waitcolormap)
-		Z_Free(waitcolormap);
-
+	Z_Free(waitcolormap);
 	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
 
 	if (waithires)
@@ -1318,7 +1308,7 @@ boolean F_ContinueResponder(event_t *event)
 	keypressed = true;
 	imcontinuing = true;
 	continuetime = TICRATE;
-	S_StartSound(0, sfx_itemup);
+	S_StartSound(NULL, sfx_itemup);
 	return true;
 }
 

@@ -61,16 +61,10 @@
 
 gameaction_t gameaction = 0;
 gamestate_t gamestate = GS_NULL;
-UINT8 ultimatemode = false;
 
 boolean botingame = false;
-UINT8 botskin = 0;
+skinnum_t botskin = 0;
 UINT8 botcolor = 0;
-
-JoyType_t Joystick[MAXSPLITSCREENPLAYERS] = {};
-
-// 1024 bytes is plenty for a savegame
-#define SAVEGAMESIZE (1024)
 
 // SRB2kart
 char gamedatafilename[64] = "kartdata.dat";
@@ -90,7 +84,6 @@ INT16 maptol = 0;
 UINT8 globalweather = 0;
 INT32 curWeather = PRECIP_NONE;
 INT32 cursaveslot = -1; // Auto-save 1p savegame slot
-INT16 lastmapsaved = 0; // Last map we auto-saved at
 boolean gamecomplete = false;
 
 UINT16 mainwads = 0;
@@ -100,7 +93,6 @@ boolean savemoddata = false;
 UINT8 paused = 0;
 UINT8 modeattacking = ATTACKING_NONE;
 boolean imcontinuing = false;
-boolean runemeraldmanager = false;
 
 boolean netgame = false; // only true if packets are broadcast
 boolean multiplayer = false;
@@ -112,7 +104,6 @@ INT32 consoleplayer = 0; // player taking events and displaying
 INT32 displayplayers[MAXSPLITSCREENPLAYERS] = {}; // view being displayed
 
 tic_t gametic = 0;
-tic_t levelstarttic = 0; // gametic at level start
 UINT32 totalrings = 0; // for intermission
 INT16 lastmap = 0; // last level you were at (returning from special stages)
 tic_t timeinmap = 0; // Ticker for time spent in level (used for levelcard display)
@@ -132,7 +123,7 @@ UINT8 skincolor_bluering = SKINCOLOR_STEEL;
 tic_t countdowntimer = 0;
 boolean countdowntimeup = false;
 
-cutscene_t *cutscenes[128];
+cutscene_t *cutscenes[128] = {};
 
 INT16 nextmapoverride = 0;
 boolean skipstats = false;
@@ -144,7 +135,7 @@ mobj_t *blueflag = NULL;
 mapthing_t *rflagpoint = NULL;
 mapthing_t *bflagpoint = NULL;
 
-struct quake quake;
+struct quake quake = {};
 
 // Map Header Information
 mapheader_t* mapheaderinfo[NUMMAPS] = {};
@@ -190,9 +181,6 @@ boolean CheckForReverseGravity = false;
 UINT16 invulntics = 20*TICRATE;
 UINT16 sneakertics = 20*TICRATE;
 UINT16 flashingtics = 3*TICRATE/2; // SRB2kart
-UINT16 tailsflytics = 8*TICRATE;
-UINT16 underwatertics = 30*TICRATE;
-UINT16 spacetimetics = 11*TICRATE + (TICRATE/2);
 UINT16 extralifetics = 4*TICRATE;
 
 // SRB2kart
@@ -210,10 +198,7 @@ const INT32 wipeoutslowtime = 20;
 const INT32 wantedreduce = 5*TICRATE;
 const INT32 wantedfrequency = 10*TICRATE;
 
-INT32 gameovertics = 15*TICRATE;
-
 UINT8 use1upSound = 0;
-UINT8 maxXtraLife = 2; // Max extra lives from rings
 
 UINT8 introtoplay = 0;
 UINT8 creditscutscene = 0;
@@ -228,7 +213,7 @@ tic_t racecountdown = 0, exitcountdown = 0; // for racing
 fixed_t gravity = 0;
 fixed_t mapobjectscale = FRACUNIT;
 
-struct maplighting maplighting;
+struct maplighting maplighting = {};
 
 INT16 autobalance = 0; //for CTF team balance
 INT16 teamscramble = 0; //for CTF team scramble
@@ -454,40 +439,27 @@ consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
 	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+//static CV_PossibleValue_t autoaccelcons_t[] = {{0, "Off"}, {1, "Manual"}, {2, "Automatic"}, {0, NULL}};
+consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS] = {
+	{"kartautoaccel",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t cechotoggle_t[] = {{0, "Off"}, {1, "On"}, {2, "Console"}, {0, NULL}};
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, cechotoggle_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-#if MAXPLAYERS > 16
-#error "please update player_name table using the new value for MAXPLAYERS"
-#endif
-
 #ifdef SEENAMES
 player_t *seenplayer = NULL; // player we're aiming at right now
 #endif
 
-char player_names[MAXPLAYERS][MAXPLAYERNAME+1] =
-{
-	"Player 1",
-	"Player 2",
-	"Player 3",
-	"Player 4",
-	"Player 5",
-	"Player 6",
-	"Player 7",
-	"Player 8",
-	"Player 9",
-	"Player 10",
-	"Player 11",
-	"Player 12",
-	"Player 13",
-	"Player 14",
-	"Player 15",
-	"Player 16"
-}; // SRB2kart - removed Players 17 through 32
-
+// now automatically allocated in D_RegisterServerCommands
+// so that it doesn't have to be updated depending on the value of MAXPLAYERS
+char player_names[MAXPLAYERS][MAXPLAYERNAME+1];
 INT32 player_name_changes[MAXPLAYERS] = {};
 
 INT16 rw_maximums[NUM_WEAPONS] =
@@ -515,11 +487,8 @@ void G_ClearRecords(void)
 	INT16 i;
 	for (i = 0; i < NUMMAPS; ++i)
 	{
-		if (mainrecords[i])
-		{
-			Z_Free(mainrecords[i]);
-			mainrecords[i] = NULL;
-		}
+		Z_Free(mainrecords[i]);
+		mainrecords[i] = NULL;
 	}
 }
 
@@ -635,14 +604,18 @@ const char *G_BuildMapName(INT32 map)
 	}
 
 	if (map < 100 && map >= 0) // ...but why use signed integer in first place? idk but this prevents warning (and potential buffer overflow lol)
-		sprintf(&mapname[3], "%.2d", map);
+	{
+		snprintf(&mapname[3], sizeof(mapname)-3, "%.2d", map);
+	}
 	else
 	{
 		mapname[3] = (char)('A' + (char)((map - 100) / 36));
+
 		if ((map - 100) % 36 < 10)
 			mapname[4] = (char)('0' + (char)((map - 100) % 36));
 		else
 			mapname[4] = (char)('A' + (char)((map - 100) % 36) - 10);
+
 		mapname[5] = '\0';
 	}
 
@@ -763,7 +736,7 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 	if (retaxis > (+JOYAXISRANGE))
 		retaxis = +JOYAXISRANGE;
 
-	if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
+	if (!DigitalGamepadStyle(pnum) && axissel < AXISDEAD)
 	{
 		const INT32 jdeadzone = ((JOYAXISRANGE-1) * deadzone) >> FRACBITS;
 
@@ -800,6 +773,10 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+//
+// G_HandleLocalDriftturn
+// Hack for Lua menus that check directional inputs with driftturn
+//
 static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 {
 	INT32 axis = 0;
@@ -807,8 +784,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 
 	const UINT8 forplayer = (ssplayer-1);
 
-	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+	const boolean analogjoystickmove  = cv_usejoystick[forplayer].value && !DigitalGamepadStyle(forplayer);
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && DigitalGamepadStyle(forplayer);
 
 	turnright = InputDown(gc_turnright, ssplayer);
 	turnleft = InputDown(gc_turnleft, ssplayer);
@@ -862,9 +839,9 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 //
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
-	boolean moveinput = false;
 	INT32 axis = 0;
-	const boolean usejoystick = (cv_usejoystick[(ssplayer-1)].value);
+	const UINT8 forplayer = (ssplayer-1);
+	const boolean usejoystick = cv_usejoystick[forplayer].value;
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, saltyhop, honking, etc.
@@ -899,15 +876,11 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 #undef CHECKINPUT
 
-	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
-	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
-	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
-
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
-	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
+	camspin[forplayer] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 
 	// Reset to our spec player if we watch someone else.
-	if ((moveinput || cmd->buttons)
+	if ((cmd->driftturn || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		if (cv_director.value)
@@ -916,6 +889,63 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 		displayplayers[0] = consoleplayer;
 		R_ResetViewInterpolation(0);
 		camera[0].reset_aiming = true;
+	}
+}
+
+//
+// G_HandleAutoAcceleration
+//
+static void G_HandleAutoAcceleration(ticcmd_t *cmd, player_t *player, UINT8 forplayer)
+{
+	if (!cv_autoaccel[forplayer].value)
+		return;
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	// dont accel before and during countdown
+	if (leveltime <= starttime)
+		return;
+
+	// dont do this in menus or when console is onscreen
+	if (menuactive || CON_Ready())
+		return;
+
+	// gotta have a player that aint respawning
+	if (!player->mo || player->kartstuff[k_respawn])
+		return;
+
+	// dont need for "finished" players
+	if (player->exiting || (player->pflags & PF_TIMEOVER))
+		return;
+
+	// dont do during spinout
+	if (player->kartstuff[k_spinouttimer])
+		return;
+
+	// spectators and freecam dont need special handling, see G_BuildTiccmd
+
+	if (cmd->buttons & BT_BRAKE)
+	{
+		if (cmd->buttons & BT_DRIFT ||
+			player->kartstuff[k_sneakertimer] ||
+			player->kartstuff[k_squishedtimer])
+		{
+			cmd->forwardmove = (SINT8)forwardmove[0];
+			cmd->buttons |= BT_ACCELERATE;
+		}
+		else
+		{
+			// allows us to drive backwards if we need to
+			if (cmd->forwardmove > 0)
+				cmd->forwardmove = 0;
+			cmd->buttons &= ~BT_ACCELERATE;
+		}
+	}
+	else
+	{
+		cmd->forwardmove = (SINT8)forwardmove[1];
+		cmd->buttons |= BT_ACCELERATE;
 	}
 }
 
@@ -944,10 +974,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	player_t *player = P_GetLocalPlayerForNum(forplayer);
 
 	camera_t *thiscam = &camera[forplayer];
-	const boolean freecam = camera[forplayer].freecam;
-
-	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+	const boolean freecam = thiscam->freecam;
 
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
@@ -978,6 +1005,9 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 		return;
 	}
+
+	const boolean analogjoystickmove  = cv_usejoystick[forplayer].value && !DigitalGamepadStyle(forplayer);
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && DigitalGamepadStyle(forplayer);
 
 	usejoystick = (analogjoystickmove || gamepadjoystickmove);
 	turnright = InputDown(gc_turnright, ssplayer);
@@ -1066,7 +1096,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (InputDown(gc_accelerate, ssplayer) || (gamepadjoystickmove && axis > 0) || player->kartstuff[k_sneakertimer])
 		{
 			cmd->buttons |= BT_ACCELERATE;
-			forward = forwardmove[1];	// 50
+			forward = forwardmove[1]; // 50
 		}
 		else if (analogjoystickmove && axis > 0)
 		{
@@ -1146,6 +1176,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->forwardmove = (SINT8)(cmd->forwardmove + forward);
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
+
+	G_HandleAutoAcceleration(cmd, player, forplayer);
 
 	//{ SRB2kart - Drift support
 	// Not grouped with the rest of turn stuff because it needs to know what buttons you're pressing for rubber-burn turn
@@ -1240,8 +1272,6 @@ static void G_DoLoadLevel(boolean resetplayer)
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
 
-	levelstarttic = gametic; // for time calculation
-
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = -1; // force a wipe
 
@@ -1263,6 +1293,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 	{
 		// fail so reset game stuff
 		Command_ExitGame_f();
+		P_FreeCorruptMapWarnings();
 		return;
 	}
 
@@ -1296,6 +1327,8 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
+	// print any map errors now due to clearhud above :chaosleep:
+	P_PrintCorruptMapWarnings();
 
 	server_lagless = !cv_gentlemens.value;
 
@@ -2597,12 +2630,18 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		// Just spawn there.
 		//return playerstarts[0];
 
+#if MAXPLAYERS > 16
+		//this section courtesy of fickle - v1.1 battle royale
+		// screw collision chex
+		return playerstarts[pos % numcoopstarts];
+#else
 		if (P_IsLocalPlayerNum(playernum))
 		{
 			CONS_Alert(CONS_WARNING, "Could not spawn at any Race starts!\n");
 		}
 
 		return NULL;
+#endif
 	}
 
 	if (P_IsLocalPlayerNum(playernum))
@@ -3295,18 +3334,6 @@ static void G_DoStartVote(void)
 	gameaction = ga_nothing;
 }
 
-//
-// G_UseContinue
-//
-void G_UseContinue(void)
-{
-	if (gamestate == GS_LEVEL && !netgame && !multiplayer)
-	{
-		gameaction = ga_startcont;
-		lastdraw = true;
-	}
-}
-
 static void G_DoStartContinue(void)
 {
 	I_Assert(!netgame && !multiplayer);
@@ -3345,7 +3372,7 @@ static void G_DoContinued(void)
 	token = 0;
 
 	// Reset # of lives
-	pl->lives = (ultimatemode) ? 1 : 3;
+	pl->lives = 3;
 
 	D_MapChange(gamemap, gametype, false, false, 0, false, false);
 
@@ -3435,7 +3462,7 @@ void G_LoadGameData(void)
 	INT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	//For records
 	tic_t rectime;
@@ -3568,7 +3595,7 @@ void G_SaveGameData(boolean force)
 	size_t length;
 	INT32 i, j;
 	UINT8 btemp;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	(void)force;
 	char backupfile[MAX_WADPATH+4];
 
@@ -3739,7 +3766,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	size_t length;
 	char vcheck[VERSIONSIZE];
 	char savename[255];
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
 	memset(&savedata, 0, sizeof(savedata));
@@ -3749,7 +3776,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	startonmapnum = mapoverride;
 #endif
 
-	sprintf(savename, savegamename, slot);
+	snprintf(savename, sizeof(savename), savegamename, slot);
 
 	length = FIL_ReadFile(savename, &save.buffer);
 	if (!length)
@@ -3761,7 +3788,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	save.p = save.buffer;
 
 	memset(vcheck, 0, sizeof (vcheck));
-	sprintf(vcheck, "version %d", VERSION);
+	snprintf(vcheck, sizeof(vcheck), "version %d", VERSION);
 
 	if (!fastcmp((const char *)save.p, (const char *)vcheck))
 	{
@@ -3825,10 +3852,10 @@ void G_SaveGame(UINT32 savegameslot)
 	boolean saved;
 	char savename[256] = "";
 	const char *backup;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
-	sprintf(savename, savegamename, savegameslot);
-	backup = va("%s",savename);
+	snprintf(savename, sizeof(savename), savegamename, savegameslot);
+	backup = va("%s", savename);
 
 	// save during evaluation or credits? game's over, folks!
 	if (gamestate == GS_CREDITS || gamestate == GS_EVALUATION)
@@ -3839,15 +3866,15 @@ void G_SaveGame(UINT32 savegameslot)
 		char name[VERSIONSIZE];
 		size_t length;
 
-		save.p = save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
+		save.p = save.buffer = (UINT8 *)Z_Malloc(1024, PU_STATIC, NULL); // 1024 bytes is plenty for a savegame
 		if (!save.p)
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
 			return;
 		}
 
-		memset(name, 0, sizeof (name));
-		sprintf(name, "version %d", VERSION);
+		memset(name, 0, sizeof(name));
+		snprintf(name, sizeof(name), "version %d", VERSION);
 		WRITEMEM(save.p, name, VERSIONSIZE);
 
 		P_SaveGame(&save);
@@ -3989,7 +4016,6 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	if (W_CheckNumForName(mapname) == LUMPERROR)
 	{
 		I_Error("Internal game map '%s' not found\n", mapname);
-		Command_ExitGame_f();
 		return;
 	}
 
@@ -4054,6 +4080,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 		const char *actnum = NULL;
 
 		len += strlen(mapheaderinfo[mapnum-1]->lvlttl);
+
 		if (strlen(mapheaderinfo[mapnum-1]->zonttl) > 0)
 		{
 			zonetext = M_GetText(mapheaderinfo[mapnum-1]->zonttl);
@@ -4064,6 +4091,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 			zonetext = M_GetText("Zone");
 			len += strlen(zonetext) + 1;	// ' ' + zonetext
 		}
+
 		if (strlen(mapheaderinfo[mapnum-1]->actnum) > 0)
 		{
 			actnum = M_GetText(mapheaderinfo[mapnum-1]->actnum);
@@ -4075,10 +4103,12 @@ char *G_BuildMapTitle(INT32 mapnum)
 		if (!title)
 			return NULL;
 
-		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
+		snprintf(title, len, "%s", mapheaderinfo[mapnum-1]->lvlttl);
 
-		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
-		if (actnum) sprintf(title + strlen(title), " %s", actnum);
+		if (zonetext)
+			snprintf(title + strlen(title), len - strlen(title), " %s", zonetext);
+		if (actnum)
+			snprintf(title + strlen(title), len - strlen(title), " %s", actnum);
 	}
 
 	return title;
@@ -4090,12 +4120,13 @@ static void measurekeywords(mapsearchfreq_t *fr,
 {
 	char *qp;
 	char *sp;
+
 	if (wanttable)
 		(*dimp) = Z_Realloc((*dimp), 255 * sizeof (struct searchdim),
 				PU_STATIC, NULL);
 	for (qp = strtok(va("%s", q), " ");
 			qp && fr->total < 255;
-			qp = strtok(0, " "))
+			qp = strtok(NULL, " "))
 	{
 		if (( sp = strcasestr(s, qp) ))
 		{
@@ -4104,10 +4135,12 @@ static void measurekeywords(mapsearchfreq_t *fr,
 				(*dimp)[(*cuntp)].pos = sp - s;
 				(*dimp)[(*cuntp)].siz = strlen(qp);
 			}
+
 			(*cuntp)++;
 			fr->total++;
 		}
 	}
+
 	if (wanttable)
 		(*dimp) = Z_Realloc((*dimp), (*cuntp) * sizeof (struct searchdim),
 				PU_STATIC, NULL);
@@ -4176,7 +4209,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 			{
 				newmapnum = mapnum;
 				newmapname = realmapname;
-				realmapname = 0;
+				realmapname = NULL;
 				Z_Free(apromapname);
 				if (!wanttable)
 					break;
@@ -4197,7 +4230,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 				{
 					apromapnum = mapnum;
 					apromapname = realmapname;
-					realmapname = 0;
+					realmapname = NULL;
 				}
 			}
 			else/* ...match individual keywords */

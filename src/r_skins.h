@@ -71,9 +71,9 @@ extern INT32 numskins;
 extern INT32 numlocalskins;
 extern INT32 numallskins;
 extern skin_t skins[MAXSKINS];
-extern UINT8 skinstats[9][9][MAXSKINS];
-extern UINT8 skinstatscount[9][9];
-extern UINT8 skinsorted[MAXSKINS];
+extern skinnum_t skinstats[9][9][MAXSKINS];
+extern skinnum_t skinstatscount[9][9];
+extern skinnum_t skinsorted[MAXSKINS];
 
 extern skin_t localskins[MAXLOCALSKINS];
 extern skin_t allskins[MAXSKINS+MAXLOCALSKINS];
@@ -92,6 +92,7 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local);
 // had to move those here Zzz...
 INT32 K_GetSkinNum(player_t *player);
 INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local);
+INT32 K_GetMobjLocalSkinNum(const skin_t *skin, const skin_t *localskin, boolean local);
 skin_t *K_GetPlayerSkin(player_t *player);
 skin_t *K_GetMobjSkin(const mobj_t *mobj);
 patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum);

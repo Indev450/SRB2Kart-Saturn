@@ -45,20 +45,20 @@ int hook_defrosting = 0;
 
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {
-	LUA_EnumLib, // global metatable for enums
-	LUA_SOCLib, // A_Action functions, freeslot
-	LUA_BaseLib, // string concatination by +, CONS_Printf, p_local.h stuff (P_InstaThrust, P_Move), etc.
-	LUA_MathLib, // fixed_t and angle_t math functions
-	LUA_HookLib, // hookAdd and hook-calling functions
-	LUA_ConsoleLib, // console command/variable functions and structs
-	LUA_InfoLib, // info.h stuff: mobjinfo_t, mobjinfo[], state_t, states[]
-	LUA_MobjLib, // mobj_t, mapthing_t
-	LUA_PlayerLib, // player_t
-	LUA_SkinLib, // skin_t, skins[]
-	LUA_ThinkerLib, // thinker_t
-	LUA_MapLib, // line_t, side_t, sector_t, subsector_t
-	LUA_BlockmapLib, // blockmap stuff
-	LUA_HudLib, // HUD stuff
+	LUA_EnumLib, 		// global metatable for enums
+	LUA_SOCLib, 		// A_Action functions, freeslot
+	LUA_BaseLib, 		// string concatination by +, CONS_Printf, p_local.h stuff (P_InstaThrust, P_Move), etc.
+	LUA_MathLib, 		// fixed_t and angle_t math functions
+	LUA_HookLib, 		// hookAdd and hook-calling functions
+	LUA_ConsoleLib, 	// console command/variable functions and structs
+	LUA_InfoLib, 		// info.h stuff: mobjinfo_t, mobjinfo[], state_t, states[]
+	LUA_MobjLib, 		// mobj_t, mapthing_t
+	LUA_PlayerLib, 		// player_t
+	LUA_SkinLib, 		// skin_t, skins[]
+	LUA_ThinkerLib, 	// thinker_t
+	LUA_MapLib, 		// line_t, side_t, sector_t, subsector_t
+	LUA_BlockmapLib, 	// blockmap stuff
+	LUA_HudLib, 		// HUD stuff
 	NULL
 };
 
@@ -66,12 +66,8 @@ static lua_CFunction liblist[] = {
 static void *LUA_Alloc(void *ud, void *ptr, size_t osize, size_t nsize)
 {
 	(void)ud;
-	if (nsize == 0) {
-		if (osize != 0)
-			Z_Free(ptr);
-		return NULL;
-	} else
-		return Z_Realloc(ptr, nsize, PU_LUA, NULL);
+	(void)osize;
+	return Z_Realloc(ptr, nsize, PU_LUA, NULL);
 }
 
 // Panic function Lua calls when there's an unprotected error.
@@ -213,7 +209,8 @@ void LUA_ClearState(void)
 	lua_setfield(L, LUA_REGISTRYINDEX, LREG_VALID);
 
 	// open srb2 libraries
-	for(i = 0; liblist[i]; i++) {
+	for (i = 0; liblist[i]; i++)
+	{
 		lua_pushcfunction(L, liblist[i]);
 		lua_call(L, 0, 0);
 	}
@@ -280,20 +277,19 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump)
 
 	if (wadfiles[wad]->type == RET_LUA)
 	{
-		name = malloc(len+1);
-		strcpy(name, wadfiles[wad]->filename);
+		name = malloc(len + 1);
+		snprintf(name, len + 1, "%s", wadfiles[wad]->filename);
 	}
 	else // If it's not a .lua file, copy the lump name in too.
 	{
 		lumpinfo_t *lump_p = &wadfiles[wad]->lumpinfo[lump];
 		len += 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-		name = malloc(len+1);
+		name = malloc(len + 1);
 
 		if (!name)
 			I_Error("LUA_LoadLump: Out of memory!\n");
 
-		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
-		name[len] = '\0';
+		snprintf(name, len + 1, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
 	}
 
 	LUA_LoadFile(&f, name); // actually load file!
@@ -595,6 +591,7 @@ void LUA_InvalidateLevel(void)
 
 	for (i = 0; i < numsubsectors; i++)
 		LUA_InvalidateUserdata(&subsectors[i]);
+
 	for (i = 0; i < numsectors; i++)
 	{
 		LUA_InvalidateUserdata(&sectors[i]);
@@ -615,6 +612,7 @@ void LUA_InvalidateLevel(void)
 
 	for (i = 0; i < numsides; i++)
 		LUA_InvalidateUserdata(&sides[i]);
+
 	for (i = 0; i < numvertexes; i++)
 		LUA_InvalidateUserdata(&vertexes[i]);
 
@@ -625,6 +623,10 @@ void LUA_InvalidateLevel(void)
 		LUA_InvalidateUserdata(&slope->o);
 		LUA_InvalidateUserdata(&slope->d);
 	}
+
+	// We invalidated a lot of userdata objects, a lot of them probably ended up unreachable so they can be
+	// GC'd right away
+	lua_gc(gL, LUA_GCCOLLECT, 0);
 }
 
 void LUA_InvalidateMapthings(void)
@@ -716,9 +718,12 @@ static UINT8 GetUserdataArchType(int index)
 
 static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 {
+	int type = lua_type(gL, myindex);
+
 	if (myindex < 0)
 		myindex = lua_gettop(gL)+1+myindex;
-	switch (lua_type(gL, myindex))
+
+	switch (type)
 	{
 	case LUA_TNONE:
 	case LUA_TNIL:
@@ -728,8 +733,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 	case LUA_TLIGHTUSERDATA:
 	case LUA_TTHREAD:
 	case LUA_TFUNCTION:
+	{
+		const char *typestr = (type == LUA_TLIGHTUSERDATA ? "light userdata" : (type == LUA_TTHREAD ? "thread" : (type == LUA_TFUNCTION ? "function" : "??")));
+		CONS_Alert(CONS_ERROR, M_GetText("Archived an invalid value! (%s)\n"), typestr);
 		WRITEUINT8(*p, ARCH_NULL);
 		return 2;
+	}
 	case LUA_TBOOLEAN:
 		WRITEUINT8(*p, ARCH_BOOLEAN);
 		WRITEUINT8(*p, lua_toboolean(gL, myindex));
@@ -982,7 +991,7 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 
 	if (!gL)
 	{
-		if (fastcmp(ptype,"player")) // players must always be included, even if no vars
+		if (fastcmp(ptype, "player")) // players must always be included, even if no vars
 			WRITEUINT16(*p, 0);
 		return;
 	}
@@ -998,7 +1007,7 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 	if (!lua_istable(gL, -1))
 	{ // no extra values table
 		lua_pop(gL, 1);
-		if (fastcmp(ptype,"player")) // players must always be included, even if no vars
+		if (fastcmp(ptype, "player")) // players must always be included, even if no vars
 			WRITEUINT16(*p, 0);
 		return;
 	}
@@ -1010,13 +1019,13 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 	// skip anything that has an empty table and isn't a player.
 	if (i == 0)
 	{
-		if (fastcmp(ptype,"player")) // always include players even if they have no extra variables
+		if (fastcmp(ptype, "player")) // always include players even if they have no extra variables
 			WRITEUINT16(*p, 0);
 		lua_pop(gL, 1);
 		return;
 	}
 
-	if (fastcmp(ptype,"mobj")) // mobjs must write their mobjnum as a header
+	if (fastcmp(ptype, "mobj")) // mobjs must write their mobjnum as a header
 		WRITEUINT32(*p, ((mobj_t *)pointer)->mobjnum);
 
 	WRITEUINT16(*p, i);
@@ -1064,9 +1073,14 @@ static void ArchiveTables(UINT8 **p)
 		{
 			// Write key
 			e = ArchiveValue(p, TABLESINDEX, -2); // key should be either a number or a string, ArchiveValue can handle this.
-			if (e == 2) // invalid key type (function, thread, lightuserdata, or anything we don't recognise)
+			if (e == 1)
+				n++; // the table contained a new table we'll have to archive. :(
+			else if (e == 2) // invalid key type (function, thread, lightuserdata, or anything we don't recognise)
 			{
-				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -2), luaL_typename(gL, -2), i);
+				lua_pushvalue(gL, -2); // copy key for error message (lua_tostring may mutate it which confuses lua_next)
+				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -1), luaL_typename(gL, -1), i);
+				lua_pop(gL, 2); // pop key copy and value
+				continue;
 			}
 			else if (e == 3) // nil key due to invalid userdata. NOT an error.
 			{
@@ -1077,16 +1091,17 @@ static void ArchiveTables(UINT8 **p)
 			// Write value
 			e = ArchiveValue(p, TABLESINDEX, -1);
 			if (e == 1)
-			{
 				n++; // the table contained a new table we'll have to archive. :(
-			}
 			else if (e == 2) // invalid value type
 			{
-				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -2), luaL_typename(gL, -1));
+				lua_pushvalue(gL, -2); // copy key for error message (same as above)
+				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -1), luaL_typename(gL, -2));
+				lua_pop(gL, 1); // pop key copy
 			}
 
 			lua_pop(gL, 1);
 		}
+
 		lua_pop(gL, 1);
 		WRITEUINT8(*p, ARCH_TEND);
 	}
@@ -1276,13 +1291,21 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 			UINT8 ret;
 
 			ret = UnArchiveValue(p, TABLESINDEX, network);
-			if (ret == 3)
+			if (ret == 1) // End of table
+				break;
+			else if (ret == 2) // Key contains a new table
+				n++;
+			else if (ret == 3)
 			{
 				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
-			else if (ret == 1) // read key
-				break;
+
+			if (lua_isnil(gL, -1)) // If key is nil, skip this entry
+			{
+				lua_pop(gL, 1);
+				continue;
+			}
 
 			ret = UnArchiveValue(p, TABLESINDEX, network);
 			if (ret == 1)
@@ -1291,21 +1314,15 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 				lua_pop(gL, 1); // Pop key
 				break;
 			}
+			else if (ret == 2) // read value
+				n++;
 			else if (ret == 3)
 			{
 				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
-			else if (ret == 2) // read value
-				n++;
 
-			if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
-			{
-				CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
-				lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
-			}
-			else
-				lua_rawset(gL, -3);
+			lua_rawset(gL, -3);
 		}
 
 		lua_pop(gL, 1);

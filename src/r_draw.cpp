@@ -400,7 +400,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 			case TC_ALLWHITE:   skintableindex = ALLWHITE_TT_CACHE_INDEX; break;
 			case TC_RAINBOW:    skintableindex = RAINBOW_TT_CACHE_INDEX; break;
 			case TC_BLINK:      skintableindex = BLINK_TT_CACHE_INDEX; break;
-			default:       skintableindex = skinnum; break;
+			default:            skintableindex = skinnum; break;
 		}
 	}
 
@@ -419,7 +419,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	// Generate the colormap if necessary
 	if (!ret)
 	{
-		ret = static_cast<UINT8*>(Z_Malloc(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL));
+		ret = static_cast<UINT8*>(Z_Malloc(NUM_PALETTE_ENTRIES, PU_STATIC, NULL));
 		K_GenerateKartColormap(ret, skinnum, color, local); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
 
 		// Cache the colormap if desired
@@ -437,8 +437,7 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
 
 UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local)
 {
-	const INT32 skinnum = localskin ? (localskin - K_GetSkinArray(local)) : (skin - skins);
-	return RGetTranslationColormap(skinnum, color, flags, (localskin && local));
+	return RGetTranslationColormap(K_GetMobjLocalSkinNum(skin, localskin, local), color, flags, (localskin && local));
 }
 
 patch_t* R_GetSkinFaceRank(player_t* ply)
@@ -488,6 +487,10 @@ patch_t* R_GetSkinFaceMini(player_t* ply)
 
 	\return	void
 */
+
+/* There seems to be no reason to free cached colormaps tho? Not like they can change :ChonkBunckle: */
+
+/*
 void R_FlushTranslationColormapCache(void)
 {
 	INT32 i;
@@ -500,6 +503,7 @@ void R_FlushTranslationColormapCache(void)
 		if (localtranslationtablecache[i])
 			memset(localtranslationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
 }
+*/
 
 // ==========================================================================
 //               COMMON DRAWER FOR 8 AND 16 BIT COLOR MODES
@@ -510,8 +514,6 @@ void R_FlushTranslationColormapCache(void)
 //
 // in reality, the few routines that can work for either mode, are
 // put here
-
-enum columncontext_e columncontext = COLUMNCONTEXT_DIRECT;
 
 enum ColumnFlushType
 {
@@ -530,9 +532,12 @@ typedef struct drawcolumndata_temp_s
 	// e6y: resolution limitation is removed
 	UINT8 *buf;
 
-	INT32    startx;
-	ColumnFlushType    type;
-	INT32   commontop, commonbot;
+	INT32 startx;
+
+	ColumnFlushType type;
+
+	INT32 commontop, commonbot;
+
 	UINT8 *transmap;
 	// SoM 7-28-04: Fix the fuzz problem.
 	UINT8 *translation;
@@ -560,8 +565,8 @@ FUNCNORETURN static ATTRNORETURN void R_QuadFlushError(void)
 }
 
 static void (*R_FlushWholeColumns)(void) = R_FlushWholeError;
-static void (*R_FlushHTColumns)(void) = R_FlushHTError;
-static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
+static void (*R_FlushHTColumns)(void)    = R_FlushHTError;
+static void (*R_FlushQuadColumn)(void)   = R_QuadFlushError;
 
 static void R_FlushColumns(void)
 {
@@ -593,8 +598,8 @@ void R_ResetColumnBuffer(void)
 
 	temp_dc.type = FLUSH_NONE;
 	R_FlushWholeColumns = R_FlushWholeError;
-	R_FlushHTColumns = R_FlushHTError;
-	R_FlushQuadColumn = R_QuadFlushError;
+	R_FlushHTColumns    = R_FlushHTError;
+	R_FlushQuadColumn   = R_QuadFlushError;
 }
 
 /**	\brief	The R_InitViewBuffer function

@@ -182,9 +182,13 @@ consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
 	{"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
+static CV_PossibleValue_t flipcammode_cons_t[] = {{0, "Displayplayer"}, {1, "Local"}, {0, NULL}};
+consvar_t cv_flipcammode = {"flipcammode",  "Displayplayer", CV_SAVE, flipcammode_cons_t, NULL,  0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_shadow          = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shadowoffs      = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skybox          = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_skydome         = {"skydome", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ffloorclip      = {"r_ffloorclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_spriteclip      = {"r_spriteclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_softcyancut     = {"softwarecyancut", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -277,22 +281,22 @@ static void Fov_OnChange(void)
 
 static void FlipCam_OnChange(void)
 {
-	SendWeaponPref();
+	SendWeaponPref(0);
 }
 
 static void FlipCam2_OnChange(void)
 {
-	SendWeaponPref2();
+	SendWeaponPref(1);
 }
 
 static void FlipCam3_OnChange(void)
 {
-	SendWeaponPref3();
+	SendWeaponPref(2);
 }
 
 static void FlipCam4_OnChange(void)
 {
-	SendWeaponPref4();
+	SendWeaponPref(3);
 }
 
 static void Precipstuff_OnChange(void)
@@ -339,14 +343,14 @@ angle_t R_PointToAngle64(INT64 x, INT64 y)
 	return (y -= viewy, (x -= viewx) || y) ?
 	x >= 0 ?
 	y >= 0 ?
-		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                            // octant 0
-		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                               // octant 1
-		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                    // octant 8
-		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                              // octant 7
+		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                          // octant 0
+		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                           // octant 1
+		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                   // octant 8
+		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                          // octant 7
 		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDivEx(y,x)] :  // octant 3
-		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                             // octant 2
+		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                         // octant 2
 		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDivEx(y,x)] :    // octant 4
-		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                              // octant 5
+		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                          // octant 5
 		0;
 }
 
@@ -407,7 +411,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	if (!sprframe)
 		return 0;
 
-	if (sprframe->rotate != SRF_SINGLE || (mo->frame & FF_PAPERSPRITE))
+	if (sprframe->rotate != SRF_SINGLE || R_ThingIsPaperSprite(mo))
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll * mo->player->kartstuff[k_aizdriftstrat]);
@@ -922,11 +926,11 @@ void R_ExecuteSetViewSize(void)
 	viewheight = vid.height;
 
 	if (splitscreen)
+	{
 		viewheight >>= 1;
 
-	if (splitscreen > 1)
-	{
-		viewwidth >>= 1;
+		if (splitscreen > 1)
+			viewwidth >>= 1;
 	}
 
 	centerx = viewwidth/2;
@@ -953,13 +957,9 @@ void R_ExecuteSetViewSize(void)
 		screenheightarray[i] = (INT16)viewheight;
 	}
 
-	if (ds_su)
-		Z_Free(ds_su);
-	if (ds_sv)
-		Z_Free(ds_sv);
-	if (ds_sz)
-		Z_Free(ds_sz);
-
+	Z_Free(ds_su);
+	Z_Free(ds_sv);
+	Z_Free(ds_sz);
 	ds_su = ds_sv = ds_sz = NULL;
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
@@ -1015,8 +1015,8 @@ static void R_InitViewMapping(void)
 
 		for (INT32 i = 0; i < j; i++)
 		{
-			fixed_t dy = (i - viewheight*8)<<FRACBITS;
-			dy = FixedMul(abs(dy), fovtan);
+			fixed_t dy = abs(i - viewheight*8) << FRACBITS;
+			dy = FixedMul(dy, fovtan);
 			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 		}
 	}
@@ -1084,7 +1084,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
 	for (i = 0; i < ret->numlines; i++)
 		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
-			return 0;
+			return NULL;
 
 	return ret;
 }
@@ -1389,6 +1389,21 @@ void R_RenderPlayerView(player_t *player)
 	maskcount_t*    masks    = static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
 	const boolean   skybox   = (skyboxmo[0] && cv_skybox.value);
 
+	// Only do it if it's the first screen being rendered
+	if (cv_homremoval.value && viewssnum == 0)
+	{
+		if (cv_homremoval.value == 1)
+		{
+			// Clear the software screen buffer to remove HOM
+			memset(vid.screens[0], 31, vid.width * vid.height);
+		}
+		else if (cv_homremoval.value == 2)
+		{
+			//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+			memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
+		}
+	}
+
 	// load previous saved value of skyVisible for the player
 	skyVisible = skyVisiblePerPlayer[viewssnum];
 
@@ -1455,10 +1470,12 @@ void R_RenderPlayerView(player_t *player)
 	NetUpdate();
 
 	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
+
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
 	PS_STOP_TIMING(ps_bsptime);
+
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
@@ -1466,8 +1483,8 @@ void R_RenderPlayerView(player_t *player)
 
 	ps_numsprites.value.i = numvisiblesprites;
 
-	PS_START_TIMING(ps_sw_portaltime);
 	// Portal rendering. Hijacks the BSP traversal.
+	PS_START_TIMING(ps_sw_portaltime);
 	if (portal_base)
 	{
 		portal_t *portal;
@@ -1508,8 +1525,7 @@ void R_RenderPlayerView(player_t *player)
 
 	R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 	PS_START_TIMING(ps_sw_planetime);
-	if (!skybox)
-		R_DrawSkyPlanes();
+	R_DrawSkyPlanes();
 	R_DrawPlanes();
 	PS_STOP_TIMING(ps_sw_planetime);
 	// draw mid texture and sprite
@@ -1517,6 +1533,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
+
 	free(masks);
 
 	// Check for new console commands.
@@ -1546,6 +1563,8 @@ void R_RegisterEngineStuff(void)
 		CV_RegisterVar(&cv_flipcam[i]);
 	}
 
+	CV_RegisterVar(&cv_flipcammode);
+
 	// Enough for dedicated server
 	if (dedicated)
 		return;
@@ -1563,6 +1582,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
+	CV_RegisterVar(&cv_skydome);
 	CV_RegisterVar(&cv_ffloorclip);
 	CV_RegisterVar(&cv_spriteclip);
 	CV_RegisterVar(&cv_secbright);
@@ -1597,7 +1617,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
 	CV_RegisterVar(&cv_sparkroll);
-	CV_RegisterVar(&cv_spinoutroll);
+	CV_RegisterVar(&cv_stairjank);
+	CV_RegisterVar(&cv_stairjanksfx);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

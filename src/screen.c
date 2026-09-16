@@ -120,6 +120,10 @@ static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
 	}
 
+	// gotta keep a copy of those for R_DrawWallColumn.....
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH_DIRECT] = R_Draw2sMultiPatchColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS_DIRECT] = R_Draw2sMultiPatchTranslucentColumn;
+
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 
 	R_SetColumnFunc(BASEDRAWFUNC);
@@ -154,7 +158,6 @@ void SCR_SetMode(void)
 // effectively adding massive overhead due to excessive flushing, so we draw our masked thing directly to screen instead
 void R_SetColumnContext(enum columncontext_e _columncontext)
 {
-	columncontext = _columncontext;
 	SCR_SetDrawFuncs(_columncontext); // set our column drawers
 }
 
@@ -274,6 +277,7 @@ void SCR_Recalc(void)
 	// vid.recalc lasts only for the next refresh...
 	con_recalc = true;
 	am_recalc = true;
+	intermissionbginit = false;
 }
 
 // Check for screen cmd-line parms: to force a resolution.
@@ -526,6 +530,6 @@ void SCR_DisplayLocalPing(void)
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
-		HU_drawPlayerPing(308, dispy, consoleplayer, pingflags); // consoleplayer's ping is everyone's ping in a splitnetgame :P
+		HU_drawLocalPlayerPing(308, dispy, pingflags); // consoleplayer's ping is everyone's ping in a splitnetgame :P
 	}
 }

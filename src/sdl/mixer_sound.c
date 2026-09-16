@@ -216,8 +216,13 @@ void I_StartupSound(void)
 				SDLmixlinked->major, SDLmixlinked->minor, SDLmixlinked->patch);
 
 #ifdef HAVE_OPENMPT
-	I_OutputMsg("libopenmpt version: %s\n", openmpt_get_string("library_version"));
-	I_OutputMsg("libopenmpt build date: %s\n", openmpt_get_string("build"));
+	const char *openmptstr;
+	openmptstr = openmpt_get_string("library_version");
+	I_OutputMsg("libopenmpt version: %s\n", openmptstr);
+	openmpt_free_string(openmptstr);
+	openmptstr = openmpt_get_string("build");
+	I_OutputMsg("libopenmpt build date: %s\n", openmptstr);
+	openmpt_free_string(openmptstr);
 #endif
 
 	sound_started = true;
@@ -237,7 +242,8 @@ void I_ShutdownSound(void)
 	Mix_Quit();
 #endif
 
-	SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	if (SDL_WasInit(SDL_INIT_AUDIO) == SDL_INIT_AUDIO)
+		SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
 #ifdef HAVE_LIBGME
 	if (gme)
@@ -461,7 +467,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 					gme_track_info(emu, &info, 0);
 
 					len = (info->play_length * 441 / 10) << 2;
-					mem = Z_Malloc(len, PU_SOUND, 0);
+					mem = Z_Malloc(len, PU_SOUND, NULL);
 
 					gme_play(emu, len >> 1, mem);
 					gme_free_info(info);
@@ -499,7 +505,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 		gme_track_info(emu, &info, 0);
 
 		len = (info->play_length * 441 / 10) << 2;
-		mem = Z_Malloc(len, PU_SOUND, 0);
+		mem = Z_Malloc(len, PU_SOUND, NULL);
 
 		gme_play(emu, len >> 1, mem);
 		gme_free_info(info);
@@ -862,7 +868,7 @@ boolean I_SetSongSpeed(float speed)
 		{
 			// deprecated in 0.5.0
 			char modspd[13];
-			sprintf(modspd, "%g", speed);
+			snprintf(modspd, sizeof(modspd), "%g", speed);
 			openmpt_module_ctl_set(openmpt_mhandle, "play.tempo_factor", modspd);
 		}
 #else
@@ -939,7 +945,7 @@ UINT32 I_GetSongLength(void)
 
 boolean I_SetSongLoopPoint(UINT32 looppoint)
 {
-	if (!music|| !is_looping)
+	if (!music || !is_looping)
 		return false;
 
 	const musictype_t mustype = I_SongType();
@@ -952,7 +958,7 @@ boolean I_SetSongLoopPoint(UINT32 looppoint)
 	if (length > 0)
 		looppoint %= length;
 
-	loop_point = max((float)(looppoint / 1000.0L), 0);
+	loop_point = max((float)(looppoint / 1000.0L), 0.0f);
 	return true;
 }
 
@@ -1107,7 +1113,7 @@ UINT32 I_GetSongPosition(void)
 
 void I_UpdateSongLagThreshold(void)
 {
-	stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
+	stutter_threshold = (UINT32)(cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100)));
 }
 
 /// ------------------------

@@ -42,15 +42,6 @@
 #define CRED_FONTEND 'Z' // the last font character
 #define CRED_FONTSIZE (CRED_FONTEND - CRED_FONTSTART + 1)
 
-extern char *shiftxform; // english translation shift table
-extern char english_shiftxform[];
-
-extern char french_shiftxform[];
-extern char french_altgrxform[];
-
-//fallback for special letter non displayable in the game (i.e.: 'é','à',etc.)
-INT32 HU_FallBackFrSpecialLetter(INT32 key);
-
 //------------------------------------
 //        sorted player lines
 //------------------------------------
@@ -68,12 +59,7 @@ typedef struct
 #define HU_MAXMSGLEN 223
 #define HU_MSGBUFSIZE 255
 #define MAX_CHAT_BUFSIZE 256		// that's enough messages, right? We'll delete the older ones when that gets out of hand.
-#define NETSPLITSCREEN // why the hell WOULDN'T we want this?
-#ifdef NETSPLITSCREEN
 #define OLDCHAT (cv_consolechat.value == 1 || dedicated || vid.width < 640)
-#else
-#define OLDCHAT (cv_consolechat.value == 1 || dedicated || vid.width < 640)
-#endif
 #define CHAT_MUTE (cv_mute.value && !(server || IsPlayerAdmin(consoleplayer)))	// this still allows to open the chat but not to type. That's used for scrolling and whatnot.
 #define OLD_MUTE (OLDCHAT && cv_mute.value && !(server || IsPlayerAdmin(consoleplayer)))	// this is used to prevent oldchat from opening when muted.
 
@@ -102,6 +88,10 @@ extern patch_t *tallminus;
 // set true whenever the tab rankings are being shown for any reason
 extern boolean hu_showscores;
 
+extern consvar_t cv_chat_xoffset;
+extern consvar_t cv_chat_yoffset;
+extern consvar_t cv_chat_showlimit;
+
 // init heads up data at game startup.
 void HU_Init(void);
 
@@ -109,8 +99,6 @@ void HU_LoadGraphics(void);
 
 // reset heads up when consoleplayer respawns.
 void HU_Start(void);
-
-void HU_Shiftform(void);
 
 boolean HU_Responder(event_t *ev);
 void HU_Ticker(void);
@@ -120,8 +108,7 @@ void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_clearChatChars(void);
 void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags);	// Lat': Ping drawer for scoreboard.
-//void HU_DrawTeamTabRankings(playersort_t *tab, INT32 whiteplayer);
-//void HU_DrawDualTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer);
+void HU_drawLocalPlayerPing(INT32 x, INT32 y, INT32 flags);
 void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 hilicol);
 void HU_DrawEmeralds(INT32 x, INT32 y, INT32 pemeralds);
 const char *HU_SkinColorToConsoleColor(skincolors_t color);

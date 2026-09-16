@@ -24,8 +24,8 @@
 typedef struct
 {
 	UINT8 skincolor;
-	UINT8 skin;
-	UINT8 botskin;
+	skinnum_t skin;
+	skinnum_t botskin;
 	UINT8 botcolor;
 	INT32 score;
 	INT32 lives;

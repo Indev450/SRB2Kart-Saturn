@@ -45,9 +45,6 @@ enum
 	TEXTURETYPE_COMPOSITE,
 };
 
-// A maptexturedef_t describes a rectangular texture,
-//  which is composed of one or more mappatch_t structures
-//  that arrange graphic patches.
 typedef struct
 {
 	// Keep name for switch changing, etc.

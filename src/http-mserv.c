@@ -135,8 +135,7 @@ HMS_on_read (char *s, size_t _1, size_t n, void *userdata)
 	return n;
 }
 
-static struct HMS_buffer *
-HMS_connect (const char *format, ...)
+static struct HMS_buffer *HMS_connect(const char *format, ...)
 {
 	va_list ap;
 	CURL *curl;
@@ -174,7 +173,7 @@ HMS_connect (const char *format, ...)
 	if (cv_masterserver_token.string && cv_masterserver_token.string[0])
 	{
 		quack_token = curl_easy_escape(curl, cv_masterserver_token.string, 0);
-		token_length = ( sizeof "&token="-1 )+ strlen(quack_token);
+		token_length = ( sizeof "&token="-1 ) + strlen(quack_token);
 	}
 	else
 	{
@@ -186,27 +185,30 @@ HMS_connect (const char *format, ...)
 	I_lock_mutex(&hms_api_mutex);
 #endif
 
-	seek = strlen(hms_api) + 1;/* + '/' */
+	seek = strlen(hms_api) + 1; /* + '/' */
 
 	va_start (ap, format);
-	url = malloc(seek + vsnprintf(0, 0, format, ap) + sizeof HMS_QUERY_VERSION - 1 + token_length + 1);
+	size_t url_size = (seek + vsnprintf(NULL, 0, format, ap) +
+					   sizeof HMS_QUERY_VERSION - 1 +
+					   token_length + 1);
+	url = malloc(url_size);
 	va_end (ap);
 
-	sprintf(url, "%s/", hms_api);
+	snprintf(url, seek + 1, "%s/", hms_api);
 
 #ifdef HAVE_THREADS
 	I_unlock_mutex(hms_api_mutex);
 #endif
 
 	va_start (ap, format);
-	seek += vsprintf(&url[seek], format, ap);
+	seek += vsnprintf(&url[seek], url_size - seek, format, ap);
 	va_end (ap);
 
 	strcpy(&url[seek], HMS_QUERY_VERSION);
 	seek += sizeof HMS_QUERY_VERSION - 1;
 
 	if (quack_token)
-		sprintf(&url[seek], "&token=%s", quack_token);
+		snprintf(&url[seek], url_size - seek, "&token=%s", quack_token);
 
 	Printf_url(url);
 
@@ -225,9 +227,10 @@ HMS_connect (const char *format, ...)
 	{
 		cc = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
-
+#ifdef LOGMESSAGES
 		cc = curl_easy_setopt(curl, CURLOPT_STDERR, logstream);
 		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+#endif
 	}
 
 	if (M_CheckParm("-bindaddr") && M_IsNextParm())
@@ -317,6 +320,7 @@ static void
 HMS_end (struct HMS_buffer *buffer)
 {
 	curl_easy_cleanup(buffer->curl);
+	free(buffer->errbuf);
 	free(buffer->buffer);
 	free(buffer);
 }
@@ -471,8 +475,8 @@ HMS_fetch_servers (msg_server_t *list, int query_id)
 			*end = '\0';
 
 			address = strtok(p, " ");
-			port    = strtok(0, " ");
-			contact = strtok(0, "");
+			port    = strtok(NULL, " ");
+			contact = strtok(NULL, "");
 
 			if (address && port)
 			{
@@ -539,7 +543,7 @@ HMS_compare_mod_version (char *buffer, size_t buffer_size)
 	if (HMS_do(hms))
 	{
 		version      = strtok(hms->buffer, " ");
-		version_name = strtok(0, "\n");
+		version_name = strtok(NULL, "\n");
 
 		if (version && version_name)
 		{

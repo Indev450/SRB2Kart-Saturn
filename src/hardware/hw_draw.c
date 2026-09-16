@@ -32,20 +32,6 @@
 
 #include <fcntl.h>
 
-typedef struct
-{
-	UINT8 id_field_length ; // 1
-	UINT8 color_map_type  ; // 2
-	UINT8 image_type      ; // 3
-	UINT8 dummy[5]        ; // 4,  8
-	INT16 x_origin        ; // 9, 10
-	INT16 y_origin        ; //11, 12
-	INT16 width           ; //13, 14
-	INT16 height          ; //15, 16
-	UINT8 image_pix_size  ; //17
-	UINT8 image_descriptor; //18
-} ATTRPACK TGAHeader; // sizeof is 18
-
 static const UINT8 softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229,255};
 static const UINT8 softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
 static const UINT8 softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
@@ -57,8 +43,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 {
 	FOutVector v[4];
 	FBITFIELD flags;
-	float cx = FIXED_TO_FLOAT(x);
-	float cy = FIXED_TO_FLOAT(y);
+	float cx, cy;
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
 	UINT8 blendmode = ((bflags & V_BLENDMASK) >> V_BLENDSHIFT);
 	GLPatch_t *hwrPatch;
@@ -71,6 +56,9 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	if (alphalevel >= 10 && alphalevel < 13)
 		return;
+
+	cx = FIXED_TO_FLOAT(x);
+	cy = FIXED_TO_FLOAT(y);
 
 	const float fvw = (float)vid.width;
 	const float fvh = (float)vid.height;
@@ -150,7 +138,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 				if (!column->topdelta)
 				{
 					const UINT8 *source = (const UINT8 *)(column) + 3;
-					HWR_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, (column->topdelta == 0xff ? 31 : source[0]));
+					HWR_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, source[0]);
 				}
 			}
 
@@ -222,7 +210,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	if (alphalevel)
 	{
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		switch (alphalevel)
@@ -244,8 +232,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 {
 	FOutVector v[4];
 	FBITFIELD flags;
-	float cx = FIXED_TO_FLOAT(x);
-	float cy = FIXED_TO_FLOAT(y);
+	float cx, cy;
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
 	GLPatch_t *hwrPatch;
 
@@ -257,6 +244,9 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 
 	if (alphalevel >= 10 && alphalevel < 13)
 		return;
+
+	cx = FIXED_TO_FLOAT(x);
+	cy = FIXED_TO_FLOAT(y);
 
 	const float fvw = (float)vid.width;
 	const float fvh = (float)vid.height;
@@ -302,7 +292,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 				if (!column->topdelta)
 				{
 					const UINT8 *source = (const UINT8 *)(column) + 3;
-					HWR_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, (column->topdelta == 0xff ? 31 : source[0]));
+					HWR_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, source[0]);
 				}
 			}
 
@@ -385,7 +375,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 	// clip it since it is used for bunny scroll in doom I
 	if (alphalevel)
 	{
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		switch (alphalevel)
@@ -490,7 +480,7 @@ void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 {
 	FOutVector  v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	FBITFIELD poly_flags = PF_NoTexture|PF_Modulated|PF_NoDepthTest;
 
 	v[0].x = v[3].x = -1.0f;
@@ -543,7 +533,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 {
 	FOutVector  v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	// setup some neat-o translucency effect
 	if (!height) //cool hack 0 height is full height
@@ -598,7 +588,7 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh, fwait = 0;
 	RGBA_t *palette;
 
@@ -702,7 +692,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32 options)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
 
 	if (w < 0 || h < 0)
@@ -820,7 +810,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
 
 	if (w < 0 || h < 0)
@@ -964,6 +954,20 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 #endif
 
 #ifndef USE_PNG
+typedef struct
+{
+	UINT8 id_field_length ; // 1
+	UINT8 color_map_type  ; // 2
+	UINT8 image_type      ; // 3
+	UINT8 dummy[5]        ; // 4,  8
+	INT16 x_origin        ; // 9, 10
+	INT16 y_origin        ; //11, 12
+	INT16 width           ; //13, 14
+	INT16 height          ; //15, 16
+	UINT8 image_pix_size  ; //17
+	UINT8 image_descriptor; //18
+} ATTRPACK TGAHeader; // sizeof is 18
+
 // --------------------------------------------------------------------------
 // save screenshots with TGA format
 // --------------------------------------------------------------------------

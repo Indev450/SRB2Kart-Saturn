@@ -238,8 +238,8 @@ void M_TextInputClear(textinput_t *input)
 
 void M_TextInputSetString(textinput_t *input, const char *c)
 {
-	memset(input->buffer, 0, input->buffer_size);
-	strncpy(input->buffer, c, input->buffer_size);
+	strncpy(input->buffer, c, input->buffer_size-1);
+	input->buffer[input->buffer_size-1] = '\0';
 	input->cursor = input->select = input->length = strlen(input->buffer);
 }
 
@@ -256,7 +256,7 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 		return true;
 	}
 
-	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
+	if (ctrldown && (cv_keyboardlayout.value != 3 || !altdown))
 	{
 		if (key == 'x' || key == 'X')
 		{
@@ -381,10 +381,10 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 	// allow people to use keypad in console (good for typing IP addresses) - Calum
 	if (key >= KEY_KEYPAD7 && key <= KEY_KPADDEL)
 	{
-		char keypad_translation[] = {'7','8','9','-',
-		                             '4','5','6','+',
-		                             '1','2','3',
-		                             '0','.'};
+		const char keypad_translation[] = {'7','8','9','-',
+		                                   '4','5','6','+',
+		                                   '1','2','3',
+		                                   '0',    '.'};
 
 		key = keypad_translation[key - KEY_KEYPAD7];
 	}
@@ -392,7 +392,7 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 		key = '/';
 
 	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
-	key = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(key) : CON_ShiftChar(key);
+	key = CON_ShiftChar(key);
 
 	// enter a char into the command prompt
 	if (key < 32 || key > 127)

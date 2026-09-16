@@ -579,7 +579,7 @@ md2found:
 	fclose(f);
 }
 
-void HWR_AddPlayerMD2(int skin, boolean local) // For MD2's that were added after startup
+void HWR_AddPlayerMD2(INT32 skin, boolean local) // For MD2's that were added after startup
 {
 	FILE *f;
 	char name[20], filename[32];
@@ -693,17 +693,15 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 	GLPatch_t *hwrBlendPatch = blendgpatch->hardware;
 	UINT16 w = gpatch->width, h = gpatch->height;
 	UINT32 size = w*h;
-	RGBA_t *image, *blendimage, *cur, blendcolor;
+	RGBA_t *image, *blendimage, *cur;
+	RGBA_t blendcolor = {};
 	RGBA_t *palette = HWR_GetTexturePalette();
-	UINT8 translation[17]; // First the color index
-	UINT8 cutoff[17]; // Brightness cutoff before using the next color
+	UINT8 translation[17] = {}; // First the color index
+	UINT8 cutoff[17] = {}; // Brightness cutoff before using the next color
 	UINT8 translen = 0;
 	UINT8 i;
-	UINT8 colorbrightnesses[17];
-	UINT8 color_match_lookup[256]; // optimization attempt
-
-	memset(translation, 0, sizeof(translation));
-	memset(cutoff, 0, sizeof(cutoff));
+	UINT8 colorbrightnesses[17] = {};
+	UINT8 color_match_lookup[256] = {}; // optimization attempt
 
 	if (glMipmap->width == 0)
 	{
@@ -716,14 +714,10 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 		glMipmap->format = GL_TEXFMT_RGBA;
 	}
 
-	if (glMipmap->data)
-	{
-		Z_Free(glMipmap->data);
-		glMipmap->data = NULL;
-	}
+	Z_Free(glMipmap->data);
+	glMipmap->data = NULL;
 
-	cur = Z_Malloc(size*4, PU_HWRMODELTEXTURE, &glMipmap->data);
-	memset(cur, 0x00, size*4);
+	cur = Z_Calloc(size*4, PU_HWRMODELTEXTURE, &glMipmap->data);
 
 	image = hwrPatch->mipmap->data;
 	blendimage = hwrBlendPatch->mipmap->data;
@@ -1037,7 +1031,6 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 	GLPatch_t *glPatch = patch->hardware;
 	GLMipmap_t *glMipmap, *newMipmap;
 
-
 	if (blendgpatch == NULL || colormap == colormaps || colormap == NULL)
 	{
 		// Don't do any blending
@@ -1106,7 +1099,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 	INT32 frame = 0;
 	INT32 nextFrame = -1;
 	FTransform p;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	if (!cv_glmdls.value || spr->precip)
 		return;
@@ -1160,8 +1153,11 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		INT32 durs = spr->mobj->state->tics;
 		INT32 tics = spr->mobj->tics;
 		//mdlframe_t *next = NULL;
+
+		//const UINT8 flip = (UINT8)(!(spr->mobj->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(spr->mobj)); // :chaosleep:
 		const UINT8 flip = (UINT8)((spr->mobj->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
-		const UINT8 hflip = (UINT8)(!(spr->mobj->mirrored) != !(spr->mobj->frame & FF_HORIZONTALFLIP));
+		const UINT8 hflip = (UINT8)(!(spr->mobj->mirrored) != !R_ThingHorizontallyFlipped(spr->mobj));
+
 		spritedef_t *sprdef;
 		spriteframe_t *sprframe;
 		spriteinfo_t *sprinfo;
@@ -1198,8 +1194,15 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
 		}
 
-		if (cv_playerfade.value && spr->mobj->player)
-			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+		if (spr->mobj->player)
+		{
+			// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+			if (cv_reducevfx.value && spr->mobj->player->kartstuff[k_hyudorotimer] > 0)
+				Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+
+			if (cv_playerfade.value)
+				Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+		}
 
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
@@ -1244,7 +1247,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		if (!md2->model)
 		{
 			CONS_Debug(DBG_RENDER, "Loading model... (%s, %s)", sprnames[spr->mobj->sprite], md2->filename);
-			sprintf(filename, "mdls/%s", md2->filename);
+			snprintf(filename, sizeof(filename), "mdls/%s", md2->filename);
 			md2->model = md2_readModel(filename);
 
 			if (md2->model)
@@ -1336,8 +1339,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		if (spr->mobj->frame & FF_ANIMATE)
 		{
 			// set duration and tics to be the correct values for FF_ANIMATE states
-			durs = (float)spr->mobj->state->var2;
-			tics = (float)spr->mobj->anim_duration;
+			durs = spr->mobj->state->var2;
+			tics = (INT32)spr->mobj->anim_duration;
 		}
 
 		//FIXME: this is not yet correct
@@ -1400,12 +1403,11 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		const angle_t sliptideroll = ((cv_sliptideroll.value && spr->mobj->player) ? spr->mobj->player->sliproll : 0);
 		const SINT8 flipfactor = flip ? -1 : 1;
+		const angle_t thingrollangle = (spr->mobj->rollangle - spr->mobj->temprollangle);
 
-		if (spr->mobj->rollangle || sliptideroll)
+		if (thingrollangle || sliptideroll)
 		{
-			angle_t rollang = sliptideroll
-			? (spr->mobj->rollangle) + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])
-			: (spr->mobj->rollangle);
+			angle_t rollang = sliptideroll ? (thingrollangle + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])) : thingrollangle;
 
 			rollang *= flipfactor;
 
@@ -1466,6 +1468,117 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			GL_DrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
 		}
 	}
+}
+
+// mostly copy paste of HWR_DrawMD2
+// very ugly but our model code kinda sucks
+void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t color, const UINT8 *colormap, fixed_t scale, INT32 frame, angle_t angle)
+{
+	patch_t *gpatch, *blendgpatch;
+	GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
+	FTransform p;
+	FSurfaceInfo Surf = {};
+
+	if (!md2->model)
+	{
+		char filename[64];
+		CONS_Debug(DBG_RENDER, "Loading model... (%s)\n", md2->filename);
+		snprintf(filename, sizeof(filename), "mdls/%s", md2->filename);
+		md2->model = md2_readModel(filename);
+
+		if (md2->model)
+		{
+			md2_printModelInfo(md2->model);
+			GL_CreateModelVBOs(md2->model);
+		}
+		else
+		{
+			md2->error = true;
+			return;
+		}
+	}
+
+	if (md2->model->meshes[0].numFrames > 0)
+		frame = frame % md2->model->meshes[0].numFrames;
+	else
+		frame = 0;
+
+	gpatch = (patch_t *)(md2->glpatch);
+	if (gpatch)
+		hwrPatch = ((GLPatch_t *)gpatch->hardware);
+
+	if (!gpatch || !hwrPatch ||
+	    ((!hwrPatch->mipmap->format || !hwrPatch->mipmap->downloaded) && !md2->notexturefile))
+		md2_loadTexture(md2);
+
+	gpatch = (patch_t*)(md2->glpatch);
+	if (gpatch)
+		hwrPatch = ((GLPatch_t *)gpatch->hardware);
+
+	blendgpatch = (patch_t*)(md2->blendglpatch);
+	if (blendgpatch)
+		hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
+
+	if ((gpatch && hwrPatch && hwrPatch->mipmap->format) &&
+		(!blendgpatch || !hwrBlendPatch ||
+		((!hwrBlendPatch->mipmap->format || !hwrBlendPatch->mipmap->downloaded) && !md2->noblendfile)))
+		md2_loadBlendTexture(md2);
+
+	blendgpatch = (patch_t*)(md2->blendglpatch);
+	if (blendgpatch)
+		hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
+
+	Surf.PolyColor.rgba = 0xFFFFFFFF;
+	Surf.PolyFlags = PF_Occlude | PF_Modulated;
+
+	Surf.LightInfo.light_level = 255;
+	Surf.LightInfo.fade_start = 0;
+	Surf.LightInfo.fade_end = 31;
+
+	if (color != SKINCOLOR_NONE &&
+	    blendgpatch && hwrBlendPatch->mipmap->format &&
+	    gpatch->width == blendgpatch->width && gpatch->height == blendgpatch->height)
+	{
+		INT32 tcskinnum = TC_DEFAULT;
+
+		if (color)
+			tcskinnum = skinnum;
+
+		HWR_GetBlendedTexture(gpatch, blendgpatch, tcskinnum, colormap, color);
+	}
+	else if (hwrPatch && hwrPatch->mipmap->format)
+	{
+		GL_SetTexture(hwrPatch->mipmap);
+	}
+
+	memset(&p, 0x00, sizeof(FTransform));
+
+	p.x = x*vid.dup + (float)(vid.width - BASEVIDWIDTH*vid.dup)/2.f;
+	p.y = -420.f; // push it back to prevent wonky culling, idk lul
+	p.z = y*vid.dup + (float)(vid.height - BASEVIDHEIGHT*vid.dup)/2.f;
+
+	p.angley = FixedToFloat(AngleFixed(angle));
+	p.anglex = 0.f;
+	p.anglez = 0.f;
+
+	p.roll = false;
+	p.fliptype = TRANSFORM_NONE;
+
+	const float fscale = FixedToFloat(scale*vid.dup);
+
+	GL_Draw2DModel(
+			md2->model,
+			frame,
+			0.f,
+			0.f,
+			-1,
+			&p,
+			fscale,
+			fscale,
+			true, // flip it vertically lul
+			false,
+			&Surf
+		);
 }
 
 #endif //HWRENDER

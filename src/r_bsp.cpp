@@ -221,8 +221,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		tempsec->floorheight = s->floorheight;
 		tempsec->ceilingheight = s->ceilingheight;
 
-		if ((underwater && (tempsec->  floorheight = sec->floorheight,
-			tempsec->ceilingheight = s->floorheight - 1, !back)) || viewz <= s->floorheight)
+		if ((underwater && (tempsec->floorheight = sec->floorheight,
+							tempsec->ceilingheight = s->floorheight - 1, !back)) ||
+							viewz <= s->floorheight)
 		{ // head-below-floor hack
 			tempsec->floorpic = s->floorpic;
 			tempsec->floor_xoffs = s->floor_xoffs;
@@ -258,8 +259,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 				*ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel
 					: sectors[s->ceilinglightsec].lightlevel;
 		}
-		else if (heightsec != -1 && viewz >= sectors[heightsec].ceilingheight
-			&& sec->ceilingheight > s->ceilingheight)
+		else if (heightsec != -1 && viewz >= sectors[heightsec].ceilingheight &&
+				 sec->ceilingheight > s->ceilingheight)
 		{ // Above-ceiling hack
 			tempsec->ceilingheight = s->ceilingheight;
 			tempsec->floorheight = s->ceilingheight + 1;
@@ -296,7 +297,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 				*ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel :
 			sectors[s->ceilinglightsec].lightlevel;
 		}
-		sec = tempsec;
+
+		sec = tempsec; // Use other sector
 	}
 
 	return sec;
@@ -318,13 +320,20 @@ static void R_AddLine(seg_t *line)
 	INT32 x1, x2;
 	angle_t angle1, angle2, span, tspan;
 	static sector_t tempsec;
-	boolean bothfloorssky   = false;
+	boolean bothfloorssky = false;
+	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
 	g_portal = NULL;
 
+	v1x = line->v1->x;
+	v1y = line->v1->y;
+
+	v2x = line->v2->x;
+	v2y = line->v2->y;
+
 	// big room fix
-	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
-	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
+	angle1 = R_PointToAngle64(v1x, v1y);
+	angle2 = R_PointToAngle64(v2x, v2y);
 
 	curline = line;
 
@@ -386,7 +395,7 @@ static void R_AddLine(seg_t *line)
 			// Find the other side!
 			INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, -1);
 
-			if (line->linedef == &lines[line2])
+			if (line2 >= 0 && line->linedef == &lines[line2])
 				line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, line2);
 
 			if (line2 >= 0) // found it!
@@ -517,6 +526,7 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	angle_t angle1, angle2;
 	INT32 sx1, sx2;
 	const INT32* check;
+	fixed_t x1, y1, x2, y2;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
@@ -530,9 +540,14 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 
 	check = checkcoord[boxpos];
 
+	x1 = bspcoord[check[0]];
+	y1 = bspcoord[check[1]];
+	x2 = bspcoord[check[2]];
+	y2 = bspcoord[check[3]];
+
 	// big room fix
-	angle1 = R_PointToAngle64(bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
-	angle2 = R_PointToAngle64(bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
+	angle1 = R_PointToAngle64(x1, y1) - viewangle;
+	angle2 = R_PointToAngle64(x2, y2) - viewangle;
 
 	// cph - replaced old code, which was unclear and badly commented
 	// Much more efficient code now
@@ -991,7 +1006,6 @@ static void R_Subsector(size_t num)
 				visffloor[numffloors].height = polysec->floorheight;
 				visffloor[numffloors].polyobj = po;
 				visffloor[numffloors].slope = NULL;
-//				visffloor[numffloors].ffloor = rover;
 				po->visplane = visffloor[numffloors].plane;
 				numffloors++;
 			}

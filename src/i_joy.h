@@ -36,28 +36,7 @@ extern "C" {
 "JOYBUTTONS is greater than INT64 bits can hold"
 #endif
 
-/**	\brief	The struct JoyType_s
-
- share some joystick information (maybe 2 for splitscreen), to the game input code,
- actually, we need to know if it is a gamepad or analog controls
-*/
-
-struct JoyType_s
-{
-	/*! if true, we MUST Poll() to get new joystick data,
-	that is: we NEED the DIRECTINPUTDEVICE2 ! (watchout NT compatibility) */
-	INT32 bJoyNeedPoll;
-	/*! this joystick is a gamepad, read: digital axes
-	if FALSE, interpret the joystick event data as JOYAXISRANGE (see above) */
-	INT32 bGamepadStyle;
-
-};
-typedef struct JoyType_s JoyType_t;
-/**	\brief Joystick info
-	for palyer[sic] 1-4's joystick/gamepad
-*/
-
-extern JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
+#define DigitalGamepadStyle(i) (cv_joyscale[i].value == 0)
 
 #ifdef __cplusplus
 } // extern "C"

@@ -35,6 +35,7 @@ extern mapthing_t *deathmatchstarts[MAX_DM_STARTS];
 extern INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
 
 extern boolean levelloading;
+extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
@@ -114,12 +115,8 @@ size_t P_PrecacheLevelFlats(void);
 
 void P_AllocMapHeader(INT16 i);
 
-// Needed for NiGHTS
-void P_DeleteGrades(INT16 i);
-void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext);
-UINT8 P_GetGrade(UINT32 pscore, INT16 map, UINT8 mare);
-UINT8 P_HasGrades(INT16 map, UINT8 mare);
-UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade);
+void P_PrintCorruptMapWarnings(void);
+void P_FreeCorruptMapWarnings(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -65,6 +65,10 @@
 # DEBUGMODE=1 - Enable various debugging capabilities.
 #               Also disables optimizations.
 #
+# PHOBOS_BUILD=1 - Compile the Phobos client.
+#                  Contains things not compatible with vanilla.
+#                  such as raised skinlimits, 32 player support, bugfixes, etc.
+#
 # Development flags:
 #
 # VALGRIND=1 - Enable Valgrind memory debugging support.
@@ -93,7 +97,8 @@
 # NOLDWARNING=1 - ?
 # NOSDLMAIN=1 - ?
 # SDLMAIN=1 - ?
-# USELTO=1 - Enable building with LTO.
+# NOLTO=1 - Disable link time optimizations
+# USEJEMALLOC=1 Enable building with jemalloc Allocator to replace GLibc malloc, might improve performance
 #
 # Library configuration flags:
 # Everything here is an override.
@@ -245,10 +250,6 @@ ifdef STATIC
 libs+=-static
 endif
 
-ifneq (,$(filter $(CC) $(CXX),gcc g++))
- opts+=-mno-ms-bitfields
-endif
-
 # build with profiling information
 ifdef PROFILEMODE
 opts+=-pg
@@ -260,7 +261,7 @@ debug_opts=-D_DEBUG
 else # build a normal optimized version
 debug_opts=-DNDEBUG
 opts+=-O3
-ifdef USELTO
+ifndef NOLTO
 # compile with LTO
 opts+=-flto=auto
 libs+=-flto=auto
@@ -269,14 +270,18 @@ endif
 
 ifdef USEASAN
 # compile with asan
-opts+=-fsanitize=address
+opts+=-O1 -fsanitize=address -fno-omit-frame-pointer -fno-common
 libs+=-fsanitize=address
 endif
 
 ifdef USEUBSAN
-# compile with asan
-opts+=-fsanitize=undefined
+# compile with ubsan
+opts+=-O1 -fsanitize=undefined -fno-omit-frame-pointer
 libs+=-fsanitize=undefined
+endif
+
+ifdef USEJEMALLOC
+libs+=-ljemalloc
 endif
 
 ifneq (,$(filter $(CC) $(CXX),clang clang++))
@@ -295,6 +300,7 @@ opts+=$(debug_opts)
 
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
+CWFLAGS+=-std=gnu17
 CXXFLAGS+=-std=c++17 # force c17 for c++ since most vpss run older ubuntu versions with old compilers
 
 opts+=$(WFLAGS) $(CFLAGS)

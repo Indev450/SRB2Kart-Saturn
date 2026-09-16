@@ -556,7 +556,7 @@ static void GIF_framewrite(void)
 		}
 		else if (gif_dynamicdelay ==(UINT8) 1)
 		{
-			float delayf = ceil(100.0f/NEWTICRATE);
+			float delayf = ceilf(100.0f/NEWTICRATE);
 
 			delay = (UINT16)((I_GetPreciseTime() - gif_prevframetime)) / (I_GetPrecisePrecision() / 1000000) /10/1000;
 
@@ -695,16 +695,13 @@ INT32 GIF_close(void)
 	fclose(gif_out);
 	gif_out = NULL;
 
-	if (gifbwr_buf)
-		Z_Free(gifbwr_buf);
+	Z_Free(gifbwr_buf);
 	gifbwr_buf = gifbwr_cur = NULL;
 
-	if (gifframe_data)
-		Z_Free(gifframe_data);
+	Z_Free(gifframe_data);
 	gifframe_data = NULL;
 
-	if (giflzw_hashTable)
-		Z_Free(giflzw_hashTable);
+	Z_Free(giflzw_hashTable);
 	giflzw_hashTable = NULL;
 
 	Z_Free(scrbuf_screens);

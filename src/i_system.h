@@ -14,6 +14,9 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
+// page for Saturn issue reports
+#define SATURNISSUEPAGE "https://github.com/Indev450/SRB2Kart-Saturn/issues"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -29,6 +32,10 @@ extern "C" {
 */
 #define MAX_QUIT_FUNCS     16
 
+void I_GetConsoleEvents(void);
+
+extern boolean consolevent;
+extern boolean framebuffer;
 
 /**	\brief Graphic system had started up
 */
@@ -39,7 +46,7 @@ extern UINT8 graphics_started;
 extern UINT8 keyboard_started;
 
 /** \brief Set to true when inside a signal handler that will exit the program. */
-extern boolean g_in_exiting_signal_handler;
+boolean I_In_Exiting_Signal_Handler(void);
 
 /**	\brief	The I_GetFreeMem function
 
@@ -144,6 +151,11 @@ extern INT32 numcontrollers;
 */
 const char *I_GetJoyName(INT32 joyindex);
 
+void I_SetJoystickFocus(void);
+
+boolean I_GamepadHasLED(INT32 playernum);
+boolean I_GamepadHasRumble(INT32 playernum);
+
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
 void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue);
 
@@ -191,6 +203,19 @@ INT32 I_StartupSystem(void);
 */
 void I_ShutdownSystem(void);
 
+/**	\brief To check if a Interrupt or Terminate Signal was fired
+ */
+boolean I_Interrupted(void);
+static inline void I_HandleInterrupt(void)
+{
+	if (I_Interrupted())
+		I_Quit();
+}
+
+/** \brief Open A URL
+ */
+int I_OpenURL(const char *url);
+
 /**	\brief	The I_GetDiskFreeSpace function
 
 	\param	freespace	a INT64 pointer to hold the free space amount
@@ -211,6 +236,21 @@ char *I_GetUserName(void);
 	\return status of new folder
 */
 INT32 I_mkdir(const char *dirname, INT32 unixright);
+
+/**	\brief Change current working directory
+
+	\param path directory path
+	\return 0 on success, -1 on error
+*/
+INT32 I_ChDir(const char *path);
+
+/**	\brief Get current working directory
+
+	\param buf buffer to store path
+	\param size size of buffer
+	\return buf on success, NULL on error
+*/
+char *I_GetCwd(char *buf, size_t size);
 
 /**	\brief Find main WAD
 		\return path to main WAD

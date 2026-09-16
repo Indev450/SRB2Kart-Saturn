@@ -105,7 +105,6 @@ enum columncontext_e
 	COLUMNCONTEXT_FLUSH,
 };
 
-extern enum columncontext_e columncontext;
 void R_SetColumnContext(enum columncontext_e _columncontext);
 
 void R_ResetColumnBuffer(void);
@@ -124,6 +123,8 @@ enum
 	COLDRAWFUNC_TRANSTRANS,
 	COLDRAWFUNC_TWOSMULTIPATCH,
 	COLDRAWFUNC_TWOSMULTIPATCHTRANS,
+	COLDRAWFUNC_TWOSMULTIPATCH_DIRECT,
+	COLDRAWFUNC_TWOSMULTIPATCHTRANS_DIRECT,
 	COLDRAWFUNC_FOG,
 
 	COLDRAWFUNC_MAX

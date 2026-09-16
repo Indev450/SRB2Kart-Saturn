@@ -446,6 +446,12 @@ void K_UpdateDirector(void)
 			}
 		}
 
+		// not sure if we should just stop here?
+		if (targetposition == MAXPLAYERS)
+		{
+			break;
+		}
+
 		target = directorinfo.sortedplayers[targetposition];
 
 		// stop here since we're already viewing this player

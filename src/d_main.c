@@ -79,6 +79,32 @@
 #include "core/memory.h"
 
 #include "lua_script.h"
+#include "lua_profile.h"
+
+/* Manually defined asset hashes for non-CMake builds
+ * Last updated 2015 / 05 / 03 - SRB2 v2.1.15 - srb2.srb
+ * Last updated 2018 / 12 / 23 - SRB2 v2.1.22 - patch.dta
+ * Last updated 2019 / 01 / 18 - Kart v1.0.2 - Main assets
+ * Last updated 2020 / 08 / 30 - Kart v1.3 - patch.kart
+ * Last updated 2022 / 08 / 16 - Kart v1.4 - Main assets
+ * Last updated 2022 / 08 / 19 - Kart v1.5 - gfx.kart
+ * Last updated 2022 / 11 / 01 - Kart v1.6 - gfx.kart, maps.kart
+ */
+
+// Base SRB2 hashes
+#define ASSET_HASH_SRB2_SRB      "c1b9577687f8a795104aef4600720ea7"
+#ifdef USE_PATCH_DTA
+#define ASSET_HASH_PATCH_DTA     "b04fd9624bfd94dc96dcf4f400f7deb4"
+#endif
+
+// SRB2Kart-specific hashes
+#define ASSET_HASH_GFX_KART      "06f86ee16136eb8a7043b15001797034"
+#define ASSET_HASH_TEXTURES_KART "abb53d56aba47c3a8cb0f764da1c8b80"
+#define ASSET_HASH_CHARS_KART    "e2c428347dde52858a3dacd29fc5b964"
+#define ASSET_HASH_MAPS_KART     "d051e55141ba736582228c456953cd98"
+#ifdef USE_PATCH_KART
+#define ASSET_HASH_PATCH_KART    "00000000000000000000000000000000"
+#endif
 
 #ifdef CMAKECONFIG
 #include "config.h"
@@ -105,14 +131,15 @@ static size_t startuppwadcount = 0;
 // autoloading
 static char *autoloadwadfiles[MAX_WADFILES];
 static char *autoloadwadfilespost[MAX_WADFILES];
-static size_t autoloadcount = 0;
-static size_t postloadcount = 0;
+static size_t autoloadwadcount = 0;
+static size_t postloadwadcount = 0;
 //
 
 boolean devparm = false; // started game with -devparm
 
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
+boolean intermissionbginit = false;
 
 #ifdef MOTIONBLUR
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
@@ -128,7 +155,7 @@ boolean music_disabled = false;
 INT32 debugload = 0;
 #endif
 
-char savegamename[256];
+char savegamename[256] = {};
 
 char srb2home[256] = ".";
 char srb2path[256] = ".";
@@ -249,24 +276,6 @@ static void D_Renderview(void)
 
 	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
-	if (rendermode == render_soft)
-	{
-		// if this is display player 1
-		if (cv_homremoval.value)
-		{
-			if (cv_homremoval.value == 1)
-			{
-				// Clear the software screen buffer to remove HOM
-				memset(vid.screens[0], 31, vid.width * vid.height);
-			}
-			else if (cv_homremoval.value == 2)
-			{
-				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
-			}
-		}
-	}
-
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
@@ -297,7 +306,6 @@ static void D_Renderview(void)
 					break;
 				default: // Initialize for P1
 					viewwindowy = viewwindowx = 0;
-					objectsdrawn = 0;
 					break;
 			}
 
@@ -308,19 +316,17 @@ static void D_Renderview(void)
 			}
 			else if (rendermode == render_soft)
 #endif
+			{
 				R_RenderPlayerView(&players[displayplayers[i]]);
-		}
 
-		if (rendermode == render_soft)
-		{
-			if (i == 0)
-				R_ApplyViewMorph();
-
+				if (i == 0)
+					R_ApplyViewMorph();
 #ifdef MOTIONBLUR
-			V_DoPostProcessor(i, postimgparam[i]);
+				V_DoPostProcessor(i, postimgparam[i]);
 #else
-			V_DoPostProcessor(i, 0);
+				V_DoPostProcessor(i, 0);
 #endif
+			}
 		}
 	}
 
@@ -343,6 +349,33 @@ static void D_Renderview(void)
 // wipegamestate can be set to -1 to force a wipe on the next draw
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
+
+static void D_MakeIntermissionBG(void)
+{
+	if (!lastdraw)
+		return;
+
+	if (rendermode == render_none)
+	{
+		lastdraw = false;
+		intermissionbginit = false;
+		return;
+	}
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		HWR_MakeScreenTexture();
+	}
+	else
+#endif
+	{
+		VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.width);
+	}
+
+	lastdraw = false;
+	intermissionbginit = true;
+}
 
 static boolean D_Display(void)
 {
@@ -509,16 +542,8 @@ static boolean D_Display(void)
 			PS_START_TIMING(ps_rendercalltime);
 			D_Renderview();
 			PS_STOP_TIMING(ps_rendercalltime);
-		}
 
-		if (lastdraw)
-		{
-			if (rendermode == render_soft)
-			{
-				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.width);
-			}
-
-			lastdraw = false;
+			D_MakeIntermissionBG();
 		}
 
 		PS_START_TIMING(ps_uitime);
@@ -620,6 +645,11 @@ static boolean D_Display(void)
 
 	    CON_Drawer(); // Ha, i LIED!
 
+		if (cv_lua_profile.value > 0)
+		{
+			LUA_RenderTimers();
+		}
+
 		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
 		PS_STOP_TIMING(ps_swaptime);
@@ -639,7 +669,7 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
-	UINT64 precision;
+	UINT64 precision = 0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -684,7 +714,11 @@ void D_SRB2Loop(void)
 		precise_t elapsed;
 		precise_t enterprecise, finishprecise;
 
+		boolean ranwipe = false;
+
 		enterprecise = I_GetPreciseTime();
+
+		I_HandleInterrupt();
 
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
@@ -692,8 +726,6 @@ void D_SRB2Loop(void)
 		// Casting the return value of a function is bad practice (apparently)
 		const UINT32 framecap = R_GetFramerateCap();
 		capbudget = (framecap == 0) ? 0 : (precise_t)((double)precision / (double)framecap + 0.5); // + 0.5 instead of round
-
-		boolean ranwipe = false;
 
 		I_UpdateTime(cv_timescale.value);
 
@@ -758,11 +790,6 @@ void D_SRB2Loop(void)
 
 				doDisplay = true;
 			}
-
-			if (!dedicated)
-			{
-				G_DeviceLEDTick();
-			}
 		}
 
 		if (interp)
@@ -803,6 +830,13 @@ void D_SRB2Loop(void)
 			M_SaveFrame();
 		if (takescreenshot)
 			M_DoScreenShot();
+
+#ifndef DEDICATED
+		if (!dedicated && renderisnewtic)
+		{
+			G_DeviceLEDTick();
+		}
+#endif
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
@@ -882,7 +916,9 @@ void D_ClearState(void)
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	SV_StopServer();
 	SV_ResetServer();
 
@@ -946,6 +982,9 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
+	if (dedicated)
+		I_Error("D_StartTitle is called on dedicated server");
+
 	D_ClearState();
 	multiplayer = netgame = false; // title menu shouldnt be a netgame or multiplayer lmao
 	F_StartTitleScreen();
@@ -1007,10 +1046,16 @@ static INT32 D_DetectFileType(const char* filename)
 }
 
 // autoload that shit
-static void D_AutoloadFile(const char *file, char **filearray, size_t index)
+static void D_AutoloadFile(const char *file, char **filearray, size_t *index)
 {
 	char *newfile;
 	INT32 fileType = D_DetectFileType(file);
+
+	if (*index >= MAX_WADFILES)
+	{
+		CONS_Printf("D_AutoloadFile: Failed to add file %s! Too many autoloaded files\n", file);
+		return;
+	}
 
 	if (!fileType)
 	{
@@ -1018,14 +1063,21 @@ static void D_AutoloadFile(const char *file, char **filearray, size_t index)
 		return;
 	}
 
+	if (fileType == 1)
+	{
+		CONS_Printf("D_AutoloadFile: File %s is a directory\n", file);
+		return;
+	}
+
 	if (fileType <= 6)
 	{
 		newfile = malloc(strlen(file) + 1);
 		if (!newfile)
-			I_Error("No more free memory to AutoloadFile %s",file);
+			I_Error("D_AutoloadFile: No more free memory to autoload file %s", file);
 
 		strcpy(newfile, file);
-		filearray[index] = newfile;
+		filearray[*index] = newfile;
+		(*index)++;
 	}
 	else
 	{
@@ -1068,7 +1120,7 @@ static void D_FindAddonsToAutoload(void)
 	// If the file is found, run our shit
 	if (!autoloadconfigfile) // nope outta here
 	{
-		autoloadcount = postloadcount = 0; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
+		autoloadwadcount = postloadwadcount = 0; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
 		return;
 	}
 
@@ -1094,27 +1146,34 @@ static void D_FindAddonsToAutoload(void)
 		if (newline)
 			*newline = '\0';
 
+		// ok so theres still issues with players adding stuff to autoload by accident
+		// sometimes this stuff contains maps
+		// you can probably imagine how that goes in a netgame....
+		if (W_CheckAutoLoadContainsMap(wadsToAutoload))
+		{
+			CONS_Alert(CONS_WARNING, "Autoload: file %s contains map data, this WILL cause crashes and desynchs! skipping...\n", wadsToAutoload);
+			continue;
+		}
+
 		if (!postload && W_CheckPostLoadList(wadsToAutoload))
 		{
-			CONS_Printf("forcing postload for file %s\n", wadsToAutoload);
+			CONS_Printf("Autoload: forcing postload for file %s\n", wadsToAutoload);
 			postload = true;
 		}
 
 		// LOAD IT
 		if (!postload)
 		{
-			D_AutoloadFile(wadsToAutoload, autoloadwadfiles, autoloadcount);
-			autoloadcount++;
+			D_AutoloadFile(wadsToAutoload, autoloadwadfiles, &autoloadwadcount);
 		}
 		else
 		{
-			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost, postloadcount);
-			postloadcount++;
+			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost, &postloadwadcount);
 		}
 	}
 
-	autoloadwadfiles[autoloadcount] = NULL;
-	autoloadwadfilespost[postloadcount] = NULL;
+	autoloadwadfiles[autoloadwadcount] = NULL;
+	autoloadwadfilespost[postloadwadcount] = NULL;
 
 	// we dont want memory leaks around here do we?
 	fclose(autoloadconfigfile);
@@ -1123,7 +1182,7 @@ static void D_FindAddonsToAutoload(void)
 static void D_AddAutoloadFiles(void)
 {
 	// nothing to autoload
-	if (autoloadcount == 0)
+	if (autoloadwadcount == 0)
 		return;
 
 	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
@@ -1131,15 +1190,15 @@ static void D_AddAutoloadFiles(void)
 	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
 		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
 
-	D_CleanFile(autoloadwadfiles, autoloadcount);
+	D_CleanFile(autoloadwadfiles, autoloadwadcount);
 
-	autoloadcount = 0;
+	autoloadwadcount = 0;
 }
 
 void D_AddPostloadFiles(void)
 {
 	// nothing to postload
-	if (postloadcount == 0 || !netgame)
+	if (postloadwadcount == 0 || !netgame)
 		return;
 
 	CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
@@ -1147,9 +1206,9 @@ void D_AddPostloadFiles(void)
 	if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
 		CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
 
-	D_CleanFile(autoloadwadfilespost, postloadcount);
+	D_CleanFile(autoloadwadfilespost, postloadwadcount);
 
-	postloadcount = 0;
+	postloadwadcount = 0;
 }
 
 // ==========================================================================
@@ -1158,7 +1217,7 @@ void D_AddPostloadFiles(void)
 
 static boolean AddIWAD(const char * file, const char *dir)
 {
-	char * path = va(pandf, dir, file);
+	char *path = va(pandf, dir, file);
 
 	if (FIL_ReadFileOK(path))
 	{
@@ -1186,17 +1245,13 @@ static void IdentifyVersion(void)
 #endif
 
 	char tempsrb2path[256] = ".";
-	getcwd(tempsrb2path, 256);
+	if (I_GetCwd(tempsrb2path, 256) == NULL)
+		strcpy(tempsrb2path, ".");
 
 	// get the current directory (possible problem on NT with "." as current dir)
 	if (!srb2waddir)
 	{
-		if (tempsrb2path[0])
-			srb2waddir = tempsrb2path;
-		else
-		{
-			srb2waddir = ".";
-		}
+		srb2waddir = tempsrb2path;
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
@@ -1290,20 +1345,24 @@ static void IdentifyVersion(void)
 //
 // search for maps
 //
-static void D_CheckMaps(boolean checkreplaced)
+static void D_CheckMapReplacements(boolean pwad)
 {
 	INT32 i;
 	char *name;
 	UINT16 wadnum;
 	lumpinfo_t *lumpinfo;
+	size_t numfiles;
 
-	for (wadnum = 0; wadnum < mainwads; wadnum++)
+	wadnum = pwad ? (mainwads+1) : 0;
+	numfiles = pwad ? numwadfiles : mainwads;
+
+	for (; wadnum < numfiles; wadnum++)
 	{
 		lumpinfo = wadfiles[wadnum]->lumpinfo;
 		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
 		{
 			name = lumpinfo->name;
-			P_CheckMapReplacements(name, checkreplaced);
+			P_CheckMapReplacements(name, pwad);
 		}
 	}
 }
@@ -1339,8 +1398,6 @@ static inline void D_MakeTitleString(char *s)
 // extra graphic patches for saturn specific thingies
 boolean xtra_speedo       = false; // extra speedometer check
 boolean xtra_speedo_clr   = false; // extra speedometer colour check
-boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3  = false; // 80x 11 extra speedometer colour check
 boolean achi_speedo       = false; // achiiro speedometer check
 boolean achi_speedo_clr   = false; // extra speedometer colour check
 boolean dial_speedo       = false; // dial speedometer check
@@ -1370,7 +1427,6 @@ static void D_CheckSaturnExtraFiles(void)
 	CV_PossibleValue_t minimapdot_cons_temp[NUMMINIMAPDOTSTUFF] = {{0, "Off"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
 
 	unsigned last_speedo_i = 0;
-	unsigned last_driftgauge_i = 3;
 	unsigned last_inputdisplay_i = 2;
 	unsigned last_minimapdot_i = 0;
 #define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
@@ -1529,20 +1585,6 @@ static void D_CheckSaturnExtraFiles(void)
 	if (found_extra3_kart)
 	{
 		mainwads++;
-
-		// 80x11 speedometer crap
-		if (W_LumpExists("SP_SM3TC"))
-		{
-			xtra_speedo3 = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 7, "Extra");
-			PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
-		}
-
-		// 80x11 speedometer crap but colour
-		if (W_LumpExists("SC_SM3TC"))
-		{
-			xtra_speedo_clr3 = true;
-		}
 	}
 
 #undef PUSHCONS
@@ -1616,12 +1658,6 @@ void D_SRB2Main(void)
 	strcpy(title, "SRB2Kart");
 	strcpy(srb2, "SRB2Kart");
 	D_MakeTitleString(srb2);
-
-#if defined (__OS2__) && !defined (HAVE_SDL)
-	// set PM window title
-	snprintf(pmData->title, sizeof (pmData->title), "SRB2Kart" VERSIONSTRING ": %s", title);
-	pmData->title[sizeof (pmData->title) - 1] = '\0';
-#endif
 
 	if (devparm)
 		CONS_Printf(M_GetText("Development mode ON.\n"));
@@ -1746,10 +1782,6 @@ void D_SRB2Main(void)
 	// Setup default unlockable conditions
 	M_SetupDefaultConditionSets();
 
-	// Setup character tables
-	// Have to be done here before files are loaded
-	M_InitCharacterTables();
-
 	// load wad, including the main wad file
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
 
@@ -1793,17 +1825,19 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	D_CheckMaps(false);
+	D_CheckMapReplacements(false);
 
-	W_InitMultipleFiles(startuppwads, startuppwadcount, true);
-
-	// Only search for pwad maps if we actually have a pwad added
 	if (startuppwadcount > 0)
 	{
-		D_CheckMaps(true);
+		CONS_Printf("W_InitMultipleFiles(): Adding extra PWADs.\n");
+		W_InitMultipleFiles(startuppwads, startuppwadcount, true);
+
+		// Only search for pwad maps if we actually have a pwad added
+		D_CheckMapReplacements(true);
+
+		D_CleanFile(startuppwads, startuppwadcount);
 	}
 
-	D_CleanFile(startuppwads, startuppwadcount);
 	startuppwadcount = 0;
 
 	cht_Init();
@@ -1869,7 +1903,8 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-warp") && M_IsNextParm())
 	{
 		const char *word = M_GetNextParm();
-		pstartmap = G_FindMapByNameOrCode(word, 0);
+		pstartmap = G_FindMapByNameOrCode(word, NULL);
+
 		if (! pstartmap)
 			I_Error("Cannot find a map remotely named '%s'\n", word);
 		else
@@ -1889,7 +1924,7 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 
-#if SOUND==SOUND_DUMMY
+#if SOUND == SOUND_DUMMY
 	sound_disabled = true;
 	music_disabled = true;
 #else
@@ -2002,9 +2037,13 @@ void D_SRB2Main(void)
 	if (M_CheckProtoParam("replay"))
 	{
 		const char *replayurl = M_GetProtoParam();
-		char *replayname = strrchr(replayurl, '/');
 
-		if (!replayname || !replayurl)
+		if (!replayurl)
+			I_Error("REPLAY: Invalid URL.");
+
+		gconst char *replayname = strrchr(replayurl, '/');
+
+		if (!replayname)
 			I_Error("REPLAY: Invalid URL.");
 
 #define REPLAYDIR "/DownloadedReplays/"
@@ -2118,8 +2157,8 @@ void D_SRB2Main(void)
 
 	if (dedicated && server)
 	{
-		levelstarttic = gametic;
 		G_SetGamestate(GS_LEVEL);
+
 		if (!P_SetupLevel(false, false))
 			I_Quit(); // fail so reset game stuff
 	}

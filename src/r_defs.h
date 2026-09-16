@@ -430,7 +430,7 @@ typedef struct line_s
 	INT16 tag;
 
 	// Visual appearance: sidedefs.
-	UINT16 sidenum[2]; // sidenum[1] will be 0xffff if one-sided
+	UINT16 sidenum[2]; // sidenum[1] will be NO_INDEX if one-sided
 	fixed_t alpha; // translucency
 	UINT8 blendmode; // blendmode
 
@@ -531,11 +531,10 @@ typedef struct seg_s
 	vertex_t *v1;
 	vertex_t *v2;
 
-	INT32 side;
-
-	fixed_t offset;
-
-	angle_t angle;
+#ifdef HWRENDER
+	floatvertex_t fv1; // v1 in floats - precalculated
+	floatvertex_t fv2; // v2 in floats - precalculated
+#endif
 
 	side_t *sidedef;
 	line_t *linedef;
@@ -545,11 +544,13 @@ typedef struct seg_s
 	sector_t *frontsector;
 	sector_t *backsector;
 
+	INT32 side;
+
 	fixed_t length; // precalculated seg length
-#ifdef HWRENDER
-	floatvertex_t fv1; // v1 in floats - precalculated
-	floatvertex_t fv2; // v2 in floats - precalculated
-#endif
+	fixed_t offset;
+
+	angle_t angle;
+
 	polyobj_t *polyseg;
 
 	// Fake contrast calculated on level load

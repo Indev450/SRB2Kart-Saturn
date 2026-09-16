@@ -31,8 +31,6 @@ typedef struct {
 	fixed_t bbox[4];
 } los_t;
 
-static INT32 sightcounts[2];
-
 typedef INT32 (*divlinefunc)(fixed_t x, fixed_t y, const divline_t *node);
 typedef INT32 (*divlinecrossfunc)(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node);
 
@@ -73,13 +71,15 @@ static inline INT32 P_DivlineCrossedFast(fixed_t x1, fixed_t y1, fixed_t x2, fix
 	return (P_DivlineSideFast(x1, y1, node) == P_DivlineSideFast(x2, y2, node));
 }
 
-static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
+static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los, boolean fast)
 {
 	size_t i;
 	sector_t *polysec;
 
 	if (!(po->flags & POF_RENDERALL))
 		return true; // the polyobject isn't visible, so we can ignore it
+
+	const divlinecrossfunc divlinecrossFunc = fast ? P_DivlineCrossedFast : P_DivlineCrossed;
 
 	polysec = po->lines[0]->backsector;
 
@@ -108,21 +108,21 @@ static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
 		v2 = line->v2;
 
 		// line isn't crossed?
-		if (P_DivlineCrossed(v1->x, v1->y, v2->x, v2->y, &los->strace))
+		if (divlinecrossFunc(v1->x, v1->y, v2->x, v2->y, &los->strace))
 			continue;
 
 		divl.dx = v2->x - (divl.x = v1->x);
 		divl.dy = v2->y - (divl.y = v1->y);
 
 		// line isn't crossed?
-		if (P_DivlineCrossed(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
+		if (divlinecrossFunc(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
 			continue;
 
 		frac = P_InterceptVector(&los->strace, &divl);
 
 		// get slopes of top and bottom of this polyobject line
-		topslope = FixedDiv(polysec->ceilingheight - los->sightzstart , frac);
-		bottomslope = FixedDiv(polysec->floorheight - los->sightzstart , frac);
+		topslope = FixedDiv(polysec->ceilingheight - los->sightzstart, frac);
+		bottomslope = FixedDiv(polysec->floorheight - los->sightzstart, frac);
 
 		if (topslope >= los->topslope && bottomslope <= los->bottomslope)
 			return false; // view completely blocked
@@ -147,6 +147,8 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 		I_Error("P_CrossSubsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
 #endif
 
+	const divlinecrossfunc divlinecrossFunc = fast ? P_DivlineCrossedFast : P_DivlineCrossed;
+
 	// haleyjd 02/23/06: this assignment should be after the above check
 	seg = segs + subsectors[num].firstline;
 
@@ -158,14 +160,12 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 			if (po->validcount != validcount)
 			{
 				po->validcount = validcount;
-				if (!P_CrossSubsecPolyObj(po, los))
+				if (!P_CrossSubsecPolyObj(po, los, fast))
 					return false;
 			}
 			po = (polyobj_t *)(po->link.next);
 		}
 	}
-
-	const divlinecrossfunc divlinecrossFunc = fast ? P_DivlineCrossedFast : P_DivlineCrossed;
 
 	for (count = subsectors[num].numlines; --count >= 0; seg++)  // check lines
 	{
@@ -214,14 +214,17 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 
 		front = seg->frontsector;
 		back  = seg->backsector;
+
 		// calculate position at intercept
 		fracx = los->strace.x + FixedMul(los->strace.dx, frac);
 		fracy = los->strace.y + FixedMul(los->strace.dy, frac);
+
 		// calculate sector heights
 		frontf = P_GetSectorFloorZAt  (front, fracx, fracy);
 		frontc = P_GetSectorCeilingZAt(front, fracx, fracy);
 		backf  = P_GetSectorFloorZAt  (back , fracx, fracy);
 		backc  = P_GetSectorCeilingZAt(back , fracx, fracy);
+
 		// crosses a two sided line
 		// no wall to block sight with?
 		if (frontf == backf && frontc == backc
@@ -262,6 +265,7 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 			ffloor_t *rover;
 			fixed_t topslope, bottomslope;
 			fixed_t topz, bottomz;
+
 			// check front sector's FOFs first
 			for (rover = front->ffloors; rover; rover = rover->next)
 			{
@@ -275,9 +279,11 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 				bottomz = P_GetFFloorBottomZAt(rover, fracx, fracy);
 				topslope    = FixedDiv(   topz - los->sightzstart, frac);
 				bottomslope = FixedDiv(bottomz - los->sightzstart, frac);
+
 				if (topslope >= los->topslope && bottomslope <= los->bottomslope)
 					return false; // view completely blocked
 			}
+
 			// check back sector's FOFs as well
 			for (rover = back->ffloors; rover; rover = rover->next)
 			{
@@ -291,6 +297,7 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 				bottomz = P_GetFFloorBottomZAt(rover, fracx, fracy);
 				topslope    = FixedDiv(   topz - los->sightzstart, frac);
 				bottomslope = FixedDiv(bottomz - los->sightzstart, frac);
+
 				if (topslope >= los->topslope && bottomslope <= los->bottomslope)
 					return false; // view completely blocked
 			}
@@ -315,10 +322,10 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 
 	while (!(bspnum & NF_SUBSECTOR))
 	{
-		register node_t *bsp = nodes + bspnum;
+		register const node_t *bsp = nodes + bspnum;
 
-		INT32 side = divlineFunc(los->strace.x, los->strace.y, (divline_t *)bsp) & 1;
-		INT32 side2 = divlineFunc(los->t2x, los->t2y, (divline_t *) bsp);
+		INT32 side  = divlineFunc(los->strace.x, los->strace.y, (const divline_t *)bsp) & 1;
+		INT32 side2 = divlineFunc(los->t2x, los->t2y, (const divline_t *)bsp);
 
 		if (side == side2)
 		{
@@ -357,8 +364,10 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 	I_Assert(!P_MobjWasRemoved(t2));
 
 	if (!t1->subsector || !t2->subsector
-	|| !t1->subsector->sector || !t2->subsector->sector)
+		|| !t1->subsector->sector || !t2->subsector->sector)
+	{
 		return false;
+	}
 
 	s1 = t1->subsector->sector;
 	s2 = t2->subsector->sector;
@@ -368,7 +377,9 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 	{
 		// Check in REJECT table.
 		if (rejectmatrix[pnum>>3] & (1 << (pnum&7))) // can't possibly be connected
+		{
 			return false;
+		}
 	}
 
 	// killough 11/98: shortcut for melee situations
@@ -376,11 +387,9 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 	// haleyjd 02/23/06: can't do this if there are polyobjects in the subsec
 	if (!t1->subsector->polyList &&
 		t1->subsector == t2->subsector)
+	{
 		return true;
-
-	// An unobstructed LOS is possible.
-	// Now look from eyes of t1 to any part of t2.
-	sightcounts[1]++;
+	}
 
 	validcount++;
 
@@ -423,21 +432,30 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 				continue;
 			}
 
-			topz1    = P_GetFFloorTopZAt   (rover, t1->x, t1->y);
+			// Check for blocking floors here.
+
 			topz2    = P_GetFFloorTopZAt   (rover, t2->x, t2->y);
 			bottomz1 = P_GetFFloorBottomZAt(rover, t1->x, t1->y);
+
+			if (los.sightzstart < bottomz1 && t2->z >= topz2)
+			{
+				// no way to see through that
+				return false;
+			}
+
+			topz1    = P_GetFFloorTopZAt   (rover, t1->x, t1->y);
 			bottomz2 = P_GetFFloorBottomZAt(rover, t2->x, t2->y);
 
-			// Check for blocking floors here.
-			if ((los.sightzstart < bottomz1 && t2->z >= topz2)
-				|| (los.sightzstart >= topz1 && t2->z + t2->height < bottomz2))
+			if (los.sightzstart >= topz1 && t2->z + t2->height < bottomz2)
 			{
 				// no way to see through that
 				return false;
 			}
 
 			if (rover->flags & FF_SOLID)
+			{
 				continue; // shortcut since neither mobj can be inside the 3dfloor
+			}
 
 			if (rover->flags & FF_BOTHPLANES || !(rover->flags & FF_INVERTPLANES))
 			{

@@ -20,6 +20,10 @@
 #pragma interface
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern tic_t leveltime;
 
 // Called by G_Ticker. Carries out all thinking of enemies and players.
@@ -37,6 +41,10 @@ mobj_t *P_SetTarget2(mobj_t **mo, mobj_t *target
 , const char *source_file, int source_line
 #endif
 );
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef PARANOIA
 #define P_SetTarget(...) P_SetTarget2(__VA_ARGS__, __FILE__, __LINE__)

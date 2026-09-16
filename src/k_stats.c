@@ -99,8 +99,7 @@ void K_EraseStats(void)
 	// The only field we want to remember
 	boolean vanilla = kartstats.vanilla;
 
-	if (kartstats.copy)
-		Z_Free(kartstats.copy);
+	Z_Free(kartstats.copy);
 
 	memset(&kartstats, 0, sizeof(kartstats_t));
 

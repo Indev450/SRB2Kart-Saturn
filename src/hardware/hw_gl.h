@@ -32,7 +32,11 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value);
 void GL_SetTransform(FTransform *stransform);
 void GL_SetBlend(FBITFIELD PolyFlags);
 void GL_SetPalette(RGBA_t *palette);
+
 void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat * ClearColor);
+
+void GL_EnableStencilTest(void);
+void GL_DisableStencilTest(void);
 
 void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags);
 void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray);
@@ -63,7 +67,7 @@ void GL_FlushScreenTextures(void);
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags);
 void GL_DoScreenWipe(int wipeStart, int wipeEnd);
 void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
-void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean useshader);
+void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height);
 
 void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2]);
 
@@ -72,6 +76,7 @@ void GL_LoadShader(int slot, char *code, hwdshaderstage_t stage);
 boolean GL_CompileShader(int slot);
 void GL_SetShader(int slot);
 void GL_UnSetShader(void);
+void GL_EnableShader(void);
 
 void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value);
 
@@ -79,6 +84,9 @@ void GL_SetPaletteLookup(UINT8 *lut);
 UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable);
 void GL_ClearLightTables(void);
 void GL_SetScreenPalette(RGBA_t *palette);
+
+void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics, INT32 nextFrameIndex,
+                      FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface);
 
 #ifdef __cplusplus
 } // extern "C"

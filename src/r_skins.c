@@ -42,8 +42,8 @@ INT32 numallskins = 0;
 INT32 numlocalskins = 0;
 skin_t skins[MAXSKINS];
 
-UINT8 skinstats[9][9][MAXSKINS];
-UINT8 skinstatscount[9][9] = {
+skinnum_t skinstats[9][9][MAXSKINS];
+skinnum_t skinstatscount[9][9] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -55,7 +55,7 @@ UINT8 skinstatscount[9][9] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 
-UINT8 skinsorted[MAXSKINS] = {};
+skinnum_t skinsorted[MAXSKINS] = {};
 skin_t localskins[MAXLOCALSKINS] = {};
 skin_t allskins[MAXSKINS+MAXLOCALSKINS] = {};
 
@@ -302,7 +302,7 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 
 		if (player->mo)
 		{
-			player->mo->localskin = 0;
+			player->mo->localskin = NULL;
 			player->mo->skinlocal = false;
 		}
 	}
@@ -398,8 +398,8 @@ static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 static int skinSortFunc(const void *a, const void *b) // tbh i have no clue what the naming conventions for local functions are
 {
 	int diff = 0;
-	const UINT8 val_a = *(const UINT8 *)a;
-	const UINT8 val_b = *(const UINT8 *)b;
+	const skinnum_t val_a = *(const skinnum_t *)a;
+	const skinnum_t val_b = *(const skinnum_t *)b;
 	const skin_t *in1 = &skins[val_a];
 	const skin_t *in2 = &skins[val_b];
 
@@ -474,7 +474,7 @@ static int skinSortFunc(const void *a, const void *b) // tbh i have no clue what
 void sortSkinGrid(void)
 {
 	//CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
-	qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
+	qs22j(skinsorted, numskins, sizeof(skinnum_t), skinSortFunc);
 }
 
 //
@@ -712,7 +712,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			// skip to end of this skin's frames
 			lastlump = lump;
 
-			while (W_CheckNameForNumPwad(wadnum, lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump), csprname,4)==0)
+			while (W_CheckNameForNumPwad(wadnum, lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump), csprname, 4) == 0)
 				lastlump++;
 
 			// allocate (or replace) sprite frames, and set spritedef
@@ -774,7 +774,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			// So just let the function in the while loop take care of it for us.
 		}
 
-		R_FlushTranslationColormapCache();
+		//R_FlushTranslationColormapCache();
 
 		CONS_Printf(M_GetText("Added skin '%s'\n"), skin->name);
 #ifdef SKINVALUES
@@ -817,7 +817,6 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	}
 
 #undef lnumskins
-	//sortSkinGrid();
 
 	return;
 }

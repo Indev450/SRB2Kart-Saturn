@@ -43,6 +43,9 @@
 
 #include "m_cond.h"
 
+// idk how PUSHGETTER works, but this is unused
+static UINT8 ultimatemode = false;
+
 #define REQUIRE_MATHLIB_GUID "{748fcbc8-6480-4013-ac4e-7afce6cab766}"
 
 // Free slot names
@@ -115,20 +118,25 @@ char *myfgets(char *buf, size_t bufsize, MYFILE *f)
 	size_t i = 0;
 	if (myfeof(f))
 		return NULL;
+
 	// we need one byte for a null terminated string
 	bufsize--;
+
 	while (i < bufsize && !myfeof(f))
 	{
 		char c = *f->curpos++;
+
 		if (c == '^')
 			buf[i++] = myfget_color(f);
 		else if (c == '\\')
 			buf[i++] = myfget_hex(f);
 		else if (c != '\r')
 			buf[i++] = c;
+
 		if (c == '\n')
 			break;
 	}
+
 	buf[i] = '\0';
 
 	dbg_line++;
@@ -138,25 +146,31 @@ char *myfgets(char *buf, size_t bufsize, MYFILE *f)
 static char *myhashfgets(char *buf, size_t bufsize, MYFILE *f)
 {
 	size_t i = 0;
+
 	if (myfeof(f))
 		return NULL;
+
 	// we need one byte for a null terminated string
 	bufsize--;
+
 	while (i < bufsize && !myfeof(f))
 	{
 		char c = *f->curpos++;
+
 		if (c == '^')
 			buf[i++] = myfget_color(f);
 		else if (c == '\\')
 			buf[i++] = myfget_hex(f);
 		else if (c != '\r')
 			buf[i++] = c;
+
 		if (c == '\n') // Ensure debug line is right...
 			dbg_line++;
+
 		if (c == '#')
 			break;
 	}
-	i++;
+
 	buf[i] = '\0';
 
 	return buf;
@@ -173,7 +187,7 @@ FUNCPRINTF static void deh_warning(const char *first, ...)
 	vsnprintf(buf, 1000, first, argptr); // sizeof only returned 4 here. it didn't like that pointer.
 	va_end(argptr);
 
-	if(dbg_line == -1) // Not in a SOC, line number unknown.
+	if (dbg_line == -1) // Not in a SOC, line number unknown.
 		CONS_Alert(CONS_WARNING, "%s\n", buf);
 	else
 		CONS_Alert(CONS_WARNING, "Line %u: %s\n", dbg_line, buf);
@@ -261,150 +275,12 @@ static void clear_levels(void)
 		// (no need to set num to 0, we're freeing the entire header shortly)
 		Z_Free(mapheaderinfo[i]->customopts);
 
-		P_DeleteGrades(i);
 		Z_Free(mapheaderinfo[i]);
 		mapheaderinfo[i] = NULL;
 	}
 
 	// Realloc the one for the current gamemap as a safeguard
 	P_AllocMapHeader(gamemap-1);
-}
-
-static boolean findFreeSlot(INT32 *num)
-{
-	// Send the character select entry to a free slot.
-	while (*num < MAXSKINS && PlayerMenu[*num].status != IT_DISABLED)
-		*num = *num+1;
-
-	// No more free slots. :(
-	if (*num >= MAXSKINS)
-		return false;
-
-	// Found one! ^_^
-	return true;
-}
-
-// Reads a player.
-// For modifying the character select screen
-static void readPlayer(MYFILE *f, INT32 num)
-{
-	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
-	char *word;
-	char *word2;
-	INT32 i;
-	boolean slotfound = false;
-
-	do
-	{
-		if (myfgets(s, MAXLINELEN, f))
-		{
-			if (s[0] == '\n')
-				break;
-
-			word = strtok(s, " ");
-			if (word)
-				strupr(word);
-			else
-				break;
-
-			if (fastcmp(word, "PLAYERTEXT"))
-			{
-				char *playertext = NULL;
-
-				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = IT_CALL;
-
-				for (i = 0; i < MAXLINELEN-3; i++)
-				{
-					if (s[i] == '=')
-					{
-						playertext = &s[i+2];
-						break;
-					}
-				}
-				if (playertext)
-				{
-					strcpy(description[num].notes, playertext);
-					strcat(description[num].notes, myhashfgets(playertext, sizeof (description[num].notes), f));
-				}
-				else
-					strcpy(description[num].notes, "");
-
-				// For some reason, cutting the string did not work above. Most likely due to strcpy or strcat...
-				// It works down here, though.
-				{
-					INT32 numline = 0;
-					for (i = 0; (size_t)i < sizeof(description[num].notes)-1; i++)
-					{
-						if (numline < 20 && description[num].notes[i] == '\n')
-							numline++;
-
-						if (numline >= 20 || description[num].notes[i] == '\0' || description[num].notes[i] == '#')
-							break;
-					}
-				}
-				description[num].notes[strlen(description[num].notes)-1] = '\0';
-				description[num].notes[i] = '\0';
-				continue;
-			}
-
-			word2 = strtok(NULL, " = ");
-			if (word2)
-				strupr(word2);
-			else
-				break;
-
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
-			i = atoi(word2);
-
-			if (fastcmp(word, "PICNAME"))
-			{
-				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = IT_CALL;
-				strncpy(description[num].picname, word2, 8);
-			}
-			else if (fastcmp(word, "STATUS"))
-			{
-				// Limit the status to only IT_DISABLED and IT_CALL
-				if (i)
-					i = IT_CALL;
-				else
-					i = IT_DISABLED;
-
-				/*
-					You MAY disable previous entries if you so desire...
-					But try to enable something that's already enabled and you will be sent to a free slot.
-
-					Because of this, you are allowed to edit any previous entrys you like, but only if you
-					signal that you are purposely doing so by disabling and then reenabling the slot.
-
-					... Or use MENUPOSITION first, that works too. Hell, you could edit multiple character
-					slots in a single section that way, due to how SOC editing works.
-				*/
-				if (i != IT_DISABLED && !slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = (INT16)i;
-			}
-			else if (fastcmp(word, "SKINNAME"))
-			{
-				// Send to free slot.
-				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = IT_CALL;
-
-				strlcpy(description[num].skinname, word2, sizeof description[num].skinname);
-				strlwr(description[num].skinname);
-			}
-			else
-				deh_warning("readPlayer %d: unknown word '%s'", num, word);
-		}
-	} while (!myfeof(f)); // finish when the line is empty
-
-done:
-	Z_Free(s);
 }
 
 static int freeslotusage[2][2] = {{0, 0}, {0, 0}}; // [S_, MT_][max, previous .wad's max]
@@ -461,12 +337,14 @@ static void readfreeslots(MYFILE *f)
 				{
 					if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
 					{
-						if (!sprnames[i][4] && memcmp(sprnames[i],word,4)==0)
+						if (!sprnames[i][4] && memcmp(sprnames[i], word, 4) == 0)
 							sprnames[i][4] = (char)f->wad;
+
 						continue; // Already allocated, next.
 					}
+
 					// Found a free slot!
-					strncpy(sprnames[i],word,4);
+					strncpy(sprnames[i], word, 4);
 					//sprnames[i][4] = 0;
 					CONS_Printf("Sprite SPR_%s allocated.\n",word);
 
@@ -475,22 +353,26 @@ static void readfreeslots(MYFILE *f)
 					used_spr[(i-SPR_FIRSTFREESLOT)/8] |= 1<<(i%8); // Okay, this sprite slot has been named now.
 					break;
 				}
+
 				if (i > SPR_LASTFREESLOT)
 					I_Error("Out of Sprite Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 			}
 			else if (fastcmp(type, "S"))
 			{
 				for (i = 0; i < NUMSTATEFREESLOTS; i++)
-					if (!FREE_STATES[i]) {
-						CONS_Printf("State S_%s allocated.\n",word);
+				{
+					if (!FREE_STATES[i])
+					{
+						CONS_Printf("State S_%s allocated.\n", word);
 
 						LUA_InvalidateMathlibCache(va("S_%s", word));
 
 						FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_STATES[i],word);
+						strcpy(FREE_STATES[i], word);
 						freeslotusage[0][0]++;
 						break;
 					}
+				}
 
 				if (i == NUMSTATEFREESLOTS)
 					I_Error("Out of State Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
@@ -498,16 +380,19 @@ static void readfreeslots(MYFILE *f)
 			else if (fastcmp(type, "MT"))
 			{
 				for (i = 0; i < NUMMOBJFREESLOTS; i++)
-					if (!FREE_MOBJS[i]) {
-						CONS_Printf("MobjType MT_%s allocated.\n",word);
+				{
+					if (!FREE_MOBJS[i])
+					{
+						CONS_Printf("MobjType MT_%s allocated.\n", word);
 
 						LUA_InvalidateMathlibCache(va("MT_%s", word));
 
 						FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_MOBJS[i],word);
+						strcpy(FREE_MOBJS[i], word);
 						freeslotusage[1][0]++;
 						break;
 					}
+				}
 
 				if (i == NUMMOBJFREESLOTS)
 					I_Error("Out of Mobj Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
@@ -550,8 +435,11 @@ static void readthing(MYFILE *f, INT32 num)
 				strupr(word2);
 			else
 				break;
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
+
+			const size_t word2len = strlen(word2);
+
+			if (word2[word2len-1] == '\n')
+				word2[word2len-1] = '\0';
 
 			if (fastcmp(word, "MAPTHINGNUM") || fastcmp(word, "DOOMEDNUM"))
 			{
@@ -819,22 +707,8 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			// Now go to uppercase
 			strupr(word2);
 
-			// NiGHTS grades
-			if (fastncmp(word, "GRADES", 6))
-			{
-				UINT8 mare = (UINT8)atoi(word + 6);
-
-				if (mare <= 0 || mare > 8)
-				{
-					deh_warning("Level header %d: unknown word '%s'", num, word);
-					continue;
-				}
-
-				P_AddGradesForMare((INT16)(num-1), mare-1, word2);
-			}
-
 			// Strings that can be truncated
-			else if (fastcmp(word, "SCRIPTNAME"))
+			if (fastcmp(word, "SCRIPTNAME"))
 			{
 				deh_strlcpy(mapheaderinfo[num-1]->scriptname, word2,
 					sizeof(mapheaderinfo[num-1]->scriptname), va("Level header %d: scriptname", num));
@@ -846,10 +720,6 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			}
 			else if (fastcmp(word, "ACT"))
 			{
-				/*if (i >= 0 && i < 20) // 0 for no act number, TTL1 through TTL19
-					mapheaderinfo[num-1]->actnum = (UINT8)i;
-				else
-					deh_warning("Level header %d: invalid act number %d", num, i);*/
 				deh_strlcpy(mapheaderinfo[num-1]->actnum, word2,
 					sizeof(mapheaderinfo[num-1]->actnum), va("Level header %d: actnum", num));
 			}
@@ -876,14 +746,20 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 				{
 					UINT16 tol = 0;
 					tmp = strtok(word2,",");
+
 					do {
 						for (i = 0; TYPEOFLEVEL[i].name; i++)
+						{
 							if (fastcmp(tmp, TYPEOFLEVEL[i].name))
 								break;
+						}
+
 						if (!TYPEOFLEVEL[i].name)
 							deh_warning("Level header %d: unknown typeoflevel flag %s\n", num, tmp);
+
 						tol |= TYPEOFLEVEL[i].flag;
 					} while((tmp = strtok(NULL,",")) != NULL);
+
 					mapheaderinfo[num-1]->typeoflevel = tol;
 				}
 			}
@@ -914,11 +790,7 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 				mapheaderinfo[num-1]->mustrack = ((UINT16)i - 1);
 			else if (fastcmp(word, "MUSICPOS"))
 				mapheaderinfo[num-1]->muspos = (UINT32)get_number(word2);
-			else if (fastcmp(word, "MUSICINTERFADEOUT"))
-				mapheaderinfo[num-1]->musinterfadeout = (UINT32)get_number(word2);
-			else if (fastcmp(word, "MUSICINTER"))
-				deh_strlcpy(mapheaderinfo[num-1]->musintername, word2,
-					sizeof(mapheaderinfo[num-1]->musintername), va("Level header %d: intermission music", num));
+
 			else if (fastcmp(word, "FORCECHARACTER"))
 			{
 				strlcpy(mapheaderinfo[num-1]->forcecharacter, word2, SKINNAMESIZE+1);
@@ -960,44 +832,12 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			else if (fastcmp(word, "SKYBOXSCALEZ"))
 				mapheaderinfo[num-1]->skybox_scalez = (INT16)i;
 
-			else if (fastcmp(word, "BONUSTYPE"))
-			{
-				if      (fastcmp(word2, "NONE"))   i = -1;
-				else if (fastcmp(word2, "NORMAL")) i =  0;
-				else if (fastcmp(word2, "BOSS"))   i =  1;
-				else if (fastcmp(word2, "ERZ3"))   i =  2;
-
-				if (i >= -1 && i <= 2) // -1 for no bonus. Max is 2.
-					mapheaderinfo[num-1]->bonustype = (SINT8)i;
-				else
-					deh_warning("Level header %d: invalid bonus type number %d", num, i);
-			}
-
-			else if (fastcmp(word, "SAVEOVERRIDE"))
-			{
-				if      (fastcmp(word2, "DEFAULT")) i = SAVE_DEFAULT;
-				else if (fastcmp(word2, "ALWAYS"))  i = SAVE_ALWAYS;
-				else if (fastcmp(word2, "NEVER"))   i = SAVE_NEVER;
-
-				if (i >= SAVE_NEVER && i <= SAVE_ALWAYS)
-					mapheaderinfo[num-1]->saveoverride = (SINT8)i;
-				else
-					deh_warning("Level header %d: invalid save override number %d", num, i);
-			}
-
 			else if (fastcmp(word, "LEVELFLAGS"))
 				mapheaderinfo[num-1]->levelflags = get_number(word2);
 			else if (fastcmp(word, "MENUFLAGS"))
 				mapheaderinfo[num-1]->menuflags = get_number(word2);
 
 			// SRB2Kart
-			/*else if (fastcmp(word, "AUTOMAP"))
-			{
-				if (i || word2[0] == 'T' || word2[0] == 'Y')
-					mapheaderinfo[num-1]->automap = true;
-				else
-					mapheaderinfo[num-1]->automap = false;
-			}*/
 			else if (fastcmp(word, "MOBJSCALE"))
 				mapheaderinfo[num-1]->mobj_scale = get_number(word2);
 			else if (fastcmp(word, "LIGHTCONTRAST") || fastcmp(word, "ENCORELIGHTCONTRAST"))
@@ -1110,6 +950,26 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 				else
 					mapheaderinfo[num-1]->menuflags &= ~LF2_NOVISITNEEDED;
 			}
+			else if (fastcmp(word, "MUSICINTERFADEOUT"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "MUSICINTER"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "BONUSTYPE"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "SAVEOVERRIDE"))
+			{
+				continue; // unused
+			}
+			else if (fastncmp(word, "GRADES", 6)) // NiGHTS grades
+			{
+				continue; // unused
+			}
 			else
 				deh_warning("Level header %d: unknown word '%s'", num, word);
 		}
@@ -1195,11 +1055,13 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			else
 				break;
 
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
+			const size_t word2len = strlen(word2);
+
+			if (word2[word2len-1] == '\n')
+				word2[word2len-1] = '\0';
+
 			i = atoi(word2);
 			usi = (UINT16)i;
-
 
 			if (fastcmp(word, "NUMBEROFPICS"))
 			{
@@ -1247,12 +1109,14 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			else if (fastcmp(word, "MUSICSLOT"))
 			{
 				i = get_mus(word2, true);
+
 				if (i && i <= 1035)
 					snprintf(cutscenes[num]->scene[scenenum].musswitch, 7, "%sM", G_BuildMapName(i));
 				else if (i && i <= 1050)
 					strncpy(cutscenes[num]->scene[scenenum].musswitch, compat_special_music_slots[i - 1036], 7);
 				else
 					cutscenes[num]->scene[scenenum].musswitch[0] = 0; // becomes empty string
+
 				cutscenes[num]->scene[scenenum].musswitch[6] = 0;
 			}
 #endif
@@ -1657,8 +1521,11 @@ static void readframe(MYFILE *f, INT32 num)
 				strupr(word2);
 			else
 				break;
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
+
+			const size_t word2len = strlen(word2);
+
+			if (word2[word2len-1] == '\n')
+				word2[word2len-1] = '\0';
 
 			if (fastcmp(word1, "SPRITENUMBER") || fastcmp(word1, "SPRITENAME"))
 			{
@@ -1881,16 +1748,8 @@ static void reademblemdata(MYFILE *f, INT32 num)
 					emblemlocations[num-1].type = ET_GLOBAL;
 				else if (fastcmp(word2, "SKIN"))
 					emblemlocations[num-1].type = ET_SKIN;
-				/*else if (fastcmp(word2, "SCORE"))
-					emblemlocations[num-1].type = ET_SCORE;*/
 				else if (fastcmp(word2, "TIME"))
 					emblemlocations[num-1].type = ET_TIME;
-				/*else if (fastcmp(word2, "RINGS"))
-					emblemlocations[num-1].type = ET_RINGS;
-				else if (fastcmp(word2, "NGRADE"))
-					emblemlocations[num-1].type = ET_NGRADE;
-				else if (fastcmp(word2, "NTIME"))
-					emblemlocations[num-1].type = ET_NTIME;*/
 				else
 					emblemlocations[num-1].type = (UINT8)value;
 			}
@@ -1995,13 +1854,19 @@ static void readextraemblemdata(MYFILE *f, INT32 num)
 			value = atoi(word2); // used for numerical settings
 
 			if (fastcmp(word, "NAME"))
+			{
 				deh_strlcpy(extraemblems[num-1].name, word2,
-					sizeof (extraemblems[num-1].name), va("Extra emblem %d: name", num));
+							sizeof (extraemblems[num-1].name), va("Extra emblem %d: name", num));
+			}
 			else if (fastcmp(word, "OBJECTIVE"))
+			{
 				deh_strlcpy(extraemblems[num-1].description, word2,
-					sizeof (extraemblems[num-1].description), va("Extra emblem %d: objective", num));
+							sizeof (extraemblems[num-1].description), va("Extra emblem %d: objective", num));
+			}
 			else if (fastcmp(word, "CONDITIONSET"))
+			{
 				extraemblems[num-1].conditionset = (UINT8)value;
+			}
 			else if (fastcmp(word, "SPRITE"))
 			{
 				if (word2[0] >= 'A' && word2[0] <= 'Z')
@@ -2073,11 +1938,15 @@ static void readunlockable(MYFILE *f, INT32 num)
 			i = atoi(word2); // used for numerical settings
 
 			if (fastcmp(word, "NAME"))
+			{
 				deh_strlcpy(unlockables[num].name, word2,
-					sizeof (unlockables[num].name), va("Unlockable %d: name", num));
+							sizeof (unlockables[num].name), va("Unlockable %d: name", num));
+			}
 			else if (fastcmp(word, "OBJECTIVE"))
+			{
 				deh_strlcpy(unlockables[num].objective, word2,
-					sizeof (unlockables[num].objective), va("Unlockable %d: objective", num));
+							sizeof (unlockables[num].objective), va("Unlockable %d: objective", num));
+			}
 			else if (fastcmp(word, "SHOWCONDITIONSET"))
 				unlockables[num].showconditionset = (UINT8)i;
 			else if (fastcmp(word, "CONDITIONSET"))
@@ -2179,14 +2048,11 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 	}
 	else if ((offset=0) || fastcmp(params[0], "GAMECLEAR")
 	||        (++offset && fastcmp(params[0], "ALLEMERALDS")))
-	//||        (++offset && fastcmp(params[0], "ULTIMATECLEAR")))
 	{
 		ty = UC_GAMECLEAR + offset;
 		re = (params[1]) ? atoi(params[1]) : 1;
 	}
 	else if ((offset=0) || fastcmp(params[0], "OVERALLTIME"))
-	//||        (++offset && fastcmp(params[0], "OVERALLSCORE"))
-	//||        (++offset && fastcmp(params[0], "OVERALLRINGS")))
 	{
 		PARAMCHECK(1);
 		ty = UC_OVERALLTIME + offset;
@@ -2195,8 +2061,6 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 	else if ((offset=0) || fastcmp(params[0], "MAPVISITED")
 	||        (++offset && fastcmp(params[0], "MAPBEATEN"))
 	||        (++offset && fastcmp(params[0], "MAPALLEMERALDS")))
-	//||        (++offset && fastcmp(params[0], "MAPULTIMATE"))
-	//||        (++offset && fastcmp(params[0], "MAPPERFECT")))
 	{
 		PARAMCHECK(1);
 		ty = UC_MAPVISITED + offset;
@@ -2214,8 +2078,6 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 		}
 	}
 	else if ((offset=0) || fastcmp(params[0], "MAPTIME"))
-	//||        (++offset && fastcmp(params[0], "MAPSCORE"))
-	//||        (++offset && fastcmp(params[0], "MAPRINGS")))
 	{
 		PARAMCHECK(2);
 		ty = UC_MAPTIME + offset;
@@ -2537,25 +2399,11 @@ static void readmaincfg(MYFILE *f)
 			{
 				flashingtics = (UINT16)get_number(word2);
 			}
-			else if (fastcmp(word, "TAILSFLYTICS"))
-			{
-				tailsflytics = (UINT16)get_number(word2);
-			}
-			else if (fastcmp(word, "UNDERWATERTICS"))
-			{
-				underwatertics = (UINT16)get_number(word2);
-			}
-			else if (fastcmp(word, "SPACETIMETICS"))
-			{
-				spacetimetics = (UINT16)get_number(word2);
-			}
 			else if (fastcmp(word, "EXTRALIFETICS"))
 			{
+				// this modifies player->powers[pw_extralife]
+				// which still has some game behaviour attached to it...
 				extralifetics = (UINT16)get_number(word2);
-			}
-			else if (fastcmp(word, "GAMEOVERTICS"))
-			{
-				gameovertics = get_number(word2);
 			}
 
 			else if (fastcmp(word, "INTROTOPLAY"))
@@ -2580,10 +2428,7 @@ static void readmaincfg(MYFILE *f)
 				if (creditscutscene > 128)
 					creditscutscene = 128;
 			}
-			else if (fastcmp(word, "NUMDEMOS"))
-			{
-				numDemos = (UINT8)get_number(word2);
-			}
+
 			else if (fastcmp(word, "DEMODELAYTIME"))
 			{
 				demoDelayTime = get_number(word2);
@@ -2595,10 +2440,6 @@ static void readmaincfg(MYFILE *f)
 			else if (fastcmp(word, "USE1UPSOUND"))
 			{
 				use1upSound = (UINT8)(value || word2[0] == 'T' || word2[0] == 'Y');
-			}
-			else if (fastcmp(word, "MAXXTRALIFE"))
-			{
-				maxXtraLife = (UINT8)get_number(word2);
 			}
 			else if (fastcmp(word, "GAMEDATA"))
 			{
@@ -2628,6 +2469,7 @@ static void readmaincfg(MYFILE *f)
 				strcatbf(savegamename, srb2home, PATHSEP);
 
 				refreshdirmenu |= REFRESHDIR_GAMEDATA;*/
+				continue;
 			}
 			else if (fastcmp(word, "RESETDATA"))
 			{
@@ -2636,6 +2478,30 @@ static void readmaincfg(MYFILE *f)
 			else if (fastcmp(word, "CUSTOMVERSION"))
 			{
 				strlcpy(customversionstring, word2, sizeof (customversionstring));
+			}
+			else if (fastcmp(word, "NUMDEMOS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "TAILSFLYTICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "UNDERWATERTICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "SPACETIMETICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "GAMEOVERTICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "MAXXTRALIFE"))
+			{
+				continue; // unused
 			}
 			else
 				deh_warning("Maincfg: unknown word '%s'", word);
@@ -2845,17 +2711,12 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 
 	deh_num_warning = 0;
 	// save values for cross reference
-	/*
-	for (i = 0; i < NUMSTATES; i++)
-		saveactions[i] = states[i].action;
-	for (i = 0; i < NUMSPRITES; i++)
-		savesprnames[i] = sprnames[i];
-	*/
 	for (i = 0; i < NUMSFX; i++)
 		savesfxnames[i] = S_sfx[i].name;
 
 	// it doesn't test the version of SRB2 and version of dehacked file
 	dbg_line = -1; // start at -1 so the first line is 0.
+
 	while (!myfeof(f))
 	{
 		char origpos[256];
@@ -2883,11 +2744,15 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 		strncpy(origpos, s, size);
 		origpos[size] = '\0';
 
-		if (NULL != (word = strtok(s, " "))) {
+		if (NULL != (word = strtok(s, " ")))
+		{
 			strupr(word);
-			if (word[strlen(word)-1] == '\n')
-				word[strlen(word)-1] = '\0';
+			const size_t wordlen = strlen(word);
+
+			if (word[wordlen-1] == '\n')
+				word[wordlen-1] = '\0';
 		}
+
 		if (word)
 		{
 			if (fastcmp(word, "FREESLOT"))
@@ -2908,32 +2773,46 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				// This is not a major mod.
 				continue;
 			}
+
 			word2 = strtok(NULL, " ");
+
 			if (fastcmp(word, "CHARACTER"))
 			{
-				if (word2) {
+				if (word2)
+				{
 					strupr(word2);
-					if (word2[strlen(word2)-1] == '\n')
-						word2[strlen(word2)-1] = '\0';
+					const size_t wordlen = strlen(word2);
+
+					if (word2[wordlen-1] == '\n')
+						word2[wordlen-1] = '\0';
+
 					i = atoi(word2);
-				} else
+				}
+				else
 					i = 0;
+
 				if (i >= 0 && i < 32)
-					readPlayer(f, i);
+					ignorelines(f); // unused
 				else
 				{
 					deh_warning("Character %d out of range (0 - 31)", i);
 					ignorelines(f);
 				}
+
 				// This is not a major mod.
 				continue;
 			}
+
 			if (word2)
 			{
 				strupr(word2);
-				if (word2[strlen(word2)-1] == '\n')
-					word2[strlen(word2)-1] = '\0';
+				const size_t wordlen = strlen(word2);
+
+				if (word2[wordlen-1] == '\n')
+					word2[wordlen-1] = '\0';
+
 				i = atoi(word2);
+
 				if (fastcmp(word, "PATCH"))
 				{
 					// Read patch from spec file.
@@ -2944,6 +2823,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_mobjtype(word2); // find a thing by name
+
 					if (i < NUMMOBJTYPES && i >= 0)
 					{
 						if (i < (MT_FIRSTFREESLOT+freeslotusage[1][1]))
@@ -2991,6 +2871,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_state(word2); // find a state by name
+
 					if (i < NUMSTATES && i >= 0)
 					{
 						if (i < (S_FIRSTFREESLOT+freeslotusage[0][1]))
@@ -3007,6 +2888,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_sfx(word2); // find a sound by name
+
 					if (i < NUMSFX && i >= 0)
 						readsound(f, i, savesfxnames);
 					else
@@ -3020,6 +2902,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_huditem(word2); // find a huditem by name
+
 					if (i >= 0 && i < NUMHUDITEMS)
 						readhuditem(f, i);
 					else
@@ -3157,11 +3040,8 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	if (deh_num_warning)
 	{
 		CONS_Printf(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s");
-		if (devparm) {
+		if (devparm)
 			I_Error("%s%s",va(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s"), M_GetText("See log.txt for details.\n"));
-			//while (!I_GetKey())
-				//I_OsPolling();
-		}
 	}
 
 	deh_loaded = true;
@@ -8250,95 +8130,121 @@ struct {
 	{NULL,0}
 };
 
+// Returns the vlaue of MT_ enumerations
 static mobjtype_t get_mobjtype(const char *word)
-{ // Returns the vlaue of MT_ enumerations
+{
 	mobjtype_t i;
+
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
-	if (fastncmp("MT_",word,3))
+
+	if (fastncmp("MT_", word, 3))
 		word += 3; // take off the MT_
-	for (i = 0; i < NUMMOBJFREESLOTS; i++) {
+
+	for (i = 0; i < NUMMOBJFREESLOTS; i++)
+	{
 		if (!FREE_MOBJS[i])
 			break;
 		if (fastcmp(word, FREE_MOBJS[i]))
 			return MT_FIRSTFREESLOT+i;
 	}
+
 	for (i = 0; i < MT_FIRSTFREESLOT; i++)
 		if (fastcmp(word, MOBJTYPE_LIST[i]+3))
 			return i;
+
 	deh_warning("Couldn't find mobjtype named 'MT_%s'",word);
 	return MT_BLUECRAWLA;
 }
 
+// Returns the value of S_ enumerations
 static statenum_t get_state(const char *word)
-{ // Returns the value of S_ enumerations
+{
 	statenum_t i;
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
-	if (fastncmp("S_",word,2))
+
+	if (fastncmp("S_", word, 2))
 		word += 2; // take off the S_
-	for (i = 0; i < NUMSTATEFREESLOTS; i++) {
+
+	for (i = 0; i < NUMSTATEFREESLOTS; i++)
+	{
 		if (!FREE_STATES[i])
 			break;
+
 		if (fastcmp(word, FREE_STATES[i]))
 			return S_FIRSTFREESLOT+i;
 	}
+
 	for (i = 0; i < S_FIRSTFREESLOT; i++)
 		if (fastcmp(word, STATE_LIST[i]+2))
 			return i;
+
 	deh_warning("Couldn't find state named 'S_%s'",word);
 	return S_NULL;
 }
 
+// Returns the value of SPR_ enumerations
 static spritenum_t get_sprite(const char *word)
-{ // Returns the value of SPR_ enumerations
+{
 	spritenum_t i;
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
-	if (fastncmp("SPR_",word,4))
+
+	if (fastncmp("SPR_", word, 4))
 		word += 4; // take off the SPR_
+
 	for (i = 0; i < NUMSPRITES; i++)
-		if (!sprnames[i][4] && memcmp(word,sprnames[i],4)==0)
+		if (!sprnames[i][4] && memcmp(word, sprnames[i], 4) == 0)
 			return i;
+
 	deh_warning("Couldn't find sprite named 'SPR_%s'",word);
 	return SPR_NULL;
 }
 
+// Returns the value of SFX_ enumerations
 static sfxenum_t get_sfx(const char *word)
-{ // Returns the value of SFX_ enumerations
+{
 	sfxenum_t i;
+
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (fastncmp("SFX_",word,4))
 		word += 4; // take off the SFX_
 	else if (fastncmp("DS",word,2))
 		word += 2; // take off the DS
+
 	for (i = 0; i < NUMSFX; i++)
 		if (S_sfx[i].name && fasticmp(word, S_sfx[i].name))
 			return i;
+
 	deh_warning("Couldn't find sfx named 'SFX_%s'",word);
 	return sfx_None;
 }
 
 #ifdef MUSICSLOT_COMPATIBILITY
+// Returns the value of MUS_ enumerations
 static UINT16 get_mus(const char *word, UINT8 dehacked_mode)
-{ // Returns the value of MUS_ enumerations
+{
 	UINT16 i;
 	char lumptmp[4];
 
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (!word[2] && toupper(word[0]) >= 'A' && toupper(word[0]) <= 'Z')
 		return (UINT16)M_MapNumber(word[0], word[1]);
 
-	if (fastncmp("MUS_",word,4))
+	if (fastncmp("MUS_", word, 4))
 		word += 4; // take off the MUS_
-	else if (fastncmp("O_",word,2) || fastncmp("D_",word,2))
+	else if (fastncmp("O_", word, 2) || fastncmp("D_", word, 2))
 		word += 2; // take off the O_ or D_
 
 	strncpy(lumptmp, word, 4);
 	lumptmp[3] = 0;
-	if (fasticmp("MAP",lumptmp))
+
+	if (fasticmp("MAP", lumptmp))
 	{
 		word += 3;
 		if (toupper(word[0]) >= 'A' && toupper(word[0]) <= 'Z')
@@ -8351,25 +8257,33 @@ static UINT16 get_mus(const char *word, UINT8 dehacked_mode)
 			deh_warning("Couldn't find music named 'MUS_%s'",word);
 		return 0;
 	}
+
 	for (i = 0; compat_special_music_slots[i][0]; ++i)
 		if (fasticmp(word, compat_special_music_slots[i]))
 			return i + 1036;
+
 	if (dehacked_mode)
 		deh_warning("Couldn't find music named 'MUS_%s'",word);
+
 	return 0;
 }
 #endif
 
+// Returns the value of HUD_ enumerations
 static hudnum_t get_huditem(const char *word)
-{ // Returns the value of HUD_ enumerations
+{
 	hudnum_t i;
+
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (fastncmp("HUD_",word,4))
 		word += 4; // take off the HUD_
+
 	for (i = 0; i < NUMHUDITEMS; i++)
 		if (fastcmp(word, HUDITEMS_LIST[i]))
 			return i;
+
 	deh_warning("Couldn't find huditem named 'HUD_%s'",word);
 	return HUD_LIVESNAME;
 }
@@ -8416,15 +8330,16 @@ static inline int lib_freeslot(lua_State *L)
 {
 	int n = lua_gettop(L);
 	int r = 0; // args returned
-	char *s, *type,*word;
+	char *s, *type, *word;
 
-  while (n-- > 0)
-  {
+	while (n-- > 0)
+	{
 		s = Z_StrDup(luaL_checkstring(L,1));
 		type = strtok(s, "_");
 		if (type)
 			strupr(type);
-		else {
+		else
+		{
 			Z_Free(s);
 			return luaL_error(L, "Unknown enum type in '%s'\n", luaL_checkstring(L, 1));
 		}
@@ -8432,19 +8347,25 @@ static inline int lib_freeslot(lua_State *L)
 		word = strtok(NULL, "\n");
 		if (word)
 			strupr(word);
-		else {
+		else
+		{
 			Z_Free(s);
 			return luaL_error(L, "Missing enum name in '%s'\n", luaL_checkstring(L, 1));
 		}
-		if (fastcmp(type, "SFX")) {
+
+		if (fastcmp(type, "SFX"))
+		{
 			sfxenum_t sfx;
 			strlwr(word);
-			CONS_Printf("Sound sfx_%s allocated.\n",word);
+			CONS_Printf("Sound sfx_%s allocated.\n", word);
 			sfx = S_AddSoundFx(word, false, 0, false);
-			if (sfx != sfx_None) {
+
+			if (sfx != sfx_None)
+			{
 				lua_pushinteger(L, sfx);
 				r++;
-			} else
+			}
+			else
 				I_Error("Out of Sfx Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word); //Should never get here since S_AddSoundFx was changed to throw I_Error when it can't allocate
 		}
 		else if (fastcmp(type, "SPR"))
@@ -8458,10 +8379,12 @@ static inline int lib_freeslot(lua_State *L)
 			{
 				if (used_spr[(j-SPR_FIRSTFREESLOT)/8] & (1<<(j%8)))
 				{
-					if (!sprnames[j][4] && memcmp(sprnames[j],word,4)==0)
+					if (!sprnames[j][4] && memcmp(sprnames[j], word, 4) == 0)
 						sprnames[j][4] = wad;
+
 					continue; // Already allocated, next.
 				}
+
 				// Found a free slot!
 				CONS_Printf("Sprite SPR_%s allocated.\n",word);
 
@@ -8469,13 +8392,14 @@ static inline int lib_freeslot(lua_State *L)
 				lua_pushfstring(L, "SPR_%s", word);
 				lua_call(L, 1, 0);
 
-				strncpy(sprnames[j],word,4);
+				strncpy(sprnames[j], word, 4);
 				//sprnames[j][4] = 0;
 				used_spr[(j-SPR_FIRSTFREESLOT)/8] |= 1<<(j%8); // Okay, this sprite slot has been named now.
 				lua_pushinteger(L, j);
 				r++;
 				break;
 			}
+
 			if (j > SPR_LASTFREESLOT)
 				I_Error("Out of Sprite Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 		}
@@ -8483,8 +8407,10 @@ static inline int lib_freeslot(lua_State *L)
 		{
 			statenum_t i;
 			for (i = 0; i < NUMSTATEFREESLOTS; i++)
-				if (!FREE_STATES[i]) {
-					CONS_Printf("State S_%s allocated.\n",word);
+			{
+				if (!FREE_STATES[i])
+				{
+					CONS_Printf("State S_%s allocated.\n", word);
 
 					lua_pushcfunction(L, lua_glib_invalidate_cache);
 					lua_pushfstring(L, "S_%s", word);
@@ -8497,6 +8423,8 @@ static inline int lib_freeslot(lua_State *L)
 					r++;
 					break;
 				}
+			}
+
 			if (i == NUMSTATEFREESLOTS)
 				I_Error("Out of State Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 		}
@@ -8504,27 +8432,33 @@ static inline int lib_freeslot(lua_State *L)
 		{
 			mobjtype_t i;
 			for (i = 0; i < NUMMOBJFREESLOTS; i++)
-				if (!FREE_MOBJS[i]) {
-					CONS_Printf("MobjType MT_%s allocated.\n",word);
+			{
+				if (!FREE_MOBJS[i])
+				{
+					CONS_Printf("MobjType MT_%s allocated.\n", word);
 
 					lua_pushcfunction(L, lua_glib_invalidate_cache);
 					lua_pushfstring(L, "MT_%s", word);
 					lua_call(L, 1, 0);
 
 					FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_MOBJS[i],word);
+					strcpy(FREE_MOBJS[i], word);
 					freeslotusage[1][0]++;
 					lua_pushinteger(L, i);
 					r++;
 					break;
 				}
+			}
+
 			if (i == NUMMOBJFREESLOTS)
 				I_Error("Out of Mobj Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 		}
+
 		Z_Free(s);
 		lua_remove(L, 1);
 		continue;
 	}
+
 	return r;
 }
 
@@ -8537,15 +8471,17 @@ static inline int lib_action(lua_State *L)
 	mobj_t *actor = *((mobj_t **)luaL_checkudata(L,1,META_MOBJ));
 	var1 = (INT32)luaL_optinteger(L,2,0);
 	var2 = (INT32)luaL_optinteger(L,3,0);
+
 	if (!actor)
 		return LUA_ErrInvalid(L, "mobj_t");
+
 	(*action)(actor);
 	return 0;
 }
 
 // Hardcoded A_Action name to call for super() or NULL if super() would be invalid.
 // Set in lua_infolib.
-const char *superactions[MAXRECURSION];
+const char *superactions[MAXRECURSION] = {};
 UINT8 superstack = 0;
 
 static int lib_dummysuper(lua_State *L)
@@ -8560,23 +8496,29 @@ FUNCINLINE static ATTRINLINE int lib_getenum(lua_State *L)
 
 	const char *word;
 	boolean mathlib = lua_toboolean(L, UV_MATHLIB);
-	if (lua_type(L,2) != LUA_TSTRING)
+
+	if (lua_type(L, 2) != LUA_TSTRING)
 		return 0;
-	word = lua_tostring(L,2);
+
+	word = lua_tostring(L, 2);
 
 	/* First check actions, as they can be overridden. */
-	if (!mathlib && fastncmp("A_",word,2)) {
+	if (!mathlib && fastncmp("A_", word, 2))
+	{
 		char *caps;
 		// Try to get a Lua action first.
 		/// \todo Push a closure that sets superactions[] and superstack.
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_ACTIONS);
+
 		// actions are stored in all uppercase.
 		caps = Z_StrDup(word);
 		strupr(caps);
 		lua_getfield(L, -1, caps);
 		Z_Free(caps);
+
 		if (!lua_isnil(L, -1))
 			return 1; // Success! :D That was easy.
+
 		// Welp, that failed.
 		lua_pop(L, 2); // pop nil and LREG_ACTIONS
 		// Hardcoded actions are handled by the proxy.
@@ -8585,12 +8527,14 @@ FUNCINLINE static ATTRINLINE int lib_getenum(lua_State *L)
 	/* Then check the globals proxy table. */
 	lua_pushvalue(L, 2);
 	lua_gettable(L, GLIB_PROXY);
+
 	if (!lua_isnil(L, -1))
 	{
 		return 1;
 	}
 
-	if (mathlib) return luaL_error(L, "constant '%s' could not be parsed.\n", word);
+	if (mathlib)
+		return luaL_error(L, "constant '%s' could not be parsed.\n", word);
 
 	return 0;
 }
@@ -8648,6 +8592,7 @@ static int lua_enumlib_server_get(lua_State *L)
 {
 	if ((!multiplayer || !(netgame || demo.playback)) && !playeringame[serverplayer])
 		return 0;
+
 	LUA_PushUserdata(L, &players[serverplayer], META_PLAYER);
 	return 1;
 }
@@ -8656,6 +8601,7 @@ static int lua_enumlib_consoleplayer_get(lua_State *L)
 {
 	if (consoleplayer < 0 || !playeringame[consoleplayer])
 		return 0;
+
 	LUA_PushUserdata(L, &players[consoleplayer], META_PLAYER);
 	return 1;
 }
@@ -8683,6 +8629,7 @@ static int lua_enumlib_mobjtype_get(lua_State *L)
 	{
 		if (!FREE_MOBJS[i])
 			break;
+
 		if (fastcmp(s+3, FREE_MOBJS[i]))
 		{
 			lua_pushinteger(L, MT_FIRSTFREESLOT+i);
@@ -8771,30 +8718,29 @@ static int lua_enumlib_sfx_get_ds(lua_State *L)
 }
 
 #ifdef MUSICSLOT_COMPATIBILITY
+static int lua_enumlib_mus_get(lua_State *L)
+{
+	const char *name = strchr(lua_tostring(L, 1), '_') + 1;
+	int mus = get_mus(name, false);
 
-	static int lua_enumlib_mus_get(lua_State *L)
-	{
-		const char *name = strchr(lua_tostring(L, 1), '_') + 1;
-		int mus = get_mus(name, false);
+	if (mus == 0)
+		return 0;
 
-		if (mus == 0)
-			return 0;
+	lua_pushinteger(L, mus);
+	return 1;
+}
 
-		lua_pushinteger(L, mus);
-		return 1;
-	}
+static int lua_enumlib_mus_get_mathlib(lua_State *L)
+{
+	const char *name = strchr(lua_tostring(L, 1), '_') + 1;
+	int mus = get_mus(name, false);
 
-	static int lua_enumlib_mus_get_mathlib(lua_State *L)
-	{
-		const char *name = strchr(lua_tostring(L, 1), '_') + 1;
-		int mus = get_mus(name, false);
+	if (mus == 0)
+		return luaL_error(L, "music '%s' could not be found.\n", lua_tostring(L, 1));
 
-		if (mus == 0)
-			return luaL_error(L, "music '%s' could not be found.\n", lua_tostring(L, 1));
-
-		lua_pushinteger(L, mus);
-		return 1;
-	}
+	lua_pushinteger(L, mus);
+	return 1;
+}
 #endif
 
 static int lua_enumlib_power_get(lua_State *L)
@@ -8848,12 +8794,15 @@ static int lua_enumlib_action_get(lua_State *L)
 	const char *action = lua_tostring(L, 1);
 
 	for (int i = 0; actionpointers[i].name; i++)
-		if (fasticmp(action, actionpointers[i].name)) {
+	{
+		if (fasticmp(action, actionpointers[i].name))
+		{
 			// push lib_action as a C closure with the actionf_t* as an upvalue.
 			lua_pushlightuserdata(L, &actionpointers[i].action);
 			lua_pushcclosure(L, lib_action, 1);
 			return 1;
 		}
+	}
 
 	return 0;
 }
@@ -8871,8 +8820,13 @@ static char *lua_enumlib_sprintf_upper(char **buf, int* size, const char *format
 	va_list va;
 	va_start(va, format);
 
-	int length = vsnprintf(*buf, *size, format, va);
-	if (length > *size)
+	va_list vacpy;
+	va_copy(vacpy, va);
+
+	int length = vsnprintf(*buf, *size, format, vacpy);
+	va_end(vacpy);
+
+	if (length >= *size)
 	{
 		void *ptr = realloc(*buf, length+1);
 		if (!ptr)
@@ -8880,12 +8834,13 @@ static char *lua_enumlib_sprintf_upper(char **buf, int* size, const char *format
 			va_end(va);
 			return NULL;
 		}
+
 		*buf = ptr;
 		*size = length+1;
 
-		va_start(va, format);
-		vsnprintf(*buf, *size, format, va);
+		length = vsnprintf(*buf, *size, format, va);
 	}
+
 	va_end(va);
 
 	for (int i = 0; i < length; i++)
@@ -8910,11 +8865,14 @@ static int lua_enumlib_super_get(lua_State *L)
 	}
 
 	for (int i = 0; actionpointers[i].name; i++)
-		if (fasticmp(superactions[superstack-1], actionpointers[i].name)) {
+	{
+		if (fasticmp(superactions[superstack-1], actionpointers[i].name))
+		{
 			lua_pushlightuserdata(L, &actionpointers[i].action);
 			lua_pushcclosure(L, lib_action, 1);
 			return 1;
 		}
+	}
 
 	return 0;
 }
@@ -9383,7 +9341,10 @@ enum actionnum LUA_GetActionNumByName(const char *actiontocompare)
 {
 	size_t z;
 	for (z = 0; actionpointers[z].name; z++)
+	{
 		if (fasticmp(actiontocompare, actionpointers[z].name))
 			return z;
+	}
+
 	return z;
 }

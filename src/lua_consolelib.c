@@ -358,7 +358,8 @@ static int lib_cvRegisterVar(lua_State *L)
 #define TYPEERROR(f, t) FIELDERROR(f, va("%s expected, got %s", lua_typename(L, t), luaL_typename(L, -1)))
 
 	lua_pushnil(L);
-	while (lua_next(L, 1)) {
+	while (lua_next(L, 1))
+	{
 		// stack: cvar table, cvar userdata, key/index, value
 		//            1             2            3        4
 		i = 0;
@@ -368,26 +369,40 @@ static int lib_cvRegisterVar(lua_State *L)
 		else if (lua_isstring(L, 3))
 			k = lua_tostring(L, 3);
 
-		if (i == 1 || (k && fasticmp(k, "name"))) {
+		if (i == 1 || (k && fasticmp(k, "name")))
+		{
 			if (!lua_isstring(L, 4))
 				TYPEERROR("name", LUA_TSTRING)
+
 			cvar->name = Z_StrDup(lua_tostring(L, 4));
-		} else if (i == 2 || (k && fasticmp(k, "defaultvalue"))) {
+		}
+		else if (i == 2 || (k && fasticmp(k, "defaultvalue")))
+		{
 			if (!lua_isstring(L, 4))
 				TYPEERROR("defaultvalue", LUA_TSTRING)
+
 			cvar->defaultvalue = Z_StrDup(lua_tostring(L, 4));
-		} else if (i == 3 || (k && fasticmp(k, "flags"))) {
+		}
+		else if (i == 3 || (k && fasticmp(k, "flags")))
+		{
 			if (!lua_isnumber(L, 4))
 				TYPEERROR("flags", LUA_TNUMBER)
+
 			cvar->flags = (INT32)lua_tointeger(L, 4);
-		} else if (i == 4 || (k && fasticmp(k, "PossibleValue"))) {
-			if (lua_islightuserdata(L, 4)) {
+		}
+		else if (i == 4 || (k && fasticmp(k, "PossibleValue")))
+		{
+			if (lua_islightuserdata(L, 4))
+			{
 				CV_PossibleValue_t *pv = lua_touserdata(L, 4);
+
 				if (pv == CV_OnOff || pv == CV_YesNo || pv == CV_Unsigned || pv == CV_Natural)
 					cvar->PossibleValue = pv;
 				else
 					FIELDERROR("PossibleValue", "CV_PossibleValue_t expected, got unrecognised pointer")
-			} else if (lua_istable(L, 4)) {
+			}
+			else if (lua_istable(L, 4))
+			{
 				// Accepts tables in the form of {MIN=0, MAX=9999} or {Red=0, Green=1, Blue=2}
 				// and converts them to CV_PossibleValue_t {{0,"MIN"},{9999,"MAX"}} or {{0,"Red"},{1,"Green"},{2,"Blue"}}
 				//
@@ -398,7 +413,9 @@ static int lib_cvRegisterVar(lua_State *L)
 				CV_PossibleValue_t *cvpv;
 
 				lua_pushnil(L);
-				while (lua_next(L, 4)) {
+
+				while (lua_next(L, 4))
+				{
 					count++;
 					lua_pop(L, 1);
 				}
@@ -412,7 +429,9 @@ static int lib_cvRegisterVar(lua_State *L)
 
 				i = 0;
 				lua_pushnil(L);
-				while (lua_next(L, 4)) {
+
+				while (lua_next(L, 4))
+				{
 					// stack: [...] PossibleValue table, index, value
 					//                       4             5      6
 					if (lua_type(L, 5) != LUA_TSTRING
@@ -423,14 +442,19 @@ static int lib_cvRegisterVar(lua_State *L)
 					i++;
 					lua_pop(L, 1);
 				}
+
 				cvpv[i].value = 0;
 				cvpv[i].strvalue = NULL;
 				cvar->PossibleValue = cvpv;
-			} else
+			}
+			else
 				FIELDERROR("PossibleValue", va("%s or CV_PossibleValue_t expected, got %s", lua_typename(L, LUA_TTABLE), luaL_typename(L, -1)))
-		} else if (i == 5 || (k && fasticmp(k, "func"))) {
+		}
+		else if (i == 5 || (k && fasticmp(k, "func")))
+		{
 			if (!lua_isfunction(L, 4))
 				TYPEERROR("func", LUA_TFUNCTION)
+
 			lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
 			I_Assert(lua_istable(L, 5));
 			lua_pushlightuserdata(L, cvar);
@@ -438,9 +462,13 @@ static int lib_cvRegisterVar(lua_State *L)
 			lua_rawset(L, 5);
 			lua_pop(L, 1);
 			cvar->func = Lua_OnChange;
+
+			if (i == 5 && !(cvar->flags & CV_CALL))
+			{
+				category = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
+			}
 		}
-		else if (((i == 5 && !(cvar->flags & CV_CALL))
-				|| (cvar->flags & CV_CALL && i == 6))
+		else if ((cvar->flags & CV_CALL && i == 6)
 				|| (k && fasticmp(k, "category")))
 		{
 			category = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
@@ -451,6 +479,7 @@ static int lib_cvRegisterVar(lua_State *L)
 		{
 			menu_name = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
 		}
+
 		lua_pop(L, 1);
 	}
 #undef FIELDERROR

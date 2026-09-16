@@ -113,18 +113,29 @@ static vsbuf_t com_text; // variable sized buffer
   * \param ptext The text to add.
   * \sa COM_BufInsertText
   */
-void COM_BufAddText(const char *ptext)
+void COM_BufAddTextEx(const char *ptext, size_t plen)
 {
 	size_t l;
+	char *text;
 
-	l = strlen(ptext);
+	if (plen == 0)
+		plen = strlen(ptext);
+
+	text = Z_Malloc(sizeof(char) * (plen+1), PU_STATIC, NULL);
+	memcpy(text, ptext, plen);
+	text[plen] = '\0';
+
+	l = strlen(text);
 
 	if (com_text.cursize + l >= com_text.maxsize)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Command buffer full!\n"));
 		return;
 	}
-	VS_Write(&com_text, ptext, l);
+
+	VS_Write(&com_text, text, l);
+
+	Z_Free(text);
 }
 
 /** Adds command text and executes it immediately.
@@ -132,8 +143,10 @@ void COM_BufAddText(const char *ptext)
   * \param ptext The text to execute. A newline is automatically added.
   * \sa COM_BufAddText
   */
-void COM_BufInsertText(const char *ptext)
+void COM_BufInsertTextEx(const char *ptext, size_t plen)
 {
+	const INT32 old_wait = com_wait;
+
 	char *temp = NULL;
 	size_t templen;
 
@@ -145,9 +158,13 @@ void COM_BufInsertText(const char *ptext)
 		VS_Clear(&com_text);
 	}
 
+	com_wait = 0;
+
 	// add the entire text of the file (or alias)
-	COM_BufAddText(ptext);
+	COM_BufAddTextEx(ptext, plen);
 	COM_BufExecute(); // do it right away
+
+	com_wait += old_wait;
 
 	// add the copied off data
 	if (templen)
@@ -159,8 +176,7 @@ void COM_BufInsertText(const char *ptext)
 
 /** Progress the wait timer and flush waiting console commands when ready.
   */
-void
-COM_BufTicker(void)
+void COM_BufTicker(void)
 {
 	if (com_wait)
 	{
@@ -237,10 +253,13 @@ void COM_ImmedExecute(const char *ptext)
 	char line[1024] = "";
 	INT32 quotes;
 
-	while (i < strlen(ptext))
+	const size_t txtlength = strlen(ptext);
+
+	while (i < txtlength)
 	{
 		quotes = 0;
-		for (j = 0; i < strlen(ptext); i++,j++)
+
+		for (j = 0; i < txtlength; i++,j++)
 		{
 			if (ptext[i] == '\"' && !quotes && i > 0 && ptext[i-1] != ' ') // Malformed command
 				return;
@@ -652,7 +671,7 @@ static void COM_Alias_f(void)
 		CONS_Printf(M_GetText("All aliases that start with \x87'%s'\x80 are:\n"), begin);
 
 		int count = 0;
-		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		for (cmdalias_t *head = com_alias; head != NULL; head = head->next)
 		{
 			if (strncmp(begin, head->name, szBegin) == 0)
 			{
@@ -673,7 +692,7 @@ static void COM_Alias_f(void)
 		/* Display alias subtext, show all aliases. */
 		CONS_Printf(M_GetText("alias <name> <command>: create a shortcut command that executes other command(s)\n"));
 
-		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		for (cmdalias_t *head = com_alias; head != NULL; head = head->next)
 		{
 			CONS_Printf(alias_format, head->name, head->value);
 		}
@@ -1162,6 +1181,39 @@ void VS_Print(vsbuf_t *buf, const char *data)
 //
 // =========================================================================
 
+#define NAME      cvar_map_t
+#define KEY_TY    const char *
+#define VAL_TY    consvar_t *
+#define HASH_FN   FNV1a_HashLowercaseString
+#define CMPR_FN   vt_cmpr_casestring
+#include "verstable.h"
+
+#define NAME      netvar_map_t
+#define KEY_TY    UINT16
+#define VAL_TY    consvar_t *
+#define HASH_FN   vt_hash_integer
+#define CMPR_FN   vt_cmpr_integer
+#include "verstable.h"
+
+static cvar_map_t cvar_map;
+static netvar_map_t netvar_map;
+
+CONSTRUCTOR static void CV_InitMap(void)
+{
+	// ensure the map is initialized
+	cvar_map_t_init(&cvar_map);
+	cvar_map_t_reserve(&cvar_map, 512);
+
+	netvar_map_t_init(&netvar_map);
+	netvar_map_t_reserve(&netvar_map, 256);
+}
+
+DESTRUCTOR static void CV_DestroyMap(void)
+{
+	cvar_map_t_cleanup(&cvar_map);
+	netvar_map_t_cleanup(&netvar_map);
+}
+
 static const char *cv_null_string = "";
 
 /** Searches if a variable has been registered.
@@ -1172,11 +1224,17 @@ static const char *cv_null_string = "";
   */
 consvar_t *CV_FindVar(const char *name)
 {
-	consvar_t *cvar;
+	cvar_map_t_itr it = cvar_map_t_get(&cvar_map, name);
+	if (!cvar_map_t_is_end(it))
+		return it.data->val;
 
+	// fallback linear search
+	/*
+	consvar_t *cvar;
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if (fasticmp(name,cvar->name))
+		if (fasticmp(name, cvar->name))
 			return cvar;
+	*/
 
 	return NULL;
 }
@@ -1191,7 +1249,7 @@ consvar_t *CV_FindVar(const char *name)
 static inline UINT16 CV_ComputeNetid(const char *s)
 {
 	UINT16 ret = 0, i = 0;
-	static UINT16 premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
+	static const UINT16 premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
 
 	while (*s)
 	{
@@ -1210,11 +1268,17 @@ static inline UINT16 CV_ComputeNetid(const char *s)
   */
 static consvar_t *CV_FindNetVar(UINT16 netid)
 {
+	netvar_map_t_itr it = netvar_map_t_get(&netvar_map, netid);
+	if (!netvar_map_t_is_end(it))
+		return it.data->val;
+
+	/*
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->netid == netid)
 			return cvar;
+	*/
 
 	if (netid == 44542) // ouch this hack
 		return &cv_karteliminatelast;
@@ -1280,6 +1344,11 @@ void CV_RegisterVar(consvar_t *variable)
 
 	// the SetValue will set this bit
 	variable->flags &= ~CV_MODIFIED;
+
+	cvar_map_t_insert(&cvar_map, variable->name, variable);
+
+	if (variable->flags & CV_NETVAR)
+		netvar_map_t_insert(&netvar_map, variable->netid, variable);
 }
 
 /** Finds the string value of a console variable.
@@ -1543,7 +1612,9 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 	// send only changed cvars ...
 	// the client will reset all netvars to default before loading
 	WRITEUINT16(*p, 0x0000);
+
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
 		if (((cvar->flags & CV_NETVAR) && !CV_IsSetToDefault(cvar)) || (isdemorecording && cvar->netid == cv_numlaps.netid))
 		{
 			WRITEUINT16(*p, cvar->netid);
@@ -1561,7 +1632,7 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 				else
 				{
 					char buf[9];
-					sprintf(buf, "%d", mapheaderinfo[gamemap - 1]->numlaps);
+					snprintf(buf, sizeof(buf), "%d", mapheaderinfo[gamemap - 1]->numlaps);
 					WRITESTRING(*p, buf);
 				}
 			}
@@ -1573,6 +1644,8 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 			WRITEUINT8(*p, false);
 			++count;
 		}
+	}
+
 	WRITEUINT16(count_p, count);
 }
 
@@ -1585,9 +1658,21 @@ size_t CV_LoadNetVars(const UINT8 *bufstart)
 	// prevent "invalid command received"
 	serverloading = true;
 
+	// we can use our netvar map instead of going through all cvars each time
+	netvar_map_t_itr it;
+	for (it = netvar_map_t_first(&netvar_map);
+		 !netvar_map_t_is_end(it);
+		 it = netvar_map_t_next(it))
+	{
+		cvar = it.data->val;
+		Setvalue(cvar, cvar->defaultvalue, true);
+	}
+
+	/*
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->flags & CV_NETVAR)
 			Setvalue(cvar, cvar->defaultvalue, true);
+	*/
 
 	count = READUINT16(p);
 	while (count--)
@@ -1717,8 +1802,7 @@ void CV_StealthSet(consvar_t *var, const char *value)
 void CV_StealthSetValue(consvar_t *var, INT32 value)
 {
 	char val[32];
-
-	sprintf(val, "%d", value);
+	snprintf(val, sizeof(val), "%d", value);
 	CV_SetCVar(var, val, true);
 }
 
@@ -1738,8 +1822,7 @@ void CV_Set(consvar_t *var, const char *value)
 void CV_SetValue(consvar_t *var, INT32 value)
 {
 	char val[32];
-
-	sprintf(val, "%d", value);
+	snprintf(val, sizeof(val), "%d", value);
 	CV_SetCVar(var, val, false);
 }
 
@@ -1790,7 +1873,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					if (newvalue == oldvalue)
 						break; // don't loop forever if there's none of a certain gametype
 
-					if (newvalue >= 0 && !mapheaderinfo[newvalue])
+					if (newvalue >= 0 && newvalue < NUMMAPS && !mapheaderinfo[newvalue])
 						continue; // Don't allocate the header.  That just makes memory usage skyrocket.
 
 				} while (!M_CanShowLevelInList(newvalue, gt));
@@ -2137,6 +2220,7 @@ void CV_SaveVariables(FILE *f)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
 		if (cvar->flags & CV_SAVE)
 		{
 			char stringtowrite[MAXTEXTCMD+1];
@@ -2145,15 +2229,23 @@ void CV_SaveVariables(FILE *f)
 			if (fastcmp(cvar->string, "MAX") || fastcmp(cvar->string, "MIN"))
 			{
 				if (cvar->flags & CV_FLOAT)
-					sprintf(stringtowrite, "%f", FixedToFloat(cvar->value));
+				{
+					snprintf(stringtowrite, sizeof(stringtowrite), "%f", FixedToFloat(cvar->value));
+				}
 				else
-					sprintf(stringtowrite, "%d", cvar->value);
+				{
+					snprintf(stringtowrite, sizeof(stringtowrite), "%d", cvar->value);
+				}
 			}
 			else
-				strcpy(stringtowrite, cvar->string);
+			{
+				strncpy(stringtowrite, cvar->string, sizeof(stringtowrite)-1);
+				stringtowrite[sizeof(stringtowrite)-1] = '\0';
+			}
 
 			fprintf(f, "%s \"%s\"\n", cvar->name, stringtowrite);
 		}
+	}
 }
 
 //============================================================================

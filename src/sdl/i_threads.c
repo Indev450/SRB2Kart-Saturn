@@ -9,6 +9,8 @@
 /// \file  i_threads.c
 /// \brief Multithreading abstraction
 
+#ifdef HAVE_THREADS
+
 #include "../doomdef.h"
 #include "../i_threads.h"
 
@@ -354,3 +356,5 @@ I_wake_all_cond (
 	if (SDL_CondBroadcast(cond) == -1)
 		abort();
 }
+
+#endif // HAVE_THREADS

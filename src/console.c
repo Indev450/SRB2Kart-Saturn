@@ -46,23 +46,23 @@
 #ifdef HAVE_THREADS
 I_mutex con_mutex;
 
-// g_in_exiting_signal_handler is an evil hack
+// I_In_Exiting_Signal_Handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&con_mutex); }
-#  define Unlock_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(con_mutex); }
-#else/*HAVE_THREADS*/
+#  define Lock_state()    if (!I_In_Exiting_Signal_Handler()) { I_lock_mutex(&con_mutex); }
+#  define Unlock_state()  if (!I_In_Exiting_Signal_Handler()) { I_unlock_mutex(con_mutex); }
+#else /*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()
-#endif/*HAVE_THREADS*/
+#endif /*HAVE_THREADS*/
 
 static boolean con_started = false; // console has been initialised
        boolean con_startup = false; // true at game startup, screen need refreshing
 static boolean con_forcepic = true; // at startup toggle console translucency when first off
        boolean con_recalc = false;  // set true when screen size has changed
 
-static tic_t con_tick; // console ticker for anim or blinking prompt cursor
+static tic_t con_tick; // console ticker for blinking prompt cursor
                         // con_scrollup should use time (currenttime - lasttime)..
 
 static boolean consoletoggle; // true when console key pushed, ticker will handle
@@ -103,6 +103,7 @@ static void CON_InputInit(void);
 static void CON_RecalcSize(void);
 static void CON_ChangeHeight(void);
 
+static void CONS_height_Change(void);
 static void CONS_hudlines_Change(void);
 static void CONS_backcolor_Change(void);
 
@@ -131,7 +132,7 @@ static CV_PossibleValue_t speed_cons_t[] = {{0, "MIN"}, {64, "MAX"}, {0, NULL}};
 static consvar_t cons_speed = {"con_speed", "8", CV_SAVE, speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // percentage of screen height to use for console
-static consvar_t cons_height = {"con_height", "50", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+static consvar_t cons_height = {"con_height", "50", CV_CALL|CV_SAVE, CV_Unsigned, CONS_height_Change, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t backpic_cons_t[] = {{0, "translucent"}, {1, "picture"}, {0, NULL}};
 // whether to use console background picture, or translucent mode
@@ -173,6 +174,18 @@ consvar_t cons_consoleprintinmenu = {"consoleprintinmenu", "Off", CV_SAVE, CV_On
 
 static void CON_Print(char *msg);
 
+// Change the console height on demand
+//
+static void CONS_height_Change(void)
+{
+	Lock_state();
+
+	if (con_destlines > 0 && !con_startup) // If the console is open (as in, not using "bind")...
+		CON_ChangeHeight(); // ...update its height now, not only when it's closed and re-opened
+
+	Unlock_state();
+}
+
 //
 //
 static void CONS_hudlines_Change(void)
@@ -207,14 +220,6 @@ static void CONS_Clear_f(void)
 
 	Unlock_state();
 }
-
-// Choose english keymap
-//
-/*static void CONS_English_f(void)
-{
-	shiftxform = english_shiftxform;
-	CONS_Printf(M_GetText("%s keymap.\n"), M_GetText("English"));
-}*/
 
 static char *bindtable[NUMINPUTS];
 
@@ -633,72 +638,191 @@ void CON_MoveConsole(void)
 	Unlock_state();
 }
 
+//======================================================================
+//                 KEYBOARD LAYOUTS FOR ENTERING TEXT
+//======================================================================
+
+static char english_shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!', '"', '#', '$', '%', '&',
+	'"', // shift-'
+	'(', ')', '*', '+',
+	'<', // shift-,
+	'_', // shift--
+	'>', // shift-.
+	'?', // shift-/
+	')', // shift-0
+	'!', // shift-1
+	'@', // shift-2
+	'#', // shift-3
+	'$', // shift-4
+	'%', // shift-5
+	'^', // shift-6
+	'&', // shift-7
+	'*', // shift-8
+	'(', // shift-9
+	':',
+	':', // shift-;
+	'<',
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', // shift-[
+	'|', // shift-backslash - OH MY GOD DOES WATCOM SUCK
+	'}', // shift-]
+	'"', '_',
+	'~', // shift-`
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127
+};
+
+static char french_shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ','$', //shift-!
+	'3', //shift-"
+	'#', '$', '%',
+	'1', //shift-&
+	'4', // shift-'
+	'5', // shift-(
+	')', // shift-)
+	'*', '+',
+	'?', // shift-,
+	'6', // shift--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9',
+	'/', // shitf-:
+	'.', // shift-;
+	'>', // shift-<
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'8', //shift-_
+	'`',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'2',
+	131, 132,
+	'0',
+	134,
+	'9',
+	136, 137,
+	'7',
+	139, 140,
+	'%'
+};
+
+static char french_altgrxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!',
+	'#', //altgr-"
+	'#', '$', '%', '&',
+	'{', //altgr-'
+	'[', //altgr-(
+	']', //altgr-)
+	'*', '+', ',',
+	'|', //altg--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9',
+	':', ';', '<',
+	'}', //altgr-=
+	'>', '?', '@',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'\\', //altgr-backslash
+	'`',
+	'a', 'b', 'c', 'd', 'E', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+	'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'~',
+	131, 132,
+	'@',
+	134,
+	'^',
+	136, 137,
+	'`',
+	139, 140,
+	KEY_FR_U_GRAVE
+};
+
+// fallback for special letter non displayable in the game (i.e.: 'é','à',etc.)
+static INT32 CON_FallBackFrSpecialLetter(INT32 key)
+{
+	switch (key)
+	{
+		case KEY_FR_E_AIGUE:     return 'e';
+		case KEY_FR_E_GRAVE:     return 'e';
+		case KEY_FR_C_CEDILLE:   return 'c';
+		case KEY_FR_A_GRAVE:     return 'a';
+		case KEY_FR_U_GRAVE:     return 'u';
+		default:       return key;
+	}
+}
+
+// goddang AZERTY
+static size_t CON_GetShiftSize(void)
+{
+	return ((cv_keyboardlayout.value == 3) ? sizeof(french_shiftxform) : sizeof(english_shiftxform));
+}
+
+static char *CON_Shiftform(void)
+{
+	return (cv_keyboardlayout.value == 3) ? french_shiftxform : english_shiftxform;
+}
+
 INT32 CON_ShiftChar(INT32 ch)
 {
-	if (I_UseNativeKeyboard())
+	if (I_UseNativeKeyboard() || ch >= (INT32)CON_GetShiftSize())
 		return ch;
 
+	// warning: shiftdown is NOT a boolean, it's 1 or 2 for lshift/rshift
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown ^ capslock)
-				ch = shiftxform[ch];
-			else if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
-		else
-		{
-			if (shiftdown ^ capslock)
-				ch = shiftxform[ch];
-		}
+		return !!shiftdown != capslock ? CON_Shiftform()[ch] : ch;
 	}
-	else	// if we're holding shift we should still shift non letter symbols
+
+	// if we're holding shift we should still shift non letter symbols
+	if (shiftdown)
 	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown)
-				ch = shiftxform[ch];
-			else if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
-		else
-		{
-			if (shiftdown)
-				ch = shiftxform[ch];
-		}
+		return CON_Shiftform()[ch];
+	}
+
+	// AZERTY
+	if (cv_keyboardlayout.value == 3)
+	{
+		if (altdown & 0x2)
+			return french_altgrxform[ch];
+
+		return CON_FallBackFrSpecialLetter(ch);
 	}
 
 	return ch;
 }
 
-INT32 CON_ShitAndAltGrChar(INT32 ch)
-{
-	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
-	{
-		if (shiftdown ^ capslock)
-			ch = shiftxform[ch];
-	}
-	else	// if we're holding shift we should still shift non letter symbols
-	{
-		if (shiftdown)
-			ch = shiftxform[ch];
-		else if (altdown & 0x2)
-		{
-			ch = french_altgrxform[ch];
-		}
-		else
-		{
-			ch = HU_FallBackFrSpecialLetter(ch);
-		}
-	}
-
-	return ch;
-}
 
 // Clear time of console heads up messages
 //
@@ -892,7 +1016,7 @@ boolean CON_Responder(event_t *ev)
 		return true;
 
 	// ctrl modifier -- changes behavior, adds shortcuts
-	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
+	if (ctrldown && (cv_keyboardlayout.value != 3 || !altdown))
 	{
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
@@ -1222,18 +1346,9 @@ void CON_LogMessage(const char *msg)
 // Console print! Wahooo! Lots o fun!
 //
 
-void CONS_Printf(const char *fmt, ...)
+static inline void CONS_PrintMsg(char *txt)
 {
-	va_list argptr;
-	static char *txt = NULL;
 	boolean startup;
-
-	if (txt == NULL)
-		txt = malloc(8192);
-
-	va_start(argptr, fmt);
-	vsnprintf(txt, 8192, fmt, argptr);
-	va_end(argptr);
 
 	// echo console prints to log file
 	DEBFILE(txt);
@@ -1258,6 +1373,21 @@ void CONS_Printf(const char *fmt, ...)
 		CON_Drawer();
 		I_FinishUpdate(); // page flip or blit buffer
 	}
+}
+
+void CONS_Printf(const char *fmt, ...)
+{
+	va_list argptr;
+	static char *txt = NULL;
+
+	if (txt == NULL)
+		txt = malloc(8192);
+
+	va_start(argptr, fmt);
+	vsnprintf(txt, 8192, fmt, argptr);
+	va_end(argptr);
+
+	CONS_PrintMsg(txt);
 }
 
 void CONS_Alert(alerttype_t level, const char *fmt, ...)
@@ -1288,9 +1418,7 @@ void CONS_Alert(alerttype_t level, const char *fmt, ...)
 			break;
 	}
 
-	// I am lazy and I feel like just letting CONS_Printf take care of things.
-	// Is that okay?
-	CONS_Printf("%s", txt);
+	CONS_PrintMsg(txt);
 }
 
 void CONS_Debug(INT32 debugflags, const char *fmt, ...)
@@ -1308,10 +1436,8 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...)
 	vsnprintf(txt, 8192, fmt, argptr);
 	va_end(argptr);
 
-	// Again I am lazy, oh well
-	CONS_Printf("%s", txt);
+	CONS_PrintMsg(txt);
 }
-
 
 // Print an error message, and wait for ENTER key to continue.
 // To make sure the user has seen the message
@@ -1324,6 +1450,8 @@ void CONS_Error(const char *msg)
 	// dirty quick hack, but for the good cause
 	while (I_GetKey() != KEY_ENTER)
 	{
+		I_HandleInterrupt();
+
 		// Sleep so we don't take too much of cpu usage
 		I_Sleep(1.f/TICRATE*1000);
 
@@ -1522,53 +1650,54 @@ static void CON_DrawConsole(void)
 	}
 
 	// draw console text lines from top to bottom
-	if (con_curlines < minheight)
-		return;
-
-	i = con_cy - con_scrollup;
-
-	// skip the last empty line due to the cursor being at the start of a new line
-	i--;
-
-	i -= (con_curlines - minheight) / charheight;
-
-	if (rendermode == render_none) return;
-
-	for (y = (con_curlines-minheight) % charheight; y <= con_curlines-minheight; y += charheight, i++)
+	if (con_curlines >= minheight)
 	{
-		INT32 x;
-		size_t c;
+		i = con_cy - con_scrollup;
 
-		p = (UINT8 *)&con_buffer[((i > 0 ? i : 0)%con_totallines)*con_width];
+		// skip the last empty line due to the cursor being at the start of a new line
+		i--;
 
-		for (c = 0, x = charwidth; c < con_width; c++, x += charwidth, p++)
+		i -= (con_curlines - minheight) / charheight;
+
+		if (rendermode == render_none)
+			return;
+
+		for (y = (con_curlines-minheight) % charheight; y <= con_curlines-minheight; y += charheight, i++)
 		{
-			while (*p & 0x80)
+			INT32 x;
+			size_t c;
+
+			p = (UINT8 *)&con_buffer[((i > 0 ? i : 0)%con_totallines)*con_width];
+
+			for (c = 0, x = charwidth; c < con_width; c++, x += charwidth, p++)
 			{
-				charflags = (*p & 0x7f) << V_CHARCOLORSHIFT;
-				p++;
-				c++;
+				while (*p & 0x80)
+				{
+					charflags = (*p & 0x7f) << V_CHARCOLORSHIFT;
+					p++;
+					c++;
+				}
+
+				if (c >= con_width)
+					break;
+
+				int emotelen;
+				emote_t *emote;
+
+				if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+				{
+					M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+					p += emotelen-1;
+					c += emotelen-1;
+					continue;
+				}
+				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 			}
-
-			if (c >= con_width)
-				break;
-
-			int emotelen;
-			emote_t *emote;
-
-			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
-			{
-				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
-				p += emotelen-1;
-				c += emotelen-1;
-				continue;
-			}
-			V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		}
 	}
 
 	// draw prompt if enough place (not while game startup)
-	if ((con_curlines == con_destlines) && (con_curlines >= minheight) && !con_startup)
+	if ((con_curlines >= (minheight-charheight)) && !con_startup)
 		CON_DrawInput();
 }
 

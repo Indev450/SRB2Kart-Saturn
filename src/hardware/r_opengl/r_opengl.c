@@ -98,10 +98,10 @@ static size_t textureBufferSize = 0;
 static LTListItem *LightTablesTail = NULL;
 static LTListItem *LightTablesHead = NULL;
 
-static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
+static RGBA_t screenPalette[256] = {}; // the palette for the postprocessing step in palette rendering
 static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256] = {0}; // the palette for converting textures to RGBA
+RGBA_t myPaletteData[256] = {}; // the palette for converting textures to RGBA
 
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
@@ -127,9 +127,9 @@ GLuint gl_num_extensions;
 int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
-GLfloat modelMatrix[16] = {0};
-GLfloat projMatrix[16] = {0};
-static GLint   viewport[4];
+GLfloat modelMatrix[16] = {};
+GLfloat projMatrix[16] = {};
+static GLint viewport[4];
 
 #ifdef USE_FBO_OGL
 enum
@@ -171,7 +171,7 @@ boolean supportstencil = false;
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
 //			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that Intel GPUs
 //			can know when the textures aren't there, as textures are always considered resident in their virtual memory
-static GLuint screenTextures[NUMSCREENTEXTURES] = {0};
+static GLuint screenTextures[NUMSCREENTEXTURES] = {};
 
 #define byte2float(byte) (GLfloat)(byte / 255.0f)
 
@@ -403,6 +403,14 @@ typedef void (APIENTRY * PFNglEnableClientState) (GLenum cap);
 static PFNglEnableClientState pglEnableClientState;
 typedef void (APIENTRY * PFNglDisableClientState) (GLenum cap);
 static PFNglDisableClientState pglDisableClientState;
+
+typedef void (APIENTRY * PFNglOrtho) (GLdouble left,
+									  GLdouble right,
+									  GLdouble bottom,
+									  GLdouble top,
+									  GLdouble nearVal,
+									  GLdouble farVal);
+static PFNglOrtho pglOrtho;
 
 /* Lighting */
 typedef void (APIENTRY * PFNglShadeModel) (GLenum mode);
@@ -745,7 +753,7 @@ typedef struct gl_shaderstate_s
 static gl_shaderstate_t gl_shaderstate;
 
 // Shader info
-static float shader_leveltime = 0;
+static float shader_leveltime = 0.0f;
 static float shader_light_x = 0.0f;
 static float shader_light_y = 0.0f;
 static float shader_light_z = 0.0f;
@@ -768,15 +776,15 @@ static int GLFramebuffer_CheckExt(void)
 	// gl versions from 2.1 may still support framebuffer objects
 
 	// maybe, just maybe, we support the standart extensions
-	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
 		return FBO_ARB;
 
 	// nope, try the older 2.1 extensions
-	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
 	{
 		// perhaps we may even support a stencil attachment
 		if (GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions))
@@ -858,6 +866,8 @@ void SetupGLFunc4(void)
 	GetGLfunc(glUniform3fv);
 	GetGLfunc(glGetUniformLocation);
 
+	GetGLfunc(glOrtho);
+
 #ifdef GLDEBUGMESSAGE
 	GetGLfunc(glDebugMessageCallback);
 #endif
@@ -875,7 +885,7 @@ void SetupGLFunc4(void)
 	{ \
 		GL_MSG_Warning("failed to get OpenGL FBO function: %s\n", #func); \
 		GL_DBG_Printf("\nFBO: No framebuffer object support\n"); \
-		supportFBO = false; \
+		supportFBO = FBO_NONE; \
 		return; \
 	} \
 
@@ -1058,6 +1068,13 @@ void GL_SetShader(int slot)
 	gl_shadersenabled = false;
 }
 
+void GL_EnableShader(void)
+{
+	// we can just use GL_Shader_SetUniforms as itll enable the shader for us
+	// and handle any failures
+	GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
+}
+
 void GL_UnSetShader(void)
 {
 	if (gl_shadersenabled) // don't repeatedly call glUseProgram if not needed
@@ -1105,7 +1122,7 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
-	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
+	if ((fabsf(deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
@@ -1267,7 +1284,7 @@ void GL_SetStates(void)
 
 	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-	pglEnable(GL_STENCIL_TEST);
+	pglDisable(GL_STENCIL_TEST);
 	pglEnable(GL_DEPTH_TEST);    // check the depth buffer
 	pglDepthMask(GL_TRUE);       // enable writing to depth buffer
 	pglClearDepth(1.0f);
@@ -1295,6 +1312,16 @@ void GL_SetStates(void)
 	pglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	pglDebugMessageCallback(&DebugMessage, NULL);
 #endif
+}
+
+void GL_EnableStencilTest(void)
+{
+	pglEnable(GL_STENCIL_TEST);
+}
+
+void GL_DisableStencilTest(void)
+{
+	pglDisable(GL_STENCIL_TEST);
 }
 
 // -----------------+
@@ -1373,19 +1400,19 @@ void GL_Flush(void)
 // -----------------+
 INT32 GL_isExtAvailable(const char *extension, const GLubyte *start)
 {
-	GLubyte         *where, *terminator;
+	gconst GLubyte *where, *terminator;
 
 	if (!extension || !start)
 		return 0;
 
-	where = (GLubyte *) strchr(extension, ' ');
+	where = (gconst GLubyte *)strchr(extension, ' ');
 
 	if (where || *extension == '\0')
 		return 0;
 
 	for (;;)
 	{
-		where = (GLubyte *) strstr((const char *) start, extension);
+		where = (gconst GLubyte *)strstr((const char *)start, extension);
 
 		if (!where)
 			break;
@@ -1437,6 +1464,19 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 	// this hack is for some reason **much** faster than the simple solution of using glGetTexImage.
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
 		GL_DrawScreenTexture(tex, NULL, 0);
+
+#ifdef USE_FBO_OGL
+	// FIXME: this is incredibly stupid
+	// but the final screen texture will NOT be drawn in the downsample fbo
+	if (tex == HWD_SCREENTEXTURE_GENERIC2 &&
+		UseScreenFBO() && HWR_ShouldUsePaletteRendering())
+	{
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
+		GL_EnableShader();
+		GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+		GL_UnSetShader();
+	}
+#endif
 
 	image = malloc(screen_width*screen_height*3);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -1556,6 +1596,7 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 		angle = atanf((v2->y-v1->y)/(v2->x-v1->x));
 	else
 		angle = (float)N_PI_DEMI;
+
 	dx = sinf(angle) / (float)screen_width;
 	dy = cosf(angle) / (float)screen_height;
 
@@ -1670,7 +1711,7 @@ static void GL_SetBlendMode(FBITFIELD flags)
 
 void GL_SetBlend(FBITFIELD PolyFlags)
 {
-	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;;
+	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;
 
 	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Skydecal|PF_Invisible))
 	{
@@ -2462,7 +2503,7 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
 
 	// Build the sky dome! Yes!
-	if (sky->rebuild)
+	if (sky->rebuild || !sky->vbo)
 	{
 		// delete VBO when already exists
 		if (sky->vbo)
@@ -2887,7 +2928,7 @@ void GL_CreateModelVBOs(model_t *model)
 	}
 }
 
-#define BUFFER_OFFSET(i) ((char*)(i))
+#define BUFFER_OFFSET(i) ((void*)(i))
 
 void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
 {
@@ -3090,6 +3131,39 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglDisable(GL_NORMALIZE);
 }
 
+void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics, INT32 nextFrameIndex,
+                      FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+{
+	// save our matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPushMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPushMatrix();
+
+	pglMatrixMode(GL_PROJECTION);
+	pglLoadIdentity();
+
+	// switch to ortho mode to make our lives easier
+	// thisll make sure our coords will be remapped to pixel coords
+	pglOrtho(0.0f, (float)vid.width, (float)vid.height, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+
+	pglMatrixMode(GL_MODELVIEW);
+	pglLoadIdentity();
+
+	pglEnable(GL_DEPTH_TEST);
+	pglDepthMask(GL_TRUE);
+	pglClear(GL_DEPTH_BUFFER_BIT);
+
+	GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex,
+	               pos, hscale, vscale, flipped, hflipped, Surface);
+
+	// restore the matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPopMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPopMatrix();
+}
+
 // -----------------+
 // SetTransform     :
 // -----------------+
@@ -3147,8 +3221,8 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		float dy = stransform->viewaiming * 2;
 
-		if (stransform->fliptype == TRANSFORM_FLIP
-			|| stransform->fliptype == TRANSFORM_MIRRORFLIP)
+		if (stransform->fliptype == TRANSFORM_FLIP ||
+			stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
@@ -3173,7 +3247,7 @@ void GL_SetTransform(FTransform *stransform)
 #ifdef USE_FBO_OGL
 static void GL_Framebuffer_DeleteAttachments(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	// Unbind the framebuffer
@@ -3193,20 +3267,12 @@ static void GL_Framebuffer_DeleteAttachments(void)
 
 static void GL_Framebuffer_Generate(void)
 {
-	if (!supportFBO || framebufferobject.init || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || framebufferobject.init || !UseScreenFBO())
 		return;
 
 	// Generate the framebuffer
 	if (!framebufferobject.fboobj)
 		pglGenFramebuffers(1, &framebufferobject.fboobj);
-
-	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
-	{
-		// if this fails, dont retry it a gazillion times
-		// this wouldnt recover
-		supportFBO = false;
-		return;
-	}
 
 	// Bind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
@@ -3221,10 +3287,10 @@ static void GL_Framebuffer_Generate(void)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
-		pglBindTexture(GL_TEXTURE_2D, 0);
 
 		// Attach the framebuffer texture to the framebuffer
 		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, framebufferobject.tex, 0);
+		pglBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	// Generate the renderbuffer
@@ -3259,6 +3325,18 @@ static void GL_Framebuffer_Generate(void)
 		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 	}
 
+	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		//pglGetError(); TODO:implement this or smth
+		GL_MSG_Error("GL_Framebuffer_Generate: Failed to create Framebuffer Object");
+
+		// if this fails, dont retry it a gazillion times
+		// this wouldnt recover
+		supportFBO = FBO_NONE;
+		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+		return;
+	}
+
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 
@@ -3267,7 +3345,7 @@ static void GL_Framebuffer_Generate(void)
 
 void GL_Framebuffer_Unbind(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3276,10 +3354,14 @@ void GL_Framebuffer_Unbind(void)
 
 void GL_Framebuffer_Enable(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || !UseScreenFBO())
 		return;
 
 	GL_Framebuffer_Generate();
+
+	// failed
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
+		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
@@ -3287,7 +3369,7 @@ void GL_Framebuffer_Enable(void)
 
 void GL_Framebuffer_Disable(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3548,22 +3630,30 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		 1.0f, -1.0f, 1.0f
 	};
 
-	xfix = 1/((float)screen_texsizew/(float)screen_width);
-	yfix = 1/((float)screen_texsizeh/(float)screen_height);
-
 	const GLfloat scrwf = (float)screen_width;
 	const GLfloat scrwh = (float)screen_height;
 
+	xfix = 1/((float)screen_texsizew/scrwf);
+	yfix = 1/((float)screen_texsizeh/scrwh);
+
+	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+
 	// Slight fuzziness
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
-	const float stride = 2.f/scrwh;
+	uint32_t r = rand();
 
-	for (i = 0; i < 1; i += stride)
+	const float ystep = 2.f/scrwh * (float)vid.udup/4.f;
+
+	for (i = 0; i < 1; i += ystep)
 	{
-		fix[2] = (float)(rand() % 128) / -22000.f * xfix;
+		// avoid calling rand thousands of times
+		r ^= r >> 13;
+		r ^= r >> 11;
+		r ^= r << 21;
+
+		fix[2] = (float)(r & 127) / -22000.f * xfix;
 		fix[0] = fix[2];
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
@@ -3581,8 +3671,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	}
 
 	// Upward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3605,13 +3695,14 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
@@ -3630,6 +3721,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -3665,11 +3757,11 @@ void GL_MakeScreenTexture(int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean useshader)
+void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
-	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
+	float xoff = 1.0f, yoff = 1.0f; // xoffset and yoffset for the polygon to have black bars around the screen
 
 	static float off[12] =
 	{
@@ -3692,19 +3784,19 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	if (origaspect < newaspect)
 	{
 		xoff = origaspect / newaspect;
-		yoff = 1;
+		yoff = 1.0f;
 	}
 	else if (origaspect > newaspect)
 	{
-		xoff = 1;
+		xoff = 1.0f;
 		yoff = newaspect / origaspect;
 	}
 
 	// float off[12];
 	off[0] = off[3]  = -xoff;
 	off[1] = off[10] = -yoff;
-	off[4] = off[7]  = yoff;
-	off[6] = off[9]  = xoff;
+	off[4] = off[7]  =  yoff;
+	off[6] = off[9]  =  xoff;
 
 	// float fix[8];
 	fix[3] = fix[5] = yfix;
@@ -3718,18 +3810,12 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
-	if (useshader)
-		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // Final postprocess step of palette rendering, after everything else has been drawn.
-
 	pglColor4ubv(white);
 
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, off);
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-	if (useshader)
-		pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];
 }

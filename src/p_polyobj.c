@@ -1385,8 +1385,7 @@ static void Polyobj_rotateThings(polyobj_t *po, vector2_t origin, angle_t delta,
 
 						if (mo->player)
 						{
-							angle_t localangle = P_GetLocalAngle(mo->player);
-							P_ForceLocalAngle(mo->player, localangle + delta);
+							P_ForceLocalAngle(mo->player, P_GetLocalAngle(mo->player) + delta);
 						}
 					}
 				}

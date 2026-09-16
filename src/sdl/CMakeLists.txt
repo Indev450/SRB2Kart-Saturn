@@ -32,7 +32,7 @@ set(SRB2_SDL2_SOURCES
 	hwsym_sdl.c
 	i_main.c
 	i_net.c
-	i_system.c
+	i_system.cpp
 	i_ttf.c
 	i_video.c
 	i_threads.c
@@ -123,8 +123,6 @@ if(${SDL2_FOUND})
 		set(MACOSX_BUNDLE_ICON_FILE Srb2mac.icns)
 		set_source_files_properties(macosx/Srb2mac.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 		set(SRB2_SDL2_MAC_SOURCES
-			macosx/mac_alert.c
-			macosx/mac_alert.h
 			macosx/mac_resources.c
 			macosx/mac_resources.h
 			macosx/Srb2mac.icns
@@ -167,11 +165,20 @@ if(${SDL2_FOUND})
 		${DISCORDRPC_LIBRARIES}
 	)
 
+	if(${SRB2_HAVE_LIBBACKTRACE})
+		target_link_libraries(SRB2SDL2 PRIVATE ${LIBBACKTRACE_LIBRARIES})
+	endif()
+
 	if(${CMAKE_SYSTEM} MATCHES Linux)
 		target_link_libraries(SRB2SDL2 PRIVATE
 			m
 			rt
+			pthread
 		)
+	endif()
+
+	if("${CMAKE_SYSTEM_NAME}" MATCHES "OpenBSD")
+		target_link_libraries(SRB2SDL2 PRIVATE pthread execinfo)
 	endif()
 
 	if(${CMAKE_SYSTEM} MATCHES Windows AND ${CMAKE_C_COMPILER_ID} MATCHES "GNU" AND ${SRB2_SYSTEM_BITS} EQUAL 32)
@@ -225,6 +232,24 @@ if(${SDL2_FOUND})
 		-DHAVE_SDL
 		-DHAVE_THREADS
 	)
+
+	if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
+		set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+	endif()
+
+	if(SRB2_CONFIG_ASAN)
+		target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
+		target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
+	endif()
+
+	if(SRB2_CONFIG_UBSAN)
+		target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+		target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+	endif()
+
+	if(NOT SRB2_CONFIG_MUMBLE)
+		target_compile_options(SRB2SDL2 PRIVATE -DNOMUMBLE)
+	endif()
 
 	## strip debug symbols into separate file when using gcc
 	# if(CMAKE_COMPILER_IS_GNUCC)
@@ -292,7 +317,7 @@ if(${SDL2_FOUND})
 			else()
 				find_library(SRB2_SDL2_DLL_${dllname} "${defaultname}")
 				list(APPEND win_extra_dll_list ${SRB2_SDL2_DLL_${dllname}})
-	endif()
+			endif()
 		endmacro()
 		getwinlib(SDL2 "SDL2.dll")
 		if(${SRB2_CONFIG_SDL2_USEMIXER})

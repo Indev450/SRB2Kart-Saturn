@@ -13,6 +13,10 @@
 #ifndef __CONSOLE__
 #define __CONSOLE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_event.h"
 #include "command.h"
 #include "i_threads.h"
@@ -45,7 +49,6 @@ extern UINT8 *yellowmap, *purplemap, *greenmap, *bluemap, *graymap, *redmap, *or
 extern UINT8 *consolebgmap;
 
 INT32 CON_ShiftChar(INT32 ch);
-INT32 CON_ShitAndAltGrChar(INT32 ch);
 
 void CON_SetupBackColormap(void);
 void CON_ClearHUD(void); // clear heads up messages
@@ -62,5 +65,9 @@ void CON_ToggleOff(void);
 boolean CON_Ready(void);
 
 void CON_LogMessage(const char *msg);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

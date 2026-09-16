@@ -189,7 +189,7 @@ model_t *LoadModel(const char *filename, int ztag)
 		return NULL;
 	}
 
-	model->mdlFilename = (char*)Z_Malloc(strlen(filename)+1, ztag, 0);
+	model->mdlFilename = (char*)Z_Malloc(strlen(filename)+1, ztag, NULL);
 	strcpy(model->mdlFilename, filename);
 
 	Optimize(model);
@@ -237,7 +237,7 @@ void GenerateVertexNormals(model_t *model)
 		{
 			mdlframe_t *frame = &mesh->frames[j];
 			int memTag = PU_STATIC;
-			float *newNormals = (float*)Z_Malloc(sizeof(float)*3*mesh->numTriangles*3, memTag, 0);
+			float *newNormals = (float*)Z_Malloc(sizeof(float)*3*mesh->numTriangles*3, memTag, NULL);
 			int k;
 			float *vertPtr = frame->vertices;
 			float *oldNormals;
@@ -309,7 +309,7 @@ static boolean AddMaterialToList(materiallist_t **head, material_t *material)
 	}
 
 	// Didn't find it, so add to the list
-	newMatNode = (materiallist_t*)Z_Malloc(sizeof(materiallist_t), PU_CACHE, 0);
+	newMatNode = (materiallist_t*)Z_Malloc(sizeof(materiallist_t), PU_CACHE, NULL);
 	newMatNode->material = material;
 	ListAdd(newMatNode, (listitem_t**)head);
 	return true;
@@ -351,7 +351,7 @@ void Optimize(model_t *model)
 	}
 
 	memTag = PU_STATIC;
-	newMeshes = (mesh_t*)Z_Calloc(sizeof(mesh_t) * numMeshes, memTag, 0);
+	newMeshes = (mesh_t*)Z_Calloc(sizeof(mesh_t) * numMeshes, memTag, NULL);
 
 	i = 0;
 	for (node = matListHead; node; node = node->next)
@@ -377,14 +377,14 @@ void Optimize(model_t *model)
 		newMesh->numFrames = 1;
 		newMesh->numTriangles = numTriangles;
 		newMesh->numVertices = numTriangles * 3;
-		newMesh->uvs = (float*)Z_Malloc(sizeof(float)*2*numTriangles*3, memTag, 0);
-		newMesh->frames = (mdlframe_t*)Z_Calloc(sizeof(mdlframe_t), memTag, 0);
+		newMesh->uvs = (float*)Z_Malloc(sizeof(float)*2*numTriangles*3, memTag, NULL);
+		newMesh->frames = (mdlframe_t*)Z_Calloc(sizeof(mdlframe_t), memTag, NULL);
 		curFrame = &newMesh->frames[0];
 
 		curFrame->material = curMat;
-		curFrame->normals = (float*)Z_Malloc(sizeof(float)*3*numTriangles*3, memTag, 0);
-		curFrame->vertices = (float*)Z_Malloc(sizeof(float)*3*numTriangles*3, memTag, 0);
-		curFrame->colors = (char*)Z_Malloc(sizeof(char)*4*numTriangles*3, memTag, 0);
+		curFrame->normals = (float*)Z_Malloc(sizeof(float)*3*numTriangles*3, memTag, NULL);
+		curFrame->vertices = (float*)Z_Malloc(sizeof(float)*3*numTriangles*3, memTag, NULL);
+		curFrame->colors = (char*)Z_Malloc(sizeof(char)*4*numTriangles*3, memTag, NULL);
 
 		// Now traverse the meshes of the model, adding in
 		// vertices/normals/uvs that match the current material

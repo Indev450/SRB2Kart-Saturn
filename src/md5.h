@@ -16,6 +16,10 @@
 #ifndef _MD5_H
 #define _MD5_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 
 #if defined (HAVE_LIMITS_H) || (defined (_LIBC) && _LIBC) || defined (_WIN32)
@@ -51,5 +55,9 @@ int md5_stream(FILE *stream, void *resblock) THROWFUNC;
 	output yields to the wanted ASCII representation of the message
 	digest.  */
 extern void *md5_buffer(const char *buffer, size_t len, void *resblock) THROWFUNC;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* md5.h */

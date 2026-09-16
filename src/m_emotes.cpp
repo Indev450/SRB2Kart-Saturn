@@ -278,7 +278,7 @@ void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, INT3
 static void Command_ListEmotes_f(void)
 {
 	const int EMOTES_PER_PAGE = 24;
-	const int NUMPAGES = std::max<int>(emotes.size()/EMOTES_PER_PAGE, 1);
+	const int NUMPAGES = emotes.size()/EMOTES_PER_PAGE + (emotes.size() % EMOTES_PER_PAGE != 0 ? 1 : 0);
 	int page = 1;
 
 	if (COM_Argc() > 1)

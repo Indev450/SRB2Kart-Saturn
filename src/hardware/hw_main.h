@@ -102,7 +102,7 @@ void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
 
 void HWR_RenderPlayerView(void);
-void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, int stencil_level, boolean allow_portals);
+void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, int stencil_level);
 
 void HWR_ClearSkyDome(void);
 void HWR_BuildSkyDome(void);
@@ -151,14 +151,19 @@ FUNCINLINE static ATTRINLINE void HWR_RenderVhsEffect(fixed_t upbary, fixed_t do
 	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }
 
+FUNCINLINE static ATTRINLINE void HWR_MakeScreenTexture(void)
+{
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+}
+
 FUNCINLINE static ATTRINLINE void HWR_MakeScreenFinalTexture(void)
 {
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 }
 
-FUNCINLINE static ATTRINLINE void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
+FUNCINLINE static ATTRINLINE void HWR_DrawScreenFinalTexture(INT32 width, INT32 height)
 {
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height);
 }
 
 // hw_main.c: Segs
@@ -208,7 +213,6 @@ extern consvar_t cv_glportals;
 
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
-extern consvar_t cv_glflashpal;
 
 FUNCINLINE static ATTRINLINE boolean HWR_UseShader(void)
 {
@@ -218,11 +222,6 @@ FUNCINLINE static ATTRINLINE boolean HWR_UseShader(void)
 FUNCINLINE static ATTRINLINE boolean HWR_ShouldUsePaletteRendering(void)
 {
 	return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
-}
-
-FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
-{
-	return (cv_glflashpal.value && HWR_ShouldUsePaletteRendering());
 }
 
 // Returns a pointer to the palette which should be used for caching textures.

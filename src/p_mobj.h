@@ -113,7 +113,7 @@ typedef enum
 	// Don't use the blocklinks (inert but displayable)
 	MF_NOBLOCKMAP       = 1<<4,
 	// Thin, paper-like collision bound (for visual equivalent, see FF_PAPERSPRITE)
-	MF_PAPERCOLLISION            = 1<<5,
+	MF_PAPERCOLLISION   = 1<<5,
 	// You can push this object. It can activate switches and things by pushing it on top.
 	MF_PUSHABLE         = 1<<6,
 	// Object is a boss.
@@ -298,6 +298,7 @@ typedef struct mobj_s
 	angle_t angle, pitch, roll; // orientation
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
 	angle_t rollangle;
+	angle_t temprollangle; // same as rollangle but resets each tic, idk either man. // cba exposing this to lua either
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
@@ -421,10 +422,6 @@ typedef struct mobj_s
 //
 // For precipitation
 //
-// Sometimes this is casted to a mobj_t,
-// so please keep the start of the
-// structure the same.
-//
 typedef struct precipmobj_s
 {
 	// List: thinker links.
@@ -444,11 +441,9 @@ typedef struct precipmobj_s
 	// More drawing info: to determine current sprite.
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
-	UINT16 anim_duration; // for FF_ANIMATE states
+	//UINT16 anim_duration; // for FF_ANIMATE states
 
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
-
-	struct mprecipsecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
 
 	struct subsector_s *subsector; // Subsector the mobj resides in.
 
@@ -458,11 +453,10 @@ typedef struct precipmobj_s
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
-	fixed_t precipflags; // fixed_t so it uses the same spot as "pmomz" even as we use precipflags_t for it
+	precipflag_t precipflags;
 
 	state_t *state;
 	INT32 tics; // state tic counter
-	UINT32 flags; // flags from mobjinfo tables
 	tic_t lastThink;
 } precipmobj_t;
 
@@ -502,7 +496,6 @@ void P_SpawnPrecipitation(void);
 void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, statenum_t nstate, angle_t rotangle, boolean spawncenter);
 boolean P_BossTargetPlayer(mobj_t *actor, boolean closest);
 boolean P_SupermanLook4Players(mobj_t *actor);
-void P_DestroyRobots(void);
 boolean P_PrecipThinker(precipmobj_t *mobj);
 void P_NullPrecipThinker(precipmobj_t *mobj);
 void P_FreePrecipMobj(precipmobj_t *mobj);
@@ -513,7 +506,6 @@ void P_EmeraldManager(void);
 #define MAXHUNTEMERALDS 64
 extern mapthing_t *huntemeralds[MAXHUNTEMERALDS];
 extern INT32 numhuntemeralds;
-extern boolean runemeraldmanager;
 extern INT32 numstarposts;
 
 #ifdef __cplusplus

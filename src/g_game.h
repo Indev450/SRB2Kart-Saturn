@@ -39,12 +39,8 @@ extern INT32 player_name_changes[MAXPLAYERS];
 extern player_t players[MAXPLAYERS];
 extern boolean playeringame[MAXPLAYERS];
 
-// gametic at level start
-extern tic_t levelstarttic;
-
 // for modding?
 extern INT16 prevmap, nextmap;
-extern INT32 gameovertics;
 extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 extern INT16 rw_maximums[NUM_WEAPONS];
 
@@ -73,6 +69,8 @@ extern consvar_t cv_xdeadzone[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
+
+extern consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
@@ -120,14 +118,16 @@ extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptideroll;
+extern consvar_t cv_stairjank;
+extern consvar_t cv_stairjanksfx;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
 extern consvar_t cv_sparkroll;
-extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_squishdance, cv_squishdancespeed;
 
 extern consvar_t cv_playerblendeffects;
+extern consvar_t cv_reducevfx;
 
 extern consvar_t cv_cechotoggle;
 
@@ -228,10 +228,11 @@ void G_SaveGameData(boolean force);
 
 void G_SaveGame(UINT32 slot);
 
-#define G_GametypeHasTeams() (G_IsGameType(GT_TEAMMATCH) || G_IsGameType(GT_CTF))
+#define G_RaceGametype()   (G_IsGameType(GT_RACE))
 #define G_BattleGametype() (G_IsGameType(GT_MATCH))
-#define G_RaceGametype() (G_IsGameType(GT_RACE))
-#define G_TagGametype() (G_IsGameType(GT_TAG) || G_IsGameType(GT_HIDEANDSEEK))
+
+#define G_GametypeHasTeams() (UNLIKELY(G_IsGameType(GT_TEAMMATCH) || G_IsGameType(GT_CTF)))
+#define G_TagGametype()      (UNLIKELY(G_IsGameType(GT_TAG) || G_IsGameType(GT_HIDEANDSEEK)))
 
 FUNCINLINE static ATTRINLINE boolean G_IsGameType(int type)
 {
@@ -249,7 +250,6 @@ UINT8 G_GetGametypeColor(INT16 gt);
 void G_ExitLevel(void);
 void G_NextLevel(void);
 void G_Continue(void);
-void G_UseContinue(void);
 void G_AfterIntermission(void);
 void G_EndGame(void); // moved from y_inter.c/h and renamed
 

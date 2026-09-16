@@ -81,6 +81,7 @@ static /*const*/ Node dummynode_ = {
 /*
 ** hash for lua_Numbers
 */
+#if 0
 static Node *hashnum (const Table *t, lua_Number n) {
   unsigned int a[numints];
   int i;
@@ -90,6 +91,12 @@ static Node *hashnum (const Table *t, lua_Number n) {
   for (i = 1; i < numints; i++) a[0] += a[i];
   return hashmod(t, a[0]);
 }
+#else
+// our lua_Number is just typedef´d int32 so no need to do any of the above
+static inline Node *hashnum (const Table *t, lua_Number n) {
+  return hashmod(t, cast(unsigned int, n));
+}
+#endif
 
 
 

@@ -38,8 +38,6 @@ extern boolean found_extra3_kart; // for use in k_kart.c
 
 extern boolean xtra_speedo;       // extra speedometer check
 extern boolean xtra_speedo_clr;   // extra speedometer colour check
-extern boolean xtra_speedo3;      // 80x11 extra speedometer check
-extern boolean xtra_speedo_clr3;  // 80x11 extra speedometer colour check
 extern boolean achi_speedo;       // achiiro speedometer check
 extern boolean achi_speedo_clr;   // extra speedometer colour check
 extern boolean dial_speedo;       // dial speedometer check

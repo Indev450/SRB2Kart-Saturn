@@ -34,8 +34,8 @@ typedef struct gl_vissprite_s
 	float gz, gzt;
 	float tz;
 	float scale;
-	float spritexscale, spriteyscale;
-	float spritexoffset, spriteyoffset;
+	//float spritexscale, spriteyscale;
+	//float spritexoffset, spriteyoffset;
 	patch_t *gpatch;
 	boolean flip;
 	UINT8 translucency;       //alpha level 0-255
@@ -54,7 +54,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 // --------
 extern extrasubsector_t *extrasubsectors;
 #ifdef PARANOIA
-extern size_t addsubsector;
+extern size_t num_extra_subsector;
 #endif
 
 void HWR_FreeExtraSubsectors(void);

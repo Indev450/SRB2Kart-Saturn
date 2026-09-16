@@ -20,11 +20,9 @@
 
 boolean OglSdlSurface(INT32 w, INT32 h);
 
-void OglSdlFinishUpdate(boolean vidwait);
+void OglSdlFinishUpdate(SDL_Window *window);
 boolean VID_LoadOGLAPI(void);
 
-extern SDL_Renderer *renderer;
-extern SDL_GLContext sdlglcontext;
 extern Uint16      realwidth;
 extern Uint16      realheight;
 

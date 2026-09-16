@@ -250,7 +250,8 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
 	I_Assert(movedir < NUMDIRS);
 
 	tryx = actor->x + FixedMul(speed*xspeed[movedir], actor->scale);
-	if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
+
+	if (twodmo(actor))
 		tryy = actor->y;
 	else
 		tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
@@ -306,7 +307,6 @@ void P_NewChaseDir(mobj_t *actor)
 	dirtype_t d[3];
 	dirtype_t tdir = DI_NODIR, olddir, turnaround;
 
-	I_Assert(actor->target != NULL);
 	I_Assert(!P_MobjWasRemoved(actor->target));
 
 	olddir = actor->movedir;
@@ -329,7 +329,7 @@ void P_NewChaseDir(mobj_t *actor)
 	else
 		d[1] = DI_NODIR;
 
-	if (twodlevel || actor->flags2 & MF2_TWOD)
+	if (twodmo(actor))
 		d[2] = DI_NODIR;
 	if (deltay < -FixedMul(10*FRACUNIT, actor->scale))
 		d[2] = DI_SOUTH;
@@ -619,7 +619,6 @@ void A_Chase(void *thing)
 	if (LUA_CallAction(A_CHASE, actor))
 		return;
 
-	I_Assert(actor != NULL);
 	I_Assert(!P_MobjWasRemoved(actor));
 
 	if (actor->reactiontime)
@@ -874,7 +873,7 @@ void A_PointyThink(void *thing)
 	TVector v;
 	TVector *res;
 	angle_t fa;
-	fixed_t radius = FixedMul(actor->info->radius*actor->info->reactiontime, actor->scale);
+	fixed_t radius;
 	boolean firsttime = true;
 	INT32 sign;
 
@@ -931,6 +930,8 @@ void A_PointyThink(void *thing)
 
 	if (!actor->tracer) // For some reason we do not have spike balls...
 		return;
+
+	radius = FixedMul(actor->info->radius*actor->info->reactiontime, actor->scale);
 
 	// Position spike balls relative to the value of 'lastlook'.
 	ball = actor->tracer;
@@ -1531,10 +1532,7 @@ void A_LobShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -1570,10 +1568,7 @@ void A_FireShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -1613,10 +1608,7 @@ void A_SuperFireShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -2770,9 +2762,11 @@ void A_Invincibility(void *thing)
 	if (P_IsLocalPlayer(player) && !player->powers[pw_super])
 	{
 		S_StopMusic();
+
 		if (mariomode)
 			G_GhostAddColor((INT32) (player - players), GHC_INVINCIBLE);
-		S_ChangeMusicInternal((mariomode) ? "minvnc" : "invinc", false);
+
+		S_ChangeMusicInternal(mariomode ? "minvnc" : "invinc", false);
 	}
 }
 
@@ -2869,12 +2863,6 @@ void A_ExtraLife(void *thing)
 
 	if (actor->type == MT_1UPICO && !actor->tracer)
 		actor->frame -= 2; // No lives icon for this player, use the default.
-
-	if (ultimatemode) //I don't THINK so!
-	{
-		S_StartSound(player->mo, sfx_lose);
-		return;
-	}
 
 	// In shooter gametypes, give the player 100 rings instead of an extra life.
 	if (gametype != GT_COOP && gametype != GT_COMPETITION)
@@ -3650,7 +3638,7 @@ static inline boolean PIT_GrenadeRing(mobj_t *thing)
 		return true;
 
 	if (thing->player && (thing->player->kartstuff[k_hyudorotimer]
-		|| (G_BattleGametype() && thing->player && thing->player->kartstuff[k_bumper] <= 0 && thing->player->kartstuff[k_comebacktimer])))
+		|| (G_BattleGametype() && thing->player->kartstuff[k_bumper] <= 0 && thing->player->kartstuff[k_comebacktimer])))
 		return true;
 
 	if ((gametype == GT_CTF || gametype == GT_TEAMMATCH)
@@ -4015,26 +4003,13 @@ void A_JetChase(void *thing)
 	}
 
 	// chase towards player
-	if (ultimatemode)
-		P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/2, actor->scale));
-	else
-		P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/4, actor->scale));
+	P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/4, actor->scale));
 
 	// must adjust height
-	if (ultimatemode)
-	{
-		if (actor->z < (actor->target->z + actor->target->height + FixedMul((64<<FRACBITS), actor->scale)))
-			actor->momz += FixedMul(FRACUNIT/2, actor->scale);
-		else
-			actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
-	}
+	if (actor->z < (actor->target->z + actor->target->height + FixedMul((32<<FRACBITS), actor->scale)))
+		actor->momz += FixedMul(FRACUNIT/2, actor->scale);
 	else
-	{
-		if (actor->z < (actor->target->z + actor->target->height + FixedMul((32<<FRACBITS), actor->scale)))
-			actor->momz += FixedMul(FRACUNIT/2, actor->scale);
-		else
-			actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
-	}
+		actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
 }
 
 // Function: A_JetbThink
@@ -4137,10 +4112,7 @@ void A_JetgShoot(void *thing)
 	A_FaceTarget(actor);
 	P_SpawnMissile(actor, actor->target, (mobjtype_t)actor->info->raisestate);
 
-	if (ultimatemode)
-		actor->reactiontime = actor->info->reactiontime*TICRATE;
-	else
-		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+	actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 
 	if (actor->info->attacksound)
 		S_StartSound(actor, actor->info->attacksound);
@@ -4388,7 +4360,7 @@ void A_MouseThink(void *thing)
 		|| (actor->eflags & MFE_VERTICALFLIP && actor->z + actor->height == actor->ceilingz))
 		&& !actor->reactiontime)
 	{
-		if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
+		if (twodmo(actor))
 		{
 			if (P_RandomChance(FRACUNIT/2))
 				actor->angle += ANGLE_180;
@@ -5301,7 +5273,7 @@ void A_MixUp(void *thing)
 		if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
 			&& !players[i].exiting && !players[i].powers[pw_super])
 		{
-			if ((netgame || multiplayer) && players[i].spectator) // Ignore spectators
+			if (netgame && players[i].spectator) // Ignore spectators
 				continue;
 
 			numplayers++;
@@ -5343,6 +5315,11 @@ void A_MixUp(void *thing)
 					break;
 				}
 			}
+
+		// idk if we ever really end up here
+		// but bad things would happen if we do without this
+		if (one == -1)
+			return;
 
 		//get this done first!
 		tempthing = players[one].mo->tracer;
@@ -5977,7 +5954,7 @@ void A_Boss7Chase(void *thing)
 	if (actor->flags2 & MF2_FRET)
 	{
 		P_SetMobjState(actor, S_BLACKEGG_DESTROYPLAT1);
-		S_StartSound(0, sfx_s3k53);
+		S_StartSound(NULL, sfx_s3k53);
 		actor->flags2 &= ~MF2_FRET;
 		return;
 	}
@@ -6011,7 +5988,7 @@ void A_Boss7Chase(void *thing)
 		{
 			// Punch him!
 			P_SetMobjState(actor, actor->info->meleestate);
-			S_StartSound(0, sfx_begrnd); // warning sound
+			S_StartSound(NULL, sfx_begrnd); // warning sound
 			return;
 		}
 	}
@@ -6057,7 +6034,7 @@ void A_Boss7Chase(void *thing)
 			case 2: // Homing Missile
 				A_FaceTarget(actor);
 				P_SetMobjState(actor, actor->info->missilestate);
-				S_StartSound(0, sfx_beflap);
+				S_StartSound(NULL, sfx_beflap);
 				break;
 		}
 
@@ -6458,12 +6435,8 @@ void A_BuzzFly(void *thing)
 	// chase towards player
 	{
 		INT32 dist, realspeed;
-		const fixed_t mf = 5*(FRACUNIT/4);
 
-		if (ultimatemode)
-			realspeed = FixedMul(FixedMul(actor->info->speed,mf), actor->scale);
-		else
-			realspeed = FixedMul(actor->info->speed, actor->scale);
+		realspeed = FixedMul(actor->info->speed, actor->scale);
 
 		dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x,
 			actor->target->y - actor->y), actor->target->z - actor->z);
@@ -7918,7 +7891,7 @@ void A_ItemPop(void *thing)
 
 	if (!(actor->target && actor->target->player))
 	{
-		if (cv_debug && !(actor->target && actor->target->player))
+		if (cv_debug)
 			CONS_Printf("ERROR: Powerup has no target!\n");
 		return;
 	}
@@ -8780,7 +8753,7 @@ void A_ReaperThinker(void *thing)
 		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
 
 		// The player we should target if it's near us:
-		for (i = 0; i<MAXPLAYERS; i++)
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
 
 			if (!playeringame[i])
@@ -9251,10 +9224,7 @@ void A_MultiShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -10739,7 +10709,7 @@ void A_BrakChase(void *thing)
 	{
 		actor->reactiontime--;
 		if (actor->reactiontime == 0 && actor->type == MT_CYBRAKDEMON)
-			S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+			S_StartSound(NULL, sfx_bewar1 + P_RandomKey(4));
 	}
 
 	// modify target threshold
@@ -10863,10 +10833,7 @@ void A_BrakFireShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -10912,10 +10879,7 @@ void A_BrakLobShot(void *thing)
 		return; // Don't even bother if we've got nothing to aim at.
 
 	// Look up actor's current gravity situation
-	if (actor->subsector->sector->gravity)
-		g = FixedMul(gravity,(FixedDiv(*actor->subsector->sector->gravity>>FRACBITS, 1000)));
-	else
-		g = gravity;
+	g =  P_GetSectorGravity(actor->subsector->sector);
 
 	// Look up distance between actor and its target
 	x = P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y);
@@ -11030,10 +10994,7 @@ void A_NapalmScatter(void *thing)
 		airtime = 16<<FRACBITS;
 
 	// Look up actor's current gravity situation
-	if (actor->subsector->sector->gravity)
-		g = FixedMul(gravity,(FixedDiv(*actor->subsector->sector->gravity>>FRACBITS, 1000)));
-	else
-		g = gravity;
+	g = P_GetSectorGravity(actor->subsector->sector);
 
 	// vy = (g*(airtime-1))/2
 	vy = FixedMul(g,(airtime-(1<<FRACBITS)))>>1;

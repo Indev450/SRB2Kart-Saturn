@@ -274,27 +274,20 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 	if (!f)
 		return NULL;
 
-	retModel = (model_t*)Z_Calloc(sizeof(model_t), ztag, 0);
-
-	//size_t fileLen;
-
-	//int i, j;
-
-	//size_t namelen;
-	//char *texturefilename;
+	retModel = (model_t*)Z_Calloc(sizeof(model_t), ztag, NULL);
 	texPos = strchr(fileName, '/');
 
 	if (texPos)
 	{
 		texPos++;
 		namelen = strlen(texPos) + 1;
-		texturefilename = (char*)Z_Malloc(namelen, PU_CACHE, 0);
+		texturefilename = (char*)Z_Malloc(namelen, PU_CACHE, NULL);
 		strcpy(texturefilename, texPos);
 	}
 	else
 	{
 		namelen = strlen(fileName) + 1;
-		texturefilename = (char*)Z_Malloc(namelen, PU_CACHE, 0);
+		texturefilename = (char*)Z_Malloc(namelen, PU_CACHE, NULL);
 		strcpy(texturefilename, fileName);
 	}
 
@@ -316,10 +309,8 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 	header = (md2header_t*)buffer;
 
 	retModel->numMeshes = 1; // MD2 only has one mesh
-	retModel->meshes = (mesh_t*)Z_Calloc(sizeof(mesh_t) * retModel->numMeshes, ztag, 0);
+	retModel->meshes = (mesh_t*)Z_Calloc(sizeof(mesh_t) * retModel->numMeshes, ztag, NULL);
 	retModel->meshes[0].numFrames = header->numFrames;
-	// const float WUNITS = 1.0f;
-	// float dataScale = WUNITS;
 
 	// Tris and ST are simple structures that can be straight-copied
 	tris = (md2triangle_t*)&buffer[header->offsetTris];
@@ -332,7 +323,7 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 	if (retModel->numMaterials <= 0) // Always at least one skin, duh
 		retModel->numMaterials = 1;
 
-	retModel->materials = (material_t*)Z_Calloc(sizeof(material_t)*retModel->numMaterials, ztag, 0);
+	retModel->materials = (material_t*)Z_Calloc(sizeof(material_t)*retModel->numMaterials, ztag, NULL);
 
 	// int t;
 	for (t = 0; t < retModel->numMaterials; t++)
@@ -355,47 +346,6 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 		retModel->materials[t].specular[3] = 1.0f;
 		retModel->materials[t].shininess = 0.0f;
 		retModel->materials[t].spheremap = false;
-
-		/*		retModel->materials[t].texture = Texture::ReadTexture((char*)texturefilename, ZT_TEXTURE);
-
-				if (!systemSucks)
-				{
-					// Check for a normal map...??
-					char openfilename[1024];
-					char normalMapName[1024];
-					strcpy(normalMapName, texturefilename);
-					size_t len = strlen(normalMapName);
-					char *ptr = &normalMapName[len];
-					ptr--; // z
-					ptr--; // u
-					ptr--; // b
-					ptr--; // .
-					*ptr++ = '_';
-					*ptr++ = 'n';
-					*ptr++ = '.';
-					*ptr++ = 'b';
-					*ptr++ = 'u';
-					*ptr++ = 'z';
-					*ptr++ = '\0';
-
-					sprintf(openfilename, "%s/%s", "textures", normalMapName);
-					// Convert backslashes to forward slashes
-					for (int k = 0; k < 1024; k++)
-					{
-						if (openfilename[k] == '\0')
-							break;
-
-						if (openfilename[k] == '\\')
-							openfilename[k] = '/';
-					}
-
-					Resource::resource_t *res = Resource::Open(openfilename);
-					if (res)
-					{
-						Resource::Close(res);
-						retModel->materials[t].lightmap = Texture::ReadTexture(normalMapName, ZT_TEXTURE);
-					}
-				}*/
 	}
 
 	retModel->meshes[0].numTriangles = header->numTris;
@@ -409,9 +359,9 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 		float *uvptr;
 
 		dataScale = 0.015624f; // 1 / 64.0f
-		retModel->meshes[0].tinyframes = (tinyframe_t*)Z_Calloc(sizeof(tinyframe_t)*header->numFrames, ztag, 0);
+		retModel->meshes[0].tinyframes = (tinyframe_t*)Z_Calloc(sizeof(tinyframe_t)*header->numFrames, ztag, NULL);
 		retModel->meshes[0].numVertices = header->numXYZ;
-		retModel->meshes[0].uvs = (float*)Z_Malloc(sizeof(float) * 2 * retModel->meshes[0].numVertices, ztag, 0);
+		retModel->meshes[0].uvs = (float*)Z_Malloc(sizeof(float) * 2 * retModel->meshes[0].numVertices, ztag, NULL);
 
 		ptr = (char*)frames;
 		for (i = 0; i < header->numFrames; i++, ptr += header->framesize)
@@ -423,17 +373,13 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 			md2vertex_t *vertex;
 
 			md2frame_t *framePtr = (md2frame_t*)ptr;
-			retModel->meshes[0].tinyframes[i].vertices = (short*)Z_Malloc(sizeof(short) * 3 * header->numXYZ, ztag, 0);
-			retModel->meshes[0].tinyframes[i].normals = (char*)Z_Malloc(sizeof(char) * 3 * header->numXYZ, ztag, 0);
-
-			//			if (retModel->materials[0].lightmap)
-			//				retModel->meshes[0].tinyframes[i].tangents = (char*)malloc(sizeof(char));//(char*)Z_Malloc(sizeof(char)*3*header->numVerts, ztag);
-			retModel->meshes[0].indices = (unsigned short*)Z_Malloc(sizeof(unsigned short) * 3 * header->numTris, ztag, 0);
+			retModel->meshes[0].tinyframes[i].vertices = (short*)Z_Malloc(sizeof(short) * 3 * header->numXYZ, ztag, NULL);
+			retModel->meshes[0].tinyframes[i].normals = (char*)Z_Malloc(sizeof(char) * 3 * header->numXYZ, ztag, NULL);
+			retModel->meshes[0].indices = (unsigned short*)Z_Malloc(sizeof(unsigned short) * 3 * header->numTris, ztag, NULL);
 
 			vertptr = retModel->meshes[0].tinyframes[i].vertices;
 			normptr = retModel->meshes[0].tinyframes[i].normals;
 
-			//			tanptr = retModel->meshes[0].tinyframes[i].tangents;
 			retModel->meshes[0].tinyframes[i].material = &retModel->materials[0];
 
 			framePtr++; // Advance to vertex list
@@ -484,8 +430,8 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 		char *ptr;
 
 		retModel->meshes[0].numVertices = header->numTris * 3;
-		retModel->meshes[0].frames = (mdlframe_t*)Z_Calloc(sizeof(mdlframe_t)*header->numFrames, ztag, 0);
-		retModel->meshes[0].uvs = (float*)Z_Malloc(sizeof(float) * 2 * retModel->meshes[0].numVertices, ztag, 0);
+		retModel->meshes[0].frames = (mdlframe_t*)Z_Calloc(sizeof(mdlframe_t)*header->numFrames, ztag, NULL);
+		retModel->meshes[0].uvs = (float*)Z_Malloc(sizeof(float) * 2 * retModel->meshes[0].numVertices, ztag, NULL);
 
 		trisPtr = tris;
 		uvptr = retModel->meshes[0].uvs;
@@ -507,11 +453,9 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 			md2vertex_t *vertex;
 
 			md2frame_t *framePtr = (md2frame_t*)ptr;
-			retModel->meshes[0].frames[i].normals = (float*)Z_Malloc(sizeof(float) * 3 * header->numTris * 3, ztag, 0);
-			retModel->meshes[0].frames[i].vertices = (float*)Z_Malloc(sizeof(float) * 3 * header->numTris * 3, ztag, 0);
-			//			if (retModel->materials[0].lightmap)
-			//				retModel->meshes[0].frames[i].tangents = (float*)malloc(sizeof(float));//(float*)Z_Malloc(sizeof(float)*3*header->numTris*3, ztag);
-			//float *vertptr, *normptr;
+			retModel->meshes[0].frames[i].normals = (float*)Z_Malloc(sizeof(float) * 3 * header->numTris * 3, ztag, NULL);
+			retModel->meshes[0].frames[i].vertices = (float*)Z_Malloc(sizeof(float) * 3 * header->numTris * 3, ztag, NULL);
+
 			normptr = (float*)retModel->meshes[0].frames[i].normals;
 			vertptr = (float*)retModel->meshes[0].frames[i].vertices;
 			trisPtr = tris;

@@ -515,8 +515,8 @@ static boolean M_BackupConfig(const char *filename)
 {
 	char backupfile[MAX_WADPATH+4];
 
-	snprintf(backupfile, sizeof backupfile, "%s.bak", filename);
-	backupfile[sizeof backupfile - 1] = '\0';
+	snprintf(backupfile, sizeof(backupfile), "%s.bak", filename);
+	backupfile[sizeof(backupfile) - 1] = '\0';
 
 	FILE *config = fopen(filename, "r");
 
@@ -540,7 +540,7 @@ static boolean M_BackupConfig(const char *filename)
 void M_SaveConfig(const char *filename)
 {
 	FILE *f;
-	char *filepath;
+	CLEANUP(Z_Pfree) char *filepath = NULL;
 
 	// make sure not to write back the config until it's been correctly loaded
 	if (!loaded_config)
@@ -558,7 +558,7 @@ void M_SaveConfig(const char *filename)
 		// append srb2home to beginning of filename
 		// but check if srb2home isn't already there, first
 		if (!strstr(filename, srb2home))
-			filepath = va(pandf,srb2home, filename);
+			filepath = Z_StrDup(va(pandf, srb2home, filename));
 		else
 			filepath = Z_StrDup(filename);
 
@@ -766,32 +766,32 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	}
 
 	if (gamestate == GS_LEVEL)
-		snprintf(maptext, 8, "%s", G_BuildMapName(gamemap));
+		snprintf(maptext, sizeof(maptext), "%s", G_BuildMapName(gamemap));
 	else
-		snprintf(maptext, 8, "Unknown");
+		snprintf(maptext, sizeof(maptext), "Unknown");
 
 	if (gamestate == GS_LEVEL && mapheaderinfo[gamemap-1]->lvlttl[0] != '\0')
-		snprintf(lvlttltext, 48, "%s%s%s",
+		snprintf(lvlttltext, sizeof(lvlttltext), "%s%s%s",
 			mapheaderinfo[gamemap-1]->lvlttl,
 			(strlen(mapheaderinfo[gamemap-1]->zonttl) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->zonttl) : // SRB2kart
 			((mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) ? "" : " ZONE"),
 			(strlen(mapheaderinfo[gamemap-1]->actnum) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->actnum) : "");
 	else
-		snprintf(lvlttltext, 48, "Unknown");
+		snprintf(lvlttltext, sizeof(lvlttltext), "Unknown");
 
 	if (gamestate == GS_LEVEL && players[displayplayers[0]].mo)
-		snprintf(locationtxt, 40, "X:%d Y:%d Z:%d A:%d",
+		snprintf(locationtxt, sizeof(locationtxt), "X:%d Y:%d Z:%d A:%d",
 			players[displayplayers[0]].mo->x>>FRACBITS,
 			players[displayplayers[0]].mo->y>>FRACBITS,
 			players[displayplayers[0]].mo->z>>FRACBITS,
 			FixedInt(AngleFixed(players[displayplayers[0]].mo->angle)));
 	else
-		snprintf(locationtxt, 40, "Unknown");
+		snprintf(locationtxt, sizeof(locationtxt), "Unknown");
 
-	memset(png_infotext,0x00,sizeof (png_infotext));
+	memset(png_infotext, 0x00, sizeof(png_infotext));
 
 	for (i = 0; i < SRB2PNGTXT; i++)
-		png_infotext[i].key  = keytxt[i];
+		png_infotext[i].key = keytxt[i];
 
 	png_infotext[0].text = titletxt;
 	if (movie)
@@ -804,9 +804,15 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	png_infotext[5].text = locationtxt;
 	png_infotext[6].text = interfacetxt;
 	png_infotext[7].text = rendermodetxt;
-	png_infotext[8].text = strncpy(ctrevision, comprevision, sizeof(ctrevision)-1);
-	png_infotext[9].text = strncpy(ctdate, compdate, sizeof(ctdate)-1);
-	png_infotext[10].text = strncpy(cttime, comptime, sizeof(cttime)-1);
+	strncpy(ctrevision, comprevision, sizeof(ctrevision)-1);
+	ctrevision[sizeof(ctrevision)-1] = '\0';
+	png_infotext[8].text = ctrevision;
+	strncpy(ctdate, compdate, sizeof(ctdate)-1);
+	ctdate[sizeof(ctdate)-1] = '\0';
+	png_infotext[9].text = ctdate;
+	strncpy(cttime, comptime, sizeof(cttime)-1);
+	cttime[sizeof(cttime)-1] = '\0';
+	png_infotext[10].text = cttime;
 
 	png_set_text(png_ptr, png_info_ptr, png_infotext, SRB2PNGTXT);
 #undef SRB2PNGTXT
@@ -1247,7 +1253,6 @@ boolean M_ScreenshotResponder(event_t *ev)
 	return true;
 }
 
-
 void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer)
 {
 	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
@@ -1255,7 +1260,7 @@ void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen,
 	const size_t amount = len - maxlen + 1;
 
 	// Note: anything above 17 will cause zero division
-	const size_t MAXSPEED = 6;
+	static const size_t MAXSPEED = 6;
 	const tic_t t = timer / (35/min(amount, MAXSPEED));
 
 	const size_t state = (t / amount) % 4;
@@ -1290,7 +1295,7 @@ void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen,
 	}
 
 	// Technically not necessary, since it gets set again after function call, but just in case
-	result[maxlen] = 0;
+	result[maxlen-1] = '\0';
 }
 
 void M_MinimapGenerate(void)
@@ -1346,14 +1351,15 @@ void M_MinimapGenerate(void)
 	minigen = AM_MinimapGenerate(mul);
 
 	if (minigen == NULL || minigen->buf == NULL)
-		goto failure;
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Couldn't create %s\n"), filepath);
+		return;
+	}
 
 	M_CreateScreenShotPalette();
 	ret = M_SavePNG(filepath, minigen->buf, minigen->w, minigen->h, screenshot_palette);
 
-failure:
-	if (minigen->buf != NULL)
-		free(minigen->buf);
+	free(minigen->buf);
 
 	if (ret)
 	{
@@ -1387,7 +1393,7 @@ char *va(const char *format, ...)
 	static char string[1024];
 
 	va_start(argptr, format);
-	vsnprintf(string, 1024, format, argptr);
+	vsnprintf(string, sizeof(string), format, argptr);
 	va_end(argptr);
 
 	return string;
@@ -1453,9 +1459,9 @@ INT32 axtoi(const char *hexStg)
 
 void CopyCaretColors(char *p, const char *s, int n)
 {
-	char *t;
-	int   m;
-	int   c;
+	gconst char *t;
+	int          m;
+	int          c;
 
 	if (!n)
 		return;
@@ -1563,6 +1569,7 @@ char *M_GetToken(const char *inputString)
 	{
 		startPos = endPos;
 	}
+
 	if (stringToUse == NULL)
 		return NULL;
 
@@ -1633,7 +1640,8 @@ char *M_GetToken(const char *inputString)
 	}
 
 	// If the end of the string is reached, no token is to be read
-	if (startPos == stringLength) {
+	if (startPos == stringLength)
+	{
 		endPos = stringLength;
 		return NULL;
 	}
@@ -1643,7 +1651,7 @@ char *M_GetToken(const char *inputString)
 			|| stringToUse[startPos] == '}')
 	{
 		endPos = startPos + 1;
-		texturesToken = (char *)Z_Malloc(2*sizeof(char),PU_STATIC,NULL);
+		texturesToken = (char *)Z_Malloc(2*sizeof(char), PU_STATIC, NULL);
 		texturesToken[0] = stringToUse[startPos];
 		texturesToken[1] = '\0';
 		return texturesToken;
@@ -1693,22 +1701,23 @@ char *M_GetToken(const char *inputString)
 }
 
 
-const char * M_Ftrim (double f)
+const char * M_Ftrim(double f)
 {
 	static char dig[9];/* "0." + 6 digits (6 is printf's default) */
 	int i;
+
 	/* I know I said it's the default, but just in case... */
-	sprintf(dig, "%.6f", fabs(modf(f, &f)));
+	snprintf(dig, sizeof(dig), "%.6f", fabs(modf(f, &f)));
+
 	/* trim trailing zeroes */
 	for (i = strlen(dig)-1; dig[i] == '0'; --i)
 		;
+
 	if (dig[i] == '.')/* :NOTHING: */
 		return "";
-	else
-	{
-		dig[i + 1] = '\0';
-		return &dig[1];/* skip the 0 */
-	}
+
+	dig[i + 1] = '\0';
+	return &dig[1];/* skip the 0 */
 }
 
 /** Count bits in a number.
@@ -1726,6 +1735,7 @@ UINT8 M_CountBits(UINT32 num, UINT8 size)
 const char *GetRevisionString(void)
 {
 	static char rev[9] = {0};
+
 	if (rev[0])
 		return rev;
 
@@ -1733,6 +1743,7 @@ const char *GetRevisionString(void)
 		strncpy(rev, comprevision, 7);
 	else
 		snprintf(rev, 7, "r%s", comprevision);
+
 	rev[7] = '\0';
 
 	return rev;
@@ -1804,35 +1815,35 @@ TMatrix *RotateZMatrix(angle_t rad)
 char *sizeu1(size_t num)
 {
 	static char sizeu1_buf[28];
-	sprintf(sizeu1_buf, "%"PRIdS, num);
+	snprintf(sizeu1_buf, sizeof(sizeu1_buf), "%" PRIdS, num);
 	return sizeu1_buf;
 }
 
 char *sizeu2(size_t num)
 {
 	static char sizeu2_buf[28];
-	sprintf(sizeu2_buf, "%"PRIdS, num);
+	snprintf(sizeu2_buf, sizeof(sizeu2_buf), "%" PRIdS, num);
 	return sizeu2_buf;
 }
 
 char *sizeu3(size_t num)
 {
 	static char sizeu3_buf[28];
-	sprintf(sizeu3_buf, "%"PRIdS, num);
+	snprintf(sizeu3_buf, sizeof(sizeu3_buf), "%" PRIdS, num);
 	return sizeu3_buf;
 }
 
 char *sizeu4(size_t num)
 {
 	static char sizeu4_buf[28];
-	sprintf(sizeu4_buf, "%"PRIdS, num);
+	snprintf(sizeu4_buf, sizeof(sizeu4_buf), "%" PRIdS, num);
 	return sizeu4_buf;
 }
 
 char *sizeu5(size_t num)
 {
 	static char sizeu5_buf[28];
-	sprintf(sizeu5_buf, "%"PRIdS, num);
+	snprintf(sizeu5_buf, sizeof(sizeu5_buf), "%" PRIdS, num);
 	return sizeu5_buf;
 }
 
@@ -1853,8 +1864,10 @@ int M_PathParts(const char *path)
 	int n;
 	const char *p;
 	const char *t;
+
 	if (path == NULL)
 		return 0;
+
 	for (n = 0, p = path ;; ++n)
 	{
 		t = p;
@@ -1867,6 +1880,7 @@ int M_PathParts(const char *path)
 			break;
 		}
 	}
+
 	return n;
 }
 
@@ -1909,7 +1923,9 @@ void M_MkdirEachUntil(const char *cpath, int start, int end, int mode)
 		if (!( p = strchr(p, PATHSEP[0]) ))
 			return;
 	}
+
 	p += strspn(p, PATHSEP);
+
 	for (;;)
 	{
 		if (end > 0 && !--end)
@@ -1948,6 +1964,22 @@ UINT32 FNV1a_Hash(const char *message, size_t size)
 	for (size_t i = 0; i < size; i++)
 	{
 		hash ^= message[i];
+		hash *= FNV1A_PRIME;
+	}
+
+	return hash;
+}
+
+// Behaves like the old quickncasehash
+// Stops either if it encounters null terminator
+// or reaches size
+UINT32 FNV1a_QuickCaseHash(const char *message, size_t size)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	for (size_t i = 0; i < size && message[i]; i++)
+	{
+		hash ^= tolower(message[i]);
 		hash *= FNV1A_PRIME;
 	}
 

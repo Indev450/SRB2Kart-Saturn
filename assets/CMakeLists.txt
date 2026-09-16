@@ -1,5 +1,10 @@
 ## Assets Target Configuration ##
 
+if(${CMAKE_SYSTEM} MATCHES Linux)
+	# Asset installation isn't part of the Linux target
+	return()
+endif()
+
 # For prepending the current source path, later
 FUNCTION(PREPEND var prefix)
    SET(listVar "")

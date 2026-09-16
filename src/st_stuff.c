@@ -14,6 +14,7 @@
 ///        Does palette indicators as well (red pain/berserk, bright pickup)
 
 #include "doomdef.h"
+#include "d_main.h"
 #include "g_game.h"
 #include "g_input.h"
 #include "k_director.h"
@@ -51,8 +52,6 @@
 #include "lua_hook.h"
 
 #include "r_fps.h"
-
-UINT16 objectsdrawn = 0;
 
 // dumb fade thing for director toggle
 tic_t directortoggletimer = 0;
@@ -174,7 +173,8 @@ INT32 st_palette = 0;
 void ST_ResetPaletteStuff(void)
 {
 	st_palette = 0;
-	V_SetPalette(0);
+	if (loaded_config)
+		V_SetPalette(0);
 }
 
 static void ST_doPaletteStuff(void)
@@ -182,12 +182,12 @@ static void ST_doPaletteStuff(void)
 	INT32 palette = 0;
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl && !HWR_PalRenderFlashpal())
+	if (rendermode == render_opengl && !HWR_ShouldUsePaletteRendering())
 		return;
 #endif
 
 	if (stplyr && stplyr->flashcount)
-		palette = CLAMP(stplyr->flashpal, 0, 13);
+		palette = min(stplyr->flashpal, 13);
 
 	if (palette != st_palette)
 	{
@@ -591,7 +591,7 @@ static void ST_overlayDrawer(void)
 					char name[MAXPLAYERNAME+12];
 
 					INT32 y = (stplyrnum == 0) ? 4 : BASEVIDHEIGHT/2-12;
-					sprintf(name, "VIEWPOINT: %s", player_names[stplyr-players]);
+					snprintf(name, sizeof(name), "VIEWPOINT: %s", player_names[stplyr-players]);
 					V_DrawRightAlignedThinString(BASEVIDWIDTH-40, y, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTORIGHT), name);
 				}
 				else if (splitscreen)
@@ -720,7 +720,7 @@ void ST_DrawDemoTitleEntry(void)
 static void ST_MayonakaStatic(void)
 {
 	INT32 flag;
-	if (cv_lessflicker.value)
+	if (cv_lessflicker.value || cv_reducevfx.value)
 		flag = V_70TRANS;
 	else
 		flag = (leveltime%2) ? V_90TRANS : V_70TRANS;

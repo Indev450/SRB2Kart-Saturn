@@ -536,7 +536,7 @@
 	#define LUA_NUMBER_SCAN		"%d"
 	#define LUA_NUMBER_FMT		"%d"
 #endif
-#define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
+#define lua_number2str(s,n)	snprintf((s), LUAI_MAXNUMBER2STR, LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	12 /* 10 digits, sign, and \0 */
 #define lua_str2number(s,p) ({ \
 		long nmr = strtol((s), (p), 10); \
@@ -772,10 +772,10 @@ union luai_Cast { double l_d; long l_l; };
 
 #include <stdio.h>
 #if defined(__GNUC__)
-#define l_likely(x)	(__builtin_expect(((x) != 0), 1))
-#define l_unlikely(x)	(__builtin_expect(((x) != 0), 0))
+#define l_likely(x)		(__builtin_expect(!!(x), 1))
+#define l_unlikely(x)	(__builtin_expect(!!(x), 0))
 #else
-#define l_likely(x)	(x)
+#define l_likely(x)		(x)
 #define l_unlikely(x)	(x)
 #endif
 

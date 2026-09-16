@@ -38,6 +38,8 @@
 #include "i_video.h" // rendermode
 #include "m_perfstats.h"
 
+#include "lua_profile.h"
+
 // Object place
 #include "m_cheat.h"
 
@@ -611,7 +613,18 @@ void P_Ticker(boolean run)
 #ifdef DEMO_COMPAT_100
 			}
 #endif
+
+			// Lookback is normally handled inside G_BuildTiccmd, which isn't called in replays so we're doing that manually
+			// idk if this is best place to handle this tho...
+			for (i = 0; i <= splitscreen; ++i)
+			{
+				const boolean usejoystick = cv_usejoystick[i].value;
+				INT32 axis = JoyAxis(AXISLOOKBACK, i+1);
+				camspin[i] = (InputDown(gc_lookback, i+1) || (usejoystick && axis > 0));
+			}
 		}
+
+		LUA_ResetTicTimers();
 
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
@@ -620,6 +633,7 @@ void P_Ticker(boolean run)
 		LUA_HookPreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
 
+		// OK! Now that we got all of that sorted, players can think!
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -637,7 +651,9 @@ void P_Ticker(boolean run)
 	if (run)
 	{
 		// Dynamic slopeness
+#ifndef PHOBOS_BUILD
 		if (midgamejoin) // only run here if we joined midgame to fix some desynchs
+#endif
 			P_RunDynamicSlopes();
 
 		PS_START_TIMING(ps_thinkertime);
@@ -664,6 +680,7 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
+	// Run shield positioning
 	P_RunOverlays();
 	P_RunShadows();
 
@@ -706,6 +723,7 @@ void P_Ticker(boolean run)
 
 		if (indirectitemcooldown > 0)
 			indirectitemcooldown--;
+
 		if (hyubgone > 0)
 			hyubgone--;
 
@@ -713,8 +731,7 @@ void P_Ticker(boolean run)
 		{
 			K_UpdateSpectateGrief();
 		}
-
-		if (G_BattleGametype())
+		else if (G_BattleGametype())
 		{
 			if (wantedcalcdelay && --wantedcalcdelay <= 0)
 				K_CalculateBattleWanted();
@@ -728,11 +745,12 @@ void P_Ticker(boolean run)
 
 			if (cv_recordmultiplayerdemos.value)
 			{
-				const INT32 axis = JoyAxis(AXISLOOKBACK, 1);
-
 				if (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE)
-					if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (cv_usejoystick[0].value && axis > 0)))
+				{
+					const INT32 axis = cv_usejoystick[0].value ? JoyAxis(AXISLOOKBACK, 1) : -1;
+					if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (axis > 0)))
 						demo.savemode = DSM_TITLEENTRY;
+				}
 
 				// if there are no players left at all, stop demo recording
 				// Demos that that dont have any players crash during playback, which can happen with dedicated servers
@@ -784,7 +802,7 @@ void P_Ticker(boolean run)
 				if (!player->mo)
 					continue;
 
-				const boolean skybox = (skyboxmo[0] && cv_skybox.value);
+				const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 				if (skyVisiblePerPlayer[i] && skybox)
 				{

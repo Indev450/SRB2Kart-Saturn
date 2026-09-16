@@ -51,13 +51,6 @@
 #include "hardware/hw_main.h"
 #endif
 
-typedef struct
-{
-	char patch[9];
-	 INT32 points;
-	UINT8 display;
-} y_bonus_t;
-
 static y_data_t data;
 
 // graphics
@@ -104,7 +97,7 @@ typedef struct
 } y_voteclient;
 
 // votescreen stuff
-votescreen_t VoteScreen = {0};
+votescreen_t VoteScreen = {};
 
 static y_votelvlinfo levelinfo[5];
 static y_voteclient voteclient;
@@ -160,7 +153,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		;
 	else if ((data.rankingsmode = (boolean)rankingsmode))
 	{
-		sprintf(data.levelstring, "* Total Rankings *");
+		snprintf(data.levelstring, sizeof(data.levelstring), "* Total Rankings *");
 		data.encore = false;
 	}
 	else
@@ -169,32 +162,41 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		if (mapheaderinfo[prevmap]->levelflags & LF_NOZONE)
 		{
 			if (mapheaderinfo[prevmap]->actnum[0])
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, mapheaderinfo[prevmap]->actnum);
+			}
 			else
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s *",
 					mapheaderinfo[prevmap]->lvlttl);
+			}
 		}
 		else
 		{
 			const char *zonttl = (mapheaderinfo[prevmap]->zonttl[0] ? mapheaderinfo[prevmap]->zonttl : "Zone");
+
 			if (mapheaderinfo[prevmap]->actnum[0])
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl, mapheaderinfo[prevmap]->actnum);
+			}
 			else
+			{
 				snprintf(data.levelstring,
-					sizeof data.levelstring,
+					sizeof(data.levelstring),
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl);
+			}
 		}
 
-		data.levelstring[sizeof data.levelstring - 1] = '\0';
+		data.levelstring[sizeof(data.levelstring) - 1] = '\0';
 
 		data.encore = encoremode;
 
@@ -272,12 +274,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 //
 static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 {
+	INT32 i;
+
 	if (standings->numplayers == 0)
 	{
 		return;
 	}
-
-	INT32 i;
 
 #define NUMFORNEWCOLUMN 8
 	INT32 y = 41, gutter = ((standings->numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
@@ -319,6 +321,12 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 		const UINT8 pnum = standings->num[i];
 		player_t *player = &players[pnum];
 
+#if MAXPLAYERS > 16
+		// 32 Player TODO: port over and cleanup standings drawer from sat-32p/blankart
+		if (i > 16)
+			break;
+#endif
+
 		if (pnum == MAXPLAYERS)
 			;
 		else if (!playeringame[pnum] || player->spectator)
@@ -337,7 +345,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			V_DrawCenteredString(x+6, y, 0, va("%d", standings->pos[i]));
 
 			// localskins are amazing
-			if (standings->color[i] != SKINCOLOR_NONE)
+			if (*standings->color[i] != SKINCOLOR_NONE)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(*standings->character[i], *standings->color[i], GTC_CACHE);
 				INT32 skinnum = (player->localskin ? (player->localskin - 1) : *standings->character[i]);
@@ -367,9 +375,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				if (standings->increase[pnum] != UINT8_MAX)
 				{
 					if (standings->increase[pnum] > 9)
-						snprintf(strtime, sizeof strtime, "(+%02d)", standings->increase[pnum]);
+						snprintf(strtime, sizeof(strtime), "(+%02d)", standings->increase[pnum]);
 					else
-						snprintf(strtime, sizeof strtime, "(+  %d)", standings->increase[pnum]);
+						snprintf(strtime, sizeof(strtime), "(+  %d)", standings->increase[pnum]);
 
 					if (standings->numplayers > NUMFORNEWCOLUMN)
 						V_DrawRightAlignedThinString(x+135+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -377,7 +385,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 						V_DrawRightAlignedString(x+120+gutter, y, 0, strtime);
 				}
 
-				snprintf(strtime, sizeof strtime, "%d", standings->val[i]);
+				snprintf(strtime, sizeof(strtime), "%d", standings->val[i]);
 
 				if (standings->numplayers > NUMFORNEWCOLUMN)
 					V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -392,9 +400,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				{
 					if (intertype == int_race)
 					{
-						snprintf(strtime, sizeof strtime, "%i'%02i\"%02i", G_TicsToMinutes(standings->val[i], true),
+						snprintf(strtime, sizeof(strtime), "%i'%02i\"%02i", G_TicsToMinutes(standings->val[i], true),
 						G_TicsToSeconds(standings->val[i]), G_TicsToCentiseconds(standings->val[i]));
-						strtime[sizeof strtime - 1] = '\0';
+						strtime[sizeof(strtime) - 1] = '\0';
 
 						if (standings->numplayers > NUMFORNEWCOLUMN)
 							V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -440,6 +448,7 @@ void Y_IntermissionDrawer(void)
 		return;
 
 	if (cv_betainterscreen.value == 1
+	|| !intermissionbginit
 #ifdef HWRENDER
 	|| (rendermode == render_opengl && cv_glscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
@@ -592,7 +601,7 @@ void Y_Ticker(void)
 
 				if (data.rankingsmode && intertic > sorttic+16+(2*TICRATE))
 				{
-					INT32 q=0,r=0;
+					INT32 q = 0, r = 0;
 					boolean kaching = true;
 
 					for (q = 0; q < data.numplayers; q++)
@@ -658,15 +667,16 @@ static void Y_UpdateRecordReplays(void)
 	if ((gpath = malloc(glen)) == NULL)
 		I_Error("Out of memory for replay filepath\n");
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
-	snprintf(lastdemo, 255, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
+	snprintf(gpath, glen, "%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+
+	snprintf(lastdemo, sizeof(lastdemo)-1, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		snprintf(bestdemo, 255, "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo)-1, "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -675,7 +685,7 @@ static void Y_UpdateRecordReplays(void)
 			CONS_Printf("\x83%s\x80 %s '%s'\n", M_GetText("NEW RECORD TIME!"), M_GetText("Saved replay as"), bestdemo);
 		}
 
-		snprintf(bestdemo, 255, "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, sizeof(bestdemo)-1, "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 		{ // Better lap time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -801,6 +811,7 @@ void Y_EndIntermission(void)
 	endtic = -1;
 	sorttic = -1;
 	intertype = int_none;
+	intermissionbginit = false; // not sure if this is the right place to reset, but i guess it works for now....
 }
 
 //
@@ -1093,7 +1104,7 @@ void Y_VoteDrawer(void)
 				V_DrawSmallScaledPatch(BASEVIDWIDTH-100, y, V_SNAPTORIGHT, pic);
 			else
 			{
-				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP|V_SNAPTORIGHT, pic, NULL);
 				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, ((y+25)<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTORIGHT, VoteScreen.rubyicon, NULL);
 			}
 
@@ -1117,7 +1128,7 @@ void Y_VoteDrawer(void)
 				V_DrawTinyScaledPatch(BASEVIDWIDTH-60, y, V_SNAPTORIGHT, pic);
 			else
 			{
-				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, FRACUNIT/4, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, FRACUNIT/4, V_FLIP|V_SNAPTORIGHT, pic, NULL);
 				V_DrawFixedPatch((BASEVIDWIDTH-40)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTORIGHT, VoteScreen.rubyicon, NULL);
 			}
 
@@ -1164,7 +1175,7 @@ void Y_VoteDrawer(void)
 				V_DrawTinyScaledPatch(x, y, V_SNAPTOLEFT, pic);
 			else
 			{
-				V_DrawFixedPatch((x+40)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/4, V_SNAPTOLEFT|V_FLIP, pic, 0);
+				V_DrawFixedPatch((x+40)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/4, V_SNAPTOLEFT|V_FLIP, pic, NULL);
 				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, VoteScreen.rubyicon, NULL);
 			}
 
@@ -1504,12 +1515,12 @@ void Y_StartVote(void)
 		{
 			if (mapheaderinfo[votelevels[i][0]]->actnum[0])
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->actnum);
 			else
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl);
 		}
@@ -1517,12 +1528,12 @@ void Y_StartVote(void)
 		{
 			if (mapheaderinfo[votelevels[i][0]]->actnum[0])
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->zonttl, mapheaderinfo[votelevels[i][0]]->actnum);
 			else
 				snprintf(levelinfo[i].str,
-					sizeof levelinfo[i].str,
+					sizeof(levelinfo[i].str),
 					"%s %s",
 					mapheaderinfo[votelevels[i][0]]->lvlttl, mapheaderinfo[votelevels[i][0]]->zonttl);
 		}
@@ -1607,9 +1618,6 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 				votes[i] = 3;
 
 			if (votes[i] == -1 || endtype > 1) // Don't need to go on
-				continue;
-
-			if (endtype == 2)
 				continue;
 
 			if (votecompare == -1)

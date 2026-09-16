@@ -96,7 +96,6 @@ typedef struct
 typedef struct
 {
 	float x, y, z;
-	fixed_t x2, y2, z2;
 } polyvertex_t;
 
 // a convex 'plane' polygon, clockwise order

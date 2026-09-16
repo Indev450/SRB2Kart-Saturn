@@ -68,6 +68,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <time.h>
 #if defined (__linux__)
 #include <sys/vfs.h>
+#elif defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
 #else
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -156,8 +162,7 @@ const char *wadSearchPaths[] = {
 
 /**	\brief WAD file to look for
 */
-#define WADKEYWORD1 "srb2.srb"
-#define WADKEYWORD2 "srb2.wad"
+#define WADKEYWORD "srb2.srb"
 /**	\brief holds wad path
 */
 static char returnWadPath[256];
@@ -167,6 +172,8 @@ static char returnWadPath[256];
 #include "../i_video.h"
 #include "../i_sound.h"
 #include "../i_system.h"
+#include "../i_time.h"
+#include "../i_net.h"
 #include "../screen.h" //vid.WndParent
 #include "../d_net.h"
 #include "../g_game.h"
@@ -177,10 +184,6 @@ static char returnWadPath[256];
 #include "../i_joy.h"
 
 #include "../m_argv.h"
-
-#ifdef MAC_ALERT
-#include "macosx/mac_alert.h"
-#endif
 
 #include "../d_main.h"
 
@@ -196,8 +199,6 @@ UINT8 keyboard_started = false;
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-boolean stdin_active = true;
-
 typedef struct
 {
 	size_t cursor;
@@ -524,17 +525,24 @@ void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char *txt;
-	va_list  argptr;
+	va_list argptr;
 
-	va_start(argptr,fmt);
+	if (!fmt)
+		return;
+
+	va_start(argptr, fmt);
 	len = vsnprintf(NULL, 0, fmt, argptr);
 	va_end(argptr);
 	if (len == 0)
 		return;
 
-	txt = malloc(len+1);
-	va_start(argptr,fmt);
-	vsprintf(txt, fmt, argptr);
+	txt = (char*)(malloc(len+1));
+
+	if (!txt)
+		I_Error("I_OutputMsg: Out of memory!\n");
+
+	va_start(argptr, fmt);
+	vsnprintf(txt, len+1, fmt, argptr);
 	va_end(argptr);
 
 #ifdef HAVE_TTF
@@ -542,7 +550,7 @@ void I_OutputMsg(const char *fmt, ...)
 	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
 #endif
 
-	len = strlen(txt);
+	len = strnlen(txt, len+1);
 
 #ifdef LOGMESSAGES
 	if (logstream)
@@ -699,11 +707,7 @@ void I_JoyScale4(void)
 
 
 */
-void I_ShutdownJoystick(void)
-{
-}
-
-void I_GetJoystickEvents(UINT8 index)
+void I_ShutdownJoystick(UINT8 index)
 {
 	(void)index;
 }
@@ -741,6 +745,22 @@ const char *I_GetJoyName(INT32 joyindex)
 {
 	(void)joyindex;
 	return NULL;
+}
+
+void I_SetJoystickFocus(void)
+{
+}
+
+boolean I_GamepadHasLED(INT32 playernum)
+{
+	(void)playernum;
+	return false;
+}
+
+boolean I_GamepadHasRumble(INT32 playernum)
+{
+	(void)playernum;
+	return false;
 }
 
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
@@ -948,14 +968,18 @@ void I_Sleep(UINT32 ms)
 
 void I_SleepDuration(precise_t duration)
 {
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__) || defined(__OpenBSD__)
 	UINT64 precision = I_GetPrecisePrecision();
 	struct timespec ts = {
 		.tv_sec = duration / precision,
 		.tv_nsec = duration * 1000000000 / precision % 1000000000,
 	};
 	int status;
+#ifdef __OpenBSD__
+	do status = nanosleep(&ts, &ts);
+#else
 	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
+#endif
 	while (status == EINTR);
 #elif defined (MIN_SLEEP_DURATION_MS)
 	UINT64 precision = I_GetPrecisePrecision();
@@ -992,7 +1016,7 @@ void I_SleepDuration(precise_t duration)
 #endif
 }
 
-boolean g_in_exiting_signal_handler = false;
+static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
 static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
 {
@@ -1015,8 +1039,13 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
 			break;
 #ifdef SIGTERM
-		case SIGTERM: // Software termination signal from kill
-			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
+		case SIGTERM: // Software termination signal from terminate
+			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a terminate signal.");
+			break;
+#endif
+#ifdef SIGKILL
+		case SIGKILL: // Software termination signal from kill
+			sigmsg = ("SIGKILL - SRB2Kart-Saturn was terminated by a kill signal.");
 			break;
 #endif
 #ifdef SIGBREAK
@@ -1028,7 +1057,7 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
 			break;
 		default:
-			sprintf(signal_msg, "Signal number %d", signal_num);
+			snprintf(signal_msg, 512, "Signal number %d", signal_num);
 			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
 			break;
 	}
@@ -1036,13 +1065,17 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	if (core_dumped)
 	{
 		if (sigmsg)
-			sprintf(signal_msg, "%s (core dumped)", sigmsg);
+		{
+			snprintf(signal_msg, 512, "%s (core dumped)", sigmsg);
+		}
 		else
+		{
 			strcat(signal_msg, " (core dumped)");
+		}
 	}
 	else
 	{
-		sprintf(signal_msg, "%s", sigmsg);
+		snprintf(signal_msg, 512, "%s", sigmsg);
 	}
 }
 
@@ -1054,6 +1087,11 @@ static void I_ReportSignal(int num, int coredumped)
 	size_t len = strlen(sigmsg);
 	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
 	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
+}
+
+boolean I_In_Exiting_Signal_Handler(void)
+{
+	return g_in_exiting_signal_handler;
 }
 
 #ifndef NEWSIGNALHANDLER
@@ -1075,11 +1113,17 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
+static volatile sig_atomic_t interrupted = 0;
+
+boolean I_Interrupted(void)
 {
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	I_Quit();
+	return interrupted;
+}
+
+static void quit_handler(int num)
+{
+	(void)num;
+	interrupted = 1;
 }
 
 #ifdef HAVE_LIBBACKTRACE
@@ -1308,7 +1352,7 @@ FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 {
 	char text[128];
 
-	snprintf(text, sizeof text,
+	snprintf(text, sizeof(text),
 			"Error while setting up signal reporting: %s: %s",
 			pr,
 			strerror(errno)
@@ -1338,18 +1382,28 @@ static void I_Fork(void)
 			I_RegisterChildSignals();
 			break;
 		default:
+			// ignore those, those are handled by child process
+			// otherwise parent might exit before it
+			// and the below stuff wont run and your terminal will be left in an awkward state
+#ifdef SIGINT
+			signal(SIGINT,   SIG_IGN);
+#endif
+#ifdef SIGBREAK
+			signal(SIGBREAK, SIG_IGN);
+#endif
+#ifdef SIGTERM
+			signal(SIGTERM,  SIG_IGN);
+#endif
 			if (logstream)
 				fclose(logstream);/* the child has this */
 
 			c = wait(&status);
-
 #ifdef LOGMESSAGES
 			/* By the way, exit closes files. */
 			logstream = fopen(logfilename, "at");
 #else
 			logstream = 0;
 #endif
-
 			if (c == -1)
 			{
 				kill(child, SIGKILL);
@@ -1378,6 +1432,12 @@ static void I_Fork(void)
 	}
 }
 #endif/*NEWSIGNALHANDLER*/
+
+int I_OpenURL(const char *url)
+{
+	(void)url;
+	return -1;
+}
 
 INT32 I_StartupSystem(void)
 {
@@ -1409,8 +1469,8 @@ void I_Quit(void)
 	/* prevent recursive I_Quit() */
 	if (quiting)
 		goto death;
+
 	quiting = false;
-	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(false); // Tails 12-08-2002
@@ -1426,16 +1486,18 @@ void I_Quit(void)
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
 	I_ShutdownSystem();
+
 	/* if option -noendtxt is set, don't print the text */
 	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM") != LUMPERROR)
 	{
 		printf("\r");
 		ShowEndTxt();
 	}
+
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
+
 death:
-	W_Shutdown();
 	exit(0);
 }
 
@@ -1476,12 +1538,11 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 		if (errorcount > 20)
 		{
 			va_start(argptr, error);
-			vsnprintf(buffer, 8192, error, argptr);
+			vsnprintf(buffer, sizeof(buffer), error, argptr);
 			va_end(argptr);
 
 			I_OutputMsg("SRB2Kart %s Recursive Error", buffer);
 
-			W_Shutdown();
 			exit(-1); // recursive errors detected
 		}
 	}
@@ -1490,7 +1551,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 	// Display error message in the console before we start shutting it down
 	va_start(argptr, error);
-	vsnprintf(buffer, 8192, error, argptr);
+	vsnprintf(buffer, sizeof(buffer), error, argptr);
 	va_end(argptr);
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 
@@ -1498,8 +1559,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	write_backtrace(BT_CRASH_REASON_ERRORMSG(buffer));
 #endif
 	// ---
-
-	I_ShutdownConsole();
 
 	M_SaveConfig(NULL); // save game config, cvars..
 	D_SaveBan(); // save the ban list
@@ -1515,8 +1574,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
 	I_ShutdownSystem();
-
-	W_Shutdown();
 
 #if defined (PARANOIA) && defined (__CYGWIN__)
 	*(INT32 *)2 = 4; //Alam: Debug!
@@ -1623,9 +1680,10 @@ void I_ShutdownSystem(void)
 {
 	INT32 c;
 
-#ifndef NEWSIGNALHANDLER
-	I_ShutdownConsole();
+#ifdef NEWSIGNALHANDLER
+	if (M_CheckParm("-nofork"))
 #endif
+		I_ShutdownConsole();
 
 	for (c = MAX_QUIT_FUNCS-1; c >= 0; c--)
 		if (quit_funcs[c])
@@ -1714,7 +1772,8 @@ char *I_GetUserName(void)
 				}
 			}
 		}
-		strncpy(username, p, MAXPLAYERNAME);
+
+		snprintf(username, sizeof(username), "%s", p);
 	}
 
 	if (!fastcmp(username, ""))
@@ -1735,6 +1794,24 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 	(void)dirname;
 	(void)unixright;
 	return false;
+#endif
+}
+
+INT32 I_ChDir(const char *path)
+{
+#ifdef _WIN32
+	return (SetCurrentDirectoryA(path) ? 0 : -1);
+#else
+	return chdir(path);
+#endif
+}
+
+char *I_GetCwd(char *buf, size_t size)
+{
+#ifdef _WIN32
+	return (GetCurrentDirectoryA((DWORD)size, buf) ? buf : NULL);
+#else
+	return getcwd(buf, size);
 #endif
 }
 
@@ -1770,42 +1847,34 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = malloc(256);
+	char wad3path[256];
 
-	if (!wad3path)
-		return false;
-
-	sprintf(wad3path, pandf, path, WADKEYWORD1);
+	snprintf(wad3path, sizeof(wad3path), pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
-		free(wad3path);
 		return true;
 	}
 
-	sprintf(wad3path, pandf, path, WADKEYWORD2);
-
-	if (FIL_ReadFileOK(wad3path))
-	{
-		free(wad3path);
-		return true;
-	}
-
-	free(wad3path);
 	return false;
 }
 
-static void pathonly(char *s)
+static void pathonly(char *s, size_t size)
 {
 	size_t j;
 
-	for (j = strlen(s); j != (size_t)-1; j--)
+	for (j = strnlen(s, size); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
-			if (s[j] == ':') s[j+1] = 0;
-			else s[j] = 0;
+			if (s[j] == ':')
+				s[j+1] = 0;
+			else
+				s[j] = 0;
+
 			return;
 		}
+	}
 }
 
 /**	\brief	search for srb2.srb in the given path
@@ -1821,11 +1890,12 @@ static const char *searchWad(const char *searchDir)
 	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD1);
+	snprintf(tempsw, sizeof(tempsw), "%s", WADKEYWORD);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
+
 	if (fstemp == FS_FOUND)
 	{
-		pathonly(tempsw);
+		pathonly(tempsw, sizeof(tempsw));
 		return tempsw;
 	}
 
@@ -1863,7 +1933,7 @@ static const char *locateWad(void)
 
 #ifndef NOCWD
 	// examine current dir
-	strcpy(returnWadPath, ".");
+	snprintf(returnWadPath, sizeof(returnWadPath), "%s", ".");
 	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
@@ -1875,7 +1945,7 @@ static const char *locateWad(void)
 	// examine user jart directory
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
-		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s" PATHSEP DEFAULTDIR, envstr);
 		CHECKWADPATH(returnWadPath);
 	}
 #endif
@@ -1889,7 +1959,7 @@ static const char *locateWad(void)
 	// examine default dirs
 	for (i = 0; wadDefaultPaths[i]; i++)
 	{
-		strcpy(returnWadPath, wadDefaultPaths[i]);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s", wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
 
@@ -1917,12 +1987,11 @@ const char *I_LocateWad(void)
 		// change to the directory where we found srb2.srb
 #if defined (_WIN32)
 		waddir = _fullpath(NULL, waddir, MAX_PATH);
-		SetCurrentDirectoryA(waddir);
 #else
 		waddir = realpath(waddir, NULL);
-		if (waddir == NULL || chdir(waddir) == -1)
-			I_OutputMsg("Couldn't change working directory\n");
 #endif
+		if (waddir == NULL || I_ChDir(waddir) == -1)
+			I_OutputMsg("Couldn't change working directory\n");
 	}
 
 	return waddir;
@@ -1942,17 +2011,22 @@ const char *I_LocateWad(void)
 static long get_entry(const char* name, const char* buf)
 {
 	long val;
-	char* hit = strstr(buf, name);
-	if (hit == NULL) {
+	const char* hit = strstr(buf, name);
+
+	if (hit == NULL)
+	{
 		return -1;
 	}
 
 	errno = 0;
 	val = strtol(hit + strlen(name), NULL, 10);
-	if (errno != 0) {
+
+	if (errno != 0)
+	{
 		CONS_Alert(CONS_ERROR, M_GetText("get_entry: strtol() failed: %s\n"), strerror(errno));
 		return -1;
 	}
+
 	return val;
 }
 #endif
@@ -1977,13 +2051,13 @@ size_t I_GetFreeMem(size_t *total)
 		*total = 32 << 20;
 	return 32 << 20;
 #elif defined (_WIN32)
-	MEMORYSTATUS info;
+	MEMORYSTATUSEX info;
 
-	info.dwLength = sizeof (MEMORYSTATUS);
-	GlobalMemoryStatus( &info );
+	info.dwLength = sizeof (MEMORYSTATUSEX);
+	GlobalMemoryStatusEx( &info );
 	if (total)
-		*total = (size_t)info.dwTotalPhys;
-	return (size_t)info.dwAvailPhys;
+		*total = (size_t)info.ullTotalPhys;
+	return (size_t)info.ullAvailPhys;
 #elif defined (__OS2__)
 	UINT32 pr_arena;
 
@@ -2016,7 +2090,7 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
@@ -2025,12 +2099,12 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
 	memTag += sizeof (MEMTOTAL);
-	totalKBytes = (size_t)atoi(memTag);
+	totalKBytes = strtoul(memTag, NULL, 10);
 
 	if ((memTag = strstr(buf, MEMAVAILABLE)) == NULL)
 	{
@@ -2044,7 +2118,7 @@ size_t I_GetFreeMem(size_t *total)
 		{
 			// Error
 			if (total)
-				*total = 0L;
+				*total = 0;
 			return 0;
 		}
 		freeKBytes = MemAvailable;
@@ -2052,16 +2126,46 @@ size_t I_GetFreeMem(size_t *total)
 	else
 	{
 		memTag += sizeof (MEMAVAILABLE);
-		freeKBytes = atoi(memTag);
+		freeKBytes = strtoul(memTag, NULL, 10);
 	}
 
 	if (total)
 		*total = totalKBytes << 10;
 	return freeKBytes << 10;
+#elif defined(__APPLE__)
+	/* macOS */
+	mach_port_t host = mach_host_self();
+	kern_return_t kr;
+	mach_msg_type_number_t count;
+	vm_size_t v_page_size;
+	struct vm_statistics64 vm_stats;
+	uint64_t total_mem, free_mem;
+	size_t size;
+
+	size = sizeof(total_mem);
+	if (sysctlbyname("hw.memsize", &total_mem, &size, NULL, 0) < 0)
+		total_mem = 0;
+
+	kr = host_page_size(host, &v_page_size);
+	if (kr != KERN_SUCCESS)
+		v_page_size = 4096;
+
+	count = HOST_VM_INFO64_COUNT;
+	kr = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stats, &count);
+	if (kr == KERN_SUCCESS)
+		free_mem = (uint64_t)(vm_stats.free_count + vm_stats.inactive_count) * v_page_size;
+	else
+		free_mem = 0;
+
+	if (total)
+		*total = (size_t)total_mem;
+	return (size_t)free_mem;
 #else
 	// Guess 48 MB.
 	if (total)
+	{
 		*total = 48<<20;
+	}
 	return 48<<20;
 #endif
 }

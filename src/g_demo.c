@@ -55,6 +55,8 @@
 #include "k_stats.h" // SRB2kart
 #include "r_fps.h" // frame interpolation/uncapped
 
+#include <errno.h>
+
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
 #endif
@@ -64,17 +66,15 @@
 #include <locale.h>
 
 // menu demo things
-UINT8  numDemos      = 0; //3; -- i'm FED UP of losing my skincolour to a broken demo. change this back when we make new ones
 UINT32 demoDelayTime = 15*TICRATE;
 UINT32 demoIdleTime  = 3*TICRATE;
 
 boolean nodrawers = false; // for comparative timing purposes
-boolean noblit = false; // for comparative timing purposes
 static tic_t demostarttime; // for comparative timing purposes
 
 //@TODO put these all in a struct for namespacing purposes?
 static char demoname[128];
-savebuffer_t demobuf = {0};
+savebuffer_t demobuf = {};
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 *demoend;
 static UINT8 demoflags;
@@ -447,7 +447,8 @@ void G_WriteDemoExtraData(void)
 	{
 		static UINT8 timeout = 0;
 
-		if (timeout) timeout--;
+		if (timeout)
+			timeout--;
 
 		if (demo_writerng == 1 || (demo_writerng == 2 && timeout == 0))
 		{
@@ -467,6 +468,7 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	if (!demobuf.p || !demo.deferstart)
 		return;
+
 	ziptic = READUINT8(demobuf.p);
 
 	if (ziptic & ZT_FWD)
@@ -488,11 +490,12 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	// what in the actual fuck is this???
 	// SRB2kart: Copy-pasted from ticcmd building, removes that crappy demo cam
-	if (((players[displayplayers[0]].mo && players[displayplayers[0]].speed > 0) // Moving
+	const player_t *player = &players[displayplayers[0]];
+	if (((player->mo && player->speed > 0) // Moving
 		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
-		|| (players[displayplayers[0]].kartstuff[k_respawn]) // Respawning
-		|| (players[displayplayers[0]].spectator || objectplacing)) // Not a physical player
-		&& !(players[displayplayers[0]].kartstuff[k_spinouttimer] && players[displayplayers[0]].kartstuff[k_sneakertimer])) // Spinning and boosting cancels out spinout
+		|| (player->kartstuff[k_respawn]) // Respawning
+		|| (player->spectator || objectplacing)) // Not a physical player
+		&& !(player->kartstuff[k_spinouttimer] && player->kartstuff[k_sneakertimer])) // Spinning and boosting cancels out spinout
 		localangle[0] += (cmd->angleturn<<16);
 
 	if (!(demoflags & DF_GHOST) && *demobuf.p == DEMOMARKER)
@@ -515,49 +518,49 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	if (cmd->forwardmove != oldcmd[playernum].forwardmove)
 	{
-		WRITEUINT8(demobuf.p,cmd->forwardmove);
+		WRITEUINT8(demobuf.p, cmd->forwardmove);
 		oldcmd[playernum].forwardmove = cmd->forwardmove;
 		ziptic |= ZT_FWD;
 	}
 
 	if (cmd->sidemove != oldcmd[playernum].sidemove)
 	{
-		WRITEUINT8(demobuf.p,cmd->sidemove);
+		WRITEUINT8(demobuf.p, cmd->sidemove);
 		oldcmd[playernum].sidemove = cmd->sidemove;
 		ziptic |= ZT_SIDE;
 	}
 
 	if (cmd->angleturn != oldcmd[playernum].angleturn)
 	{
-		WRITEINT16(demobuf.p,cmd->angleturn);
+		WRITEINT16(demobuf.p, cmd->angleturn);
 		oldcmd[playernum].angleturn = cmd->angleturn;
 		ziptic |= ZT_ANGLE;
 	}
 
 	if (cmd->buttons != oldcmd[playernum].buttons)
 	{
-		WRITEUINT16(demobuf.p,cmd->buttons);
+		WRITEUINT16(demobuf.p, cmd->buttons);
 		oldcmd[playernum].buttons = cmd->buttons;
 		ziptic |= ZT_BUTTONS;
 	}
 
 	if (cmd->aiming != oldcmd[playernum].aiming)
 	{
-		WRITEINT16(demobuf.p,cmd->aiming);
+		WRITEINT16(demobuf.p, cmd->aiming);
 		oldcmd[playernum].aiming = cmd->aiming;
 		ziptic |= ZT_AIMING;
 	}
 
 	if (cmd->driftturn != oldcmd[playernum].driftturn)
 	{
-		WRITEINT16(demobuf.p,cmd->driftturn);
+		WRITEINT16(demobuf.p, cmd->driftturn);
 		oldcmd[playernum].driftturn = cmd->driftturn;
 		ziptic |= ZT_DRIFT;
 	}
 
 	if (cmd->latency != oldcmd[playernum].latency)
 	{
-		WRITEUINT8(demobuf.p,cmd->latency);
+		WRITEUINT8(demobuf.p, cmd->latency);
 		oldcmd[playernum].latency = cmd->latency;
 		ziptic |= ZT_LATENCY;
 	}
@@ -713,7 +716,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	if (!(demoflags & DF_GHOST))
 		return; // No ghost data to write.
 
-	if (ghost->player && ghost->player->pflags & PF_NIGHTSMODE && ghost->tracer)
+	if (ghost->player && nightsplayer(ghost->player) && ghost->tracer)
 	{
 		// We're talking about the NiGHTS thing, not the normal platforming thing!
 		ziptic |= GZT_NIGHTS;
@@ -726,8 +729,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 	// GZT_XYZ is only useful if you've moved 256 FRACUNITS or more in a single tic.
 	if (abs(ghost->x-oldghost[playernum].x) > MAXMOM
-	|| abs(ghost->y-oldghost[playernum].y) > MAXMOM
-	|| abs(ghost->z-oldghost[playernum].z) > MAXMOM
+	||  abs(ghost->y-oldghost[playernum].y) > MAXMOM
+	||  abs(ghost->z-oldghost[playernum].z) > MAXMOM
 	|| ((UINT8)(leveltime & 255) > 0 && (UINT8)(leveltime & 255) <= (UINT8)cv_netdemosyncquality.value)) // Hack to enable slightly nicer resyncing
 	{
 		oldghost[playernum].x = ghost->x;
@@ -931,7 +934,7 @@ void G_ConsAllGhostTics(void)
 void G_ConsGhostTic(INT32 playernum)
 {
 	UINT8 ziptic;
-	fixed_t px,py,pz,gx,gy,gz;
+	fixed_t px, py, pz, gx, gy, gz;
 	mobj_t *testmo;
 	fixed_t syncleeway;
 	boolean nightsfail = false;
@@ -976,7 +979,7 @@ void G_ConsGhostTic(INT32 playernum)
 
 	if (ziptic & GZT_NIGHTS)
 	{
-		if (!testmo || !testmo->player || !(testmo->player->pflags & PF_NIGHTSMODE) || !testmo->tracer)
+		if (!testmo || !testmo->player || !nightsplayer(testmo->player) || !testmo->tracer)
 			nightsfail = true;
 		else
 			testmo = testmo->tracer;
@@ -1344,7 +1347,7 @@ fadeghost:
 					}
 					else
 					{
-						mobj = P_SpawnMobj(g->mo->x, g->mo->y, g->mo->z - FixedDiv(FixedMul(g->mo->info->height, g->mo->scale) - g->mo->height,3*FRACUNIT), MT_THOK);
+						mobj = P_SpawnMobj(g->mo->x, g->mo->y, g->mo->z - FixedDiv(FixedMul(g->mo->info->height, g->mo->scale) - g->mo->height, 3*FRACUNIT), MT_THOK);
 						mobj->sprite = states[mobjinfo[type].spawnstate].sprite;
 						mobj->frame = (states[mobjinfo[type].spawnstate].frame & FF_FRAMEMASK) | tr_trans60<<FF_TRANSSHIFT;
 						mobj->tics = -1; // nope.
@@ -1375,7 +1378,7 @@ fadeghost:
 				UINT16 i, health;
 				UINT16 count = READUINT16(g->p);
 				//UINT32 type;
-				fixed_t x,y,z;
+				fixed_t x, y, z;
 				angle_t angle;
 				mobj_t *poof;
 
@@ -1518,7 +1521,9 @@ void G_PreviewRewind(tic_t previewtime)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		player_t *player = &players[i];
+
+		if (!playeringame[i] || player->spectator)
 		{
 			if (info->playerinfo[i].player.mo)
 			{
@@ -1530,35 +1535,35 @@ void G_PreviewRewind(tic_t previewtime)
 
 		if (!info->playerinfo[i].ingame || !info->playerinfo[i].player.mo)
 		{
-			if (players[i].mo)
-				players[i].mo->flags2 |= MF2_DONTDRAW;
+			if (player->mo)
+				player->mo->flags2 |= MF2_DONTDRAW;
 
 			continue;
 		}
 
-		if (!players[i].mo)
+		if (!player->mo)
 			continue; //@TODO spawn temp object to act as a player display
 
-		players[i].mo->flags2 &= ~MF2_DONTDRAW;
+		player->mo->flags2 &= ~MF2_DONTDRAW;
 
-		P_UnsetThingPosition(players[i].mo);
+		P_UnsetThingPosition(player->mo);
 #define TWEEN(pr) info->playerinfo[i].mobj.pr + FixedMul((INT32) (next_info->playerinfo[i].mobj.pr - info->playerinfo[i].mobj.pr), tweenvalue)
-		players[i].mo->x = TWEEN(x);
-		players[i].mo->y = TWEEN(y);
-		players[i].mo->z = TWEEN(z);
-		players[i].mo->angle = TWEEN(angle);
+		player->mo->x = TWEEN(x);
+		player->mo->y = TWEEN(y);
+		player->mo->z = TWEEN(z);
+		player->mo->angle = TWEEN(angle);
 #undef TWEEN
-		P_SetThingPosition(players[i].mo);
+		P_SetThingPosition(player->mo);
 
-		players[i].frameangle = info->playerinfo[i].player.frameangle + FixedMul((INT32) (next_info->playerinfo[i].player.frameangle - info->playerinfo[i].player.frameangle), tweenvalue);
+		player->frameangle = info->playerinfo[i].player.frameangle + FixedMul((INT32) (next_info->playerinfo[i].player.frameangle - info->playerinfo[i].player.frameangle), tweenvalue);
 
-		players[i].mo->sprite = info->playerinfo[i].mobj.sprite;
-		players[i].mo->frame = info->playerinfo[i].mobj.frame;
+		player->mo->sprite = info->playerinfo[i].mobj.sprite;
+		player->mo->frame = info->playerinfo[i].mobj.frame;
 
-		players[i].realtime = info->playerinfo[i].player.realtime;
+		player->realtime = info->playerinfo[i].player.realtime;
 
 		for (j = 0; j < NUMKARTSTUFF; j++)
-			players[i].kartstuff[j] = info->playerinfo[i].player.kartstuff[j];
+			player->kartstuff[j] = info->playerinfo[i].player.kartstuff[j];
 	}
 
 	for (i = splitscreen; i >= 0; i--)
@@ -1651,10 +1656,12 @@ void G_RecordDemo(const char *name)
 		maxsize = cv_maxdemosize.value*1024*1024;
 
 		demobuf.buffer = Z_Malloc(maxsize + 100*1024, PU_STATIC, NULL);
-		demoend = demobuf.buffer + maxsize;
 
 		if (demobuf.buffer)
+		{
+			demoend = demobuf.buffer + maxsize;
 			demo.recording = true;
+		}
 		else
 			CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 	}
@@ -1689,7 +1696,7 @@ void G_BeginRecording(void)
 		return;
 	}
 
-	memset(name,0,sizeof(name));
+	memset(name, 0, sizeof(name));
 
 	demobuf.p = demobuf.buffer;
 	demoflags = DF_GHOST|(multiplayer ? DF_MULTIPLAYER : (modeattacking<<DF_ATTACKSHIFT));
@@ -1703,9 +1710,9 @@ void G_BeginRecording(void)
 
 	// Setup header.
 	memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
-	WRITEUINT8(demobuf.p,VERSION);
-	WRITEUINT8(demobuf.p,SUBVERSION);
-	WRITEUINT16(demobuf.p,DEMOVERSION);
+	WRITEUINT8(demobuf.p, VERSION);
+	WRITEUINT8(demobuf.p, SUBVERSION);
+	WRITEUINT16(demobuf.p, DEMOVERSION);
 
 	// Full replay title
 	demobuf.p += 64;
@@ -1716,11 +1723,11 @@ void G_BeginRecording(void)
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
 		if (title)
 		{
-			snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+			snprintf(demotitlename, sizeof(demotitlename)-1, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
 			Z_Free(title);
 		}
 		else
-			snprintf(demotitlename, 64, "%s", modeattacking ? "Time Attack" : connectedservername);
+			snprintf(demotitlename, sizeof(demotitlename)-1, "%s", modeattacking ? "Time Attack" : connectedservername);
 
 		// Init just in case it isn't initialized already
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
@@ -1734,7 +1741,7 @@ void G_BeginRecording(void)
 
 	// game data
 	memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
-	WRITEINT16(demobuf.p,gamemap);
+	WRITEINT16(demobuf.p, gamemap);
 	memcpy(demobuf.p, mapmd5, 16); demobuf.p += 16;
 
 	WRITEUINT8(demobuf.p, demoflags);
@@ -1766,8 +1773,8 @@ void G_BeginRecording(void)
 			break;
 		case ATTACKING_RECORD: // 1
 			demotime_p = demobuf.p;
-			WRITEUINT32(demobuf.p,UINT32_MAX); // time
-			WRITEUINT32(demobuf.p,UINT32_MAX); // lap
+			WRITEUINT32(demobuf.p, UINT32_MAX); // time
+			WRITEUINT32(demobuf.p, UINT32_MAX); // lap
 			break;
 		default: // 3
 			break;
@@ -1824,9 +1831,9 @@ void G_BeginRecording(void)
 	if (demoflags & DF_LUAVARS)
 		LUA_Archive(&demobuf, false);
 
-	memset(&oldcmd,0,sizeof(oldcmd));
-	memset(&oldghost,0,sizeof(oldghost));
-	memset(&ghostext,0,sizeof(ghostext));
+	memset(&oldcmd, 0, sizeof(oldcmd));
+	memset(&oldghost, 0, sizeof(oldghost));
+	memset(&ghostext, 0, sizeof(ghostext));
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -1866,19 +1873,19 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT
 	// Name
 	memset(temp, 0, 16);
 	strncpy(temp, name, 16);
-	memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p, temp, 16);
 	demobuf.p += 16;
 
 	// Skin
 	memset(temp, 0, 16);
 	strncpy(temp, skins[skinnum].name, 16);
-	memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p, temp, 16);
 	demobuf.p += 16;
 
 	// Color
 	memset(temp, 0, 16);
 	strncpy(temp, KartColor_Names[color], 16);
-	memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p, temp, 16);
 	demobuf.p += 16;
 
 	// Score/time/whatever
@@ -1992,7 +1999,6 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 	UINT8 totalfiles, filesloaded, nmusfilecount;
 	char filename[MAX_WADPATH];
 	UINT8 md5sum[16];
-	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
 	UINT8 error = 0;
@@ -2002,53 +2008,44 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 
 	for (i = 0; i < totalfiles; ++i)
 	{
-		if (toomany)
-			SKIPSTRING((*pp));
-		else
-		{
-			strlcpy(filename, (char *)(*pp), sizeof filename);
-			SKIPSTRING((*pp));
-		}
+		strlcpy(filename, (char *)(*pp), sizeof filename);
+		SKIPSTRING((*pp));
 
 		READMEM((*pp), md5sum, 16); // hue hue peepee
 
-		if (!toomany)
+		alreadyloaded = false;
+		nmusfilecount = 0;
+
+		for (j = 0; j < numwadfiles; ++j)
 		{
-			alreadyloaded = false;
-			nmusfilecount = 0;
-
-			for (j = 0; j < numwadfiles; ++j)
-			{
-				if (wadfiles[j]->important && j > mainwads)
-					nmusfilecount++;
-				else
-					continue;
-
-				if (memcmp(md5sum, wadfiles[j]->md5sum, 16) == 0)
-				{
-					alreadyloaded = true;
-
-					if (i != nmusfilecount-1 && error < DFILE_ERROR_OUTOFORDER)
-						error |= DFILE_ERROR_OUTOFORDER;
-
-					break;
-				}
-			}
-
-			if (alreadyloaded)
-			{
-				filesloaded++;
+			if (wadfiles[j]->important && j > mainwads)
+				nmusfilecount++;
+			else
 				continue;
-			}
 
-			if (numwadfiles >= MAX_WADFILES)
-				error = DFILE_ERROR_CANNOTLOAD;
-			else if (!quick && findfile(filename, md5sum, false) != FS_FOUND)
-				error = DFILE_ERROR_CANNOTLOAD;
-			else if (error < DFILE_ERROR_INCOMPLETEOUTOFORDER)
-				error |= DFILE_ERROR_NOTLOADED;
-		} else
+			if (memcmp(md5sum, wadfiles[j]->md5sum, 16) == 0)
+			{
+				alreadyloaded = true;
+
+				if (i != nmusfilecount-1 && error < DFILE_ERROR_OUTOFORDER)
+					error |= DFILE_ERROR_OUTOFORDER;
+
+				break;
+			}
+		}
+
+		if (alreadyloaded)
+		{
+			filesloaded++;
+			continue;
+		}
+
+		if (numwadfiles >= MAX_WADFILES)
 			error = DFILE_ERROR_CANNOTLOAD;
+		else if (!quick && findfile(filename, md5sum, false) != FS_FOUND)
+			error = DFILE_ERROR_CANNOTLOAD;
+		else if (error < DFILE_ERROR_INCOMPLETEOUTOFORDER)
+			error |= DFILE_ERROR_NOTLOADED;
 	}
 
 	// Get final file count
@@ -2215,7 +2212,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2225,7 +2222,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2250,14 +2247,14 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 #ifdef DEMO_COMPAT_100
 		case 0x0001:
 			pdemo->type = MD_OUTDATED;
-			sprintf(pdemo->title, "Legacy Replay");
+			snprintf(pdemo->title, sizeof(pdemo->title), "Legacy Replay");
 			break;
 #endif
 		// too old, cannot support.
 		default:
 			CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
 			pdemo->type = MD_INVALID;
-			sprintf(pdemo->title, "INVALID REPLAY");
+			snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 			return;
 	}
 
@@ -2270,7 +2267,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2291,7 +2288,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is a legacy multiplayer replay and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 #endif
@@ -2338,7 +2335,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	while (READUINT8(extrainfo_p) == DW_STANDING) // Assume standings are always first in the extrainfo
 	{
 		INT32 i;
-		char temp[16];
+		char temp[17];
 
 		pdemo->standings[count].ranking = READUINT8(extrainfo_p);
 
@@ -2347,7 +2344,8 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		extrainfo_p += 16;
 
 		// Skin
-		memcpy(temp,extrainfo_p,16);
+		memcpy(temp, extrainfo_p, 16);
+		temp[16] = '\0';
 		extrainfo_p += 16;
 		pdemo->standings[count].skin = UINT8_MAX;
 
@@ -2361,12 +2359,13 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		}
 
 		// Color
-		memcpy(temp,extrainfo_p,16);
+		memcpy(temp, extrainfo_p, 16);
+		temp[16] = '\0';
 		extrainfo_p += 16;
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
 		{
-			if (fasticmp(KartColor_Names[i],temp)) // SRB2kart
+			if (fasticmp(KartColor_Names[i], temp)) // SRB2kart
 			{
 				pdemo->standings[count].color = i;
 				break;
@@ -2401,49 +2400,69 @@ static long G_GetCreationTime(char *filepath)
 
 static char *G_GetDemoDate(menudemo_t *pdemo)
 {
-	char *datetime;
-	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
-
-	// no mallocma balls... :c
-	if (!datetime)
-	{
-		return NULL;
-	}
-
+	char *endPos = NULL;
+	static char datetime[11];
 	time_t file_time = 0;
+	const char *format = NULL;
+	struct tm *tm_buf = NULL;
+	CLEANUP(pfree) char *filename = NULL;
 
 	// get le filepath
-	char *filename;
 	filename = strdup(pdemo->filepath);
 
-#if defined (_WIN32)
 	if (!filename)
 	{
-		// if we cant get a filename try just getting the file create time
+#if defined (_WIN32)
+		// if we cant get a filename try just getting the file creation time
 		file_time = G_GetCreationTime(pdemo->filepath);
 		goto skipfilenametime;
-	}
 #else
-	if (!filename)
-	{
-		free(datetime);
 		return NULL;
-	}
 #endif
+	}
 
 	// get the actual filename Zzz...
 	nameonly(filename);
 
-	// convert it to long Zzz....
-	file_time = strtol(filename, NULL, 10);
-	free(filename); // dont need this anymore a
+	// the first 10 characters of a replay name usually is a unix timestamp
+
+	// not long enough to contain a valid timestamp
+	if (strlen(filename) < 10)
+	{
+#if defined (_WIN32)
+		// try to get file creation time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		goto skipfilenametime;
+#else
+		return NULL;
+#endif
+	}
+
+#ifndef AVOID_ERRNO
+	errno = 0;
+#endif
+	// get the timestamp as actual numbers lul
+	file_time = strtol(filename, &endPos, 10);
+
+	if (endPos == filename // Empty string
+#ifndef AVOID_ERRNO
+		|| errno == ERANGE // Number out-of-range
+#endif
+		|| file_time < 0) // Number is not positive
+	{
+#if defined (_WIN32)
+		// just try and get the creation time then
+		file_time = G_GetCreationTime(pdemo->filepath);
+#else
+		return NULL;
+#endif
+	}
 
 #if defined (_WIN32)
 skipfilenametime:
 #endif
 
 	// then throw it into localtime to get an actual human readable format lmao
-	struct tm *tm_buf = NULL;
 	tm_buf = localtime(&file_time);
 
 	// cant believe we ended up in 1970
@@ -2456,14 +2475,10 @@ skipfilenametime:
 		tm_buf = localtime(&file_time);
 
 		if (tm_buf == NULL || tm_buf->tm_year <= 110)
-		{
-			free(datetime);
 			return NULL;
-		}
 
 		goto gotcreationtime;
 #else
-		free(datetime);
 		return NULL;
 #endif
 	}
@@ -2472,17 +2487,27 @@ skipfilenametime:
 gotcreationtime:
 #endif
 
-	const char *format;
-
 	// US ppl are special (:
 	if (cv_demodateformat.value == 2)
 		format = "%m.%d.%Y";
 	else if (cv_demodateformat.value == 1)
 		format = "%d.%m.%Y";
 	else
-		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
+	{
+		const char *locale = setlocale(LC_TIME, NULL);
 
-	strftime(datetime, sizeof(pdemo->date), format, tm_buf);
+		if (locale == NULL)
+			format = "%d.%m.%Y"; // fallback to non US format
+		else if (strstr(locale, "en_US"))
+			format = "%m.%d.%Y";
+		else
+			format = "%d.%m.%Y";
+	}
+
+	if (strftime(datetime, sizeof(datetime), format, tm_buf) == 0)
+	{
+		return NULL;
+	}
 
 	return datetime;
 }
@@ -2491,6 +2516,7 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 {
 	UINT8 infobuffer[96], *info_p;
 	UINT16 pdemoversion;
+	char *demodate = NULL;
 	size_t count;
 
 	FILE *handle = fopen(pdemo->filepath, "rb");
@@ -2498,7 +2524,7 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	if (!handle)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2510,7 +2536,7 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	if (count < 96 || memcmp(info_p, DEMOHEADER, 12))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -2529,23 +2555,23 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 			memcpy(pdemo->title, info_p, 64);
 
 			// demo date
-			char *demodate;
 			demodate = G_GetDemoDate(pdemo);
 
 			if (demodate)
-				strncpy(pdemo->date, demodate, sizeof(pdemo->date));
+			{
+				strlcpy(pdemo->date, demodate, sizeof(pdemo->date));
+			}
 
-			free(demodate);
 			break;
 #ifdef DEMO_COMPAT_100
 		case 0x0001:
-			sprintf(pdemo->title, "Legacy Replay");
+			snprintf(pdemo->title, sizeof(pdemo->title), "Legacy Replay");
 			break;
 #endif
 		// too old, cannot support.
 		default:
 			CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
-			sprintf(pdemo->title, "INVALID REPLAY");
+			snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 	}
 }
 
@@ -2576,7 +2602,7 @@ void G_DoPlayDemo(char *defdemoname)
 	boolean skiperrors = false;
 #endif
 	boolean spectator;
-	UINT8 slots[MAXPLAYERS], kartspeed[MAXPLAYERS], kartweight[MAXPLAYERS], numslots = 0;
+	UINT8 slots[MAXPLAYERS] = {}, kartspeed[MAXPLAYERS] = {}, kartweight[MAXPLAYERS] = {}, numslots = 0;
 
 	G_InitDemoRewind();
 
@@ -2587,7 +2613,7 @@ void G_DoPlayDemo(char *defdemoname)
 	if (defdemoname == NULL)
 	{
 		demobuf.p = demobuf.buffer;
-		pdemoname = ZZ_Alloc(1); // Easier than adding checks for this everywhere it's freed
+		pdemoname = ZZ_Calloc(1); // Easier than adding checks for this everywhere it's freed
 	}
 	else
 	{
@@ -2599,7 +2625,7 @@ void G_DoPlayDemo(char *defdemoname)
 			n++;
 
 		pdemoname = ZZ_Alloc(strlen(n)+1);
-		strcpy(pdemoname,n);
+		strcpy(pdemoname, n);
 
 		M_SetPlaybackMenuPointer();
 
@@ -2609,7 +2635,7 @@ void G_DoPlayDemo(char *defdemoname)
 			//FIL_DefaultExtension(defdemoname, ".lmp");
 			if (!FIL_ReadFile(defdemoname, &demobuf.buffer))
 			{
-				snprintf(msg, 1024, M_GetText("Failed to read file '%s'.\n"), defdemoname);
+				snprintf(msg, sizeof(msg), M_GetText("Failed to read file '%s'.\n"), defdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				gameaction = ga_nothing;
 				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
@@ -2621,7 +2647,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// load demo resource from WAD
 		else if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
 		{
-			snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("Failed to read lump '%s'.\n"), defdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			gameaction = ga_nothing;
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
@@ -2642,7 +2668,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	if (memcmp(demobuf.p, DEMOHEADER, 12))
 	{
-		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2668,7 +2694,7 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 		// too old, cannot support.
 		default:
-			snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2679,7 +2705,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	if (memcmp(demobuf.p, "PLAY", 4))
 	{
-		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2696,7 +2722,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		if (demoflags & DF_MULTIPLAYER)
 		{
-			snprintf(msg, 1024, M_GetText("%s is an alpha multiplayer replay and cannot be played.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s is an alpha multiplayer replay and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2723,31 +2749,31 @@ void G_DoPlayDemo(char *defdemoname)
 			switch (error)
 			{
 				case DFILE_ERROR_NOTLOADED:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo are not loaded.\n\nUse\n\"playdemo %s -addfiles\"\nto load them and play the demo.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_OUTOFORDER:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo are loaded out of order.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_INCOMPLETEOUTOFORDER:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo are not loaded, and some are out of order.\n\nUse\n\"playdemo %s -addfiles\"\nto load needed files and play the demo.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_CANNOTLOAD:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"Required files for this demo cannot be loaded.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n",
 						 pdemoname);
 					break;
 
 				case DFILE_ERROR_EXTRAFILES:
-					snprintf(msg, 1024,
+					snprintf(msg, sizeof(msg),
 						"You have additional files loaded beyond the demo's file list.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n",
 						 pdemoname);
 					break;
@@ -2795,9 +2821,9 @@ void G_DoPlayDemo(char *defdemoname)
 	demobuf.p += 4; // Extrainfo location
 
 	// ...*map* not loaded?
-	if (!gamemap || (gamemap > NUMMAPS) || !mapheaderinfo[gamemap-1] || !(mapheaderinfo[gamemap-1]->menuflags & LF2_EXISTSHACK))
+	if (!gamemap || (gamemap > NUMMAPS) || (W_CheckNumForName(G_BuildMapName(gamemap)) == LUMPERROR))
 	{
-		snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2808,15 +2834,15 @@ void G_DoPlayDemo(char *defdemoname)
 	if (demo.version == 0x0001)
 	{
 		// Player name
-		memcpy(player_names[0],demobuf.p,16);
+		memcpy(player_names[0], demobuf.p, 16);
 		demobuf.p += 16;
 
 		// Skin
-		memcpy(skin,demobuf.p,16);
+		memcpy(skin, demobuf.p, 16);
 		demobuf.p += 16;
 
 		// Color
-		memcpy(color,demobuf.p,16);
+		memcpy(color, demobuf.p, 16);
 		demobuf.p += 16;
 
 		demobuf.p += 5; // Backwards compat - some stats
@@ -2829,7 +2855,17 @@ void G_DoPlayDemo(char *defdemoname)
 		// Skin not loaded?
 		if (!SetPlayerSkin(0, skin))
 		{
-			snprintf(msg, 1024, M_GetText("%s features a character that is not currently loaded.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s features a character that is not currently loaded.\n"), pdemoname);
+			CONS_Alert(CONS_ERROR, "%s", msg);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
+			G_ResetDemoPlayback();
+			return;
+		}
+
+		// ...*map* not loaded?
+		if (!gamemap || (gamemap > NUMMAPS) || !mapheaderinfo[gamemap-1] || !(mapheaderinfo[gamemap-1]->menuflags & LF2_EXISTSHACK))
+		{
+			snprintf(msg, sizeof(msg), M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2839,7 +2875,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// Set color
 		for (i = 0; i < MAXSKINCOLORS; i++)
 		{
-			if (fasticmp(KartColor_Names[i],color)) // SRB2kart
+			if (fasticmp(KartColor_Names[i], color)) // SRB2kart
 			{
 				players[0].skincolor = i;
 				break;
@@ -2852,16 +2888,16 @@ void G_DoPlayDemo(char *defdemoname)
 		// Sigh ... it's an empty demo.
 		if (*demobuf.p == DEMOMARKER)
 		{
-			snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s contains no data to be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
 
-		memset(&oldcmd,0,sizeof(oldcmd));
-		memset(&oldghost,0,sizeof(oldghost));
-		memset(&ghostext,0,sizeof(ghostext));
+		memset(&oldcmd, 0, sizeof(oldcmd));
+		memset(&oldghost, 0, sizeof(oldghost));
+		memset(&ghostext, 0, sizeof(ghostext));
 
 		CONS_Alert(CONS_WARNING, M_GetText("Demo version does not match game version. Desyncs may occur.\n"));
 
@@ -2890,7 +2926,7 @@ void G_DoPlayDemo(char *defdemoname)
 	// Sigh ... it's an empty demo.
 	if (*demobuf.p == DEMOMARKER)
 	{
-		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
+		snprintf(msg, sizeof(msg), M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
@@ -2939,7 +2975,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 			if (modeattacking)
 			{
-				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
+				snprintf(msg, sizeof(msg), M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 				G_ResetDemoPlayback();
@@ -2951,7 +2987,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		if (modeattacking && numslots > 1)
 		{
-			snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
+			snprintf(msg, sizeof(msg), M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
@@ -2965,16 +3001,16 @@ void G_DoPlayDemo(char *defdemoname)
 		players[p].spectator = spectator;
 
 		// Name
-		memcpy(player_names[p],demobuf.p,16);
+		memcpy(player_names[p], demobuf.p, 16);
 		demobuf.p += 16;
 
 		// Skin
-		memcpy(skin,demobuf.p,16);
+		memcpy(skin, demobuf.p, 16);
 		demobuf.p += 16;
 		SetPlayerSkin(p, skin);
 
 		// Color
-		memcpy(color,demobuf.p,16);
+		memcpy(color, demobuf.p, 16);
 		demobuf.p += 16;
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
@@ -3050,6 +3086,9 @@ post_compat:
 
 	if (cv_director.value)
 		CV_SetValue(&cv_director, 0);
+
+	if (demo.timing)
+		G_DoneLevelLoad();
 
 	demo.deferstart = true;
 }
@@ -3189,15 +3228,15 @@ void G_AddGhost(char *defdemoname)
 	if (ghostversion == 0x0001)
 	{
 		// Player name (TODO: Display this somehow if it doesn't match cv_playername!)
-		memcpy(name, p,16);
+		memcpy(name, p, 16);
 		p += 16;
 
 		// Skin
-		memcpy(skin, p,16);
+		memcpy(skin, p, 16);
 		p += 16;
 
 		// Color
-		memcpy(color, p,16);
+		memcpy(color, p, 16);
 		p += 16;
 
 		// Ghosts do not have a player structure to put this in.
@@ -3349,7 +3388,7 @@ void G_AddGhost(char *defdemoname)
 
 	for (i = 0; i < MAXSKINCOLORS; i++)
 	{
-		if (fasticmp(KartColor_Names[i],color)) // SRB2kart
+		if (fasticmp(KartColor_Names[i], color)) // SRB2kart
 		{
 			gh->mo->color = (UINT8)i;
 			break;
@@ -3441,7 +3480,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	if (ghostversion == 0x0001)
 	{
 		// Player name
-		memcpy(dummystaffname, p,16);
+		memcpy(dummystaffname, p, 16);
 		dummystaffname[16] = '\0';
 		return; // Not really a failure but whatever
 	}
@@ -3478,10 +3517,11 @@ static INT32 restorecv_vidwait;
 void G_TimeDemo(const char *name)
 {
 	nodrawers = M_CheckParm("-nodraw");
-	noblit = M_CheckParm("-noblit");
+
 	restorecv_vidwait = cv_vidwait.value;
 	if (cv_vidwait.value)
 		CV_Set(&cv_vidwait, "0");
+
 	demo.timing = true;
 	singletics = true;
 	framecount = 0;

@@ -319,15 +319,16 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 	double clipfov;
 	double floatangle;
 	angle_t a1;
-
-	float tilt = fabsf(((float)(int)tiltangle) / (float)ANG1);
-
-	if (tilt > 90.0f)
-		tilt = 90.0f;
+	float tilt;
 
 	// If the pitch is larger than this you can look all around at a FOV of 90
 	if (abs((signed)tiltangle) > 46 * ANG1)
 		return 0xffffffff;
+
+	tilt = fabsf(((float)(int)tiltangle) / (float)ANG1);
+
+	if (tilt > 90.0f)
+		tilt = 90.0f;
 
 	// ok, this is a gross hack that barely works...
 	// but at least it doesn't overestimate too much...
@@ -335,7 +336,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 	floatangle = 2.0 + (45.0 + ((double)tilt / 1.9)) * clipfov / 90.0;
 	if (floatangle >= 180.0)
 		return 0xffffffff;
-	a1 = (angle_t)xs_CRoundToInt(ANG1 * floatangle);
+	a1 = (angle_t)lrint(ANG1 * floatangle);
 	return a1;
 }
 

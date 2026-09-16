@@ -32,6 +32,8 @@ extern consvar_t cv_bananajitter;
 extern consvar_t cv_bananthrowroll;
 extern consvar_t cv_airsparks;
 
+extern INT32 stprevnextchecks[2];
+
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
 INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush);
@@ -57,7 +59,7 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj);
 void K_RollMobjBySlopes(mobj_t *mo, pslope_t *slope);
 void K_SpawnBoostTrail(player_t *player);
 void K_SpawnSparkleTrail(mobj_t *mo);
-void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
+mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
 void K_DriftDustHandling(mobj_t *spawner);
 void K_PuntMine(mobj_t *mine, mobj_t *punter);
 void K_DoSneaker(player_t *player, INT32 type);

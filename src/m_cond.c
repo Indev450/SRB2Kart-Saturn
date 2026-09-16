@@ -235,7 +235,7 @@ void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1
 	wnum = conditionSets[set - 1].numconditions;
 	num = ++conditionSets[set - 1].numconditions;
 
-	conditionSets[set - 1].condition = Z_Realloc(conditionSets[set - 1].condition, sizeof(condition_t)*num, PU_STATIC, 0);
+	conditionSets[set - 1].condition = Z_Realloc(conditionSets[set - 1].condition, sizeof(condition_t)*num, PU_STATIC, NULL);
 
 	cond = conditionSets[set - 1].condition;
 
@@ -248,12 +248,9 @@ void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1
 
 void M_ClearConditionSet(UINT8 set)
 {
-	if (conditionSets[set - 1].numconditions)
-	{
-		Z_Free(conditionSets[set - 1].condition);
-		conditionSets[set - 1].condition = NULL;
-		conditionSets[set - 1].numconditions = 0;
-	}
+	Z_Free(conditionSets[set - 1].condition);
+	conditionSets[set - 1].condition = NULL;
+	conditionSets[set - 1].numconditions = 0;
 	conditionSets[set - 1].achieved = false;
 }
 
@@ -482,32 +479,13 @@ UINT8 M_CheckLevelEmblems(void)
 	// Update Score, Time, Rings emblems
 	for (i = 0; i < numemblems; ++i)
 	{
-		if (emblemlocations[i].type <= ET_SKIN || emblemlocations[i].collected)
+		// Requires time on map <= x
+		if (emblemlocations[i].type != ET_TIME || emblemlocations[i].collected)
 			continue;
 
 		levelnum = emblemlocations[i].level;
 		valToReach = emblemlocations[i].var;
-
-		switch (emblemlocations[i].type)
-		{
-			/*case ET_SCORE: // Requires score on map >= x
-				res = (G_GetBestScore(levelnum) >= (unsigned)valToReach);
-				break;*/
-			case ET_TIME: // Requires time on map <= x
-				res = (G_GetBestTime(levelnum) <= (unsigned)valToReach);
-				break;
-			/*case ET_RINGS: // Requires rings on map >= x
-				res = (G_GetBestRings(levelnum) >= valToReach);
-				break;
-			case ET_NGRADE: // Requires NiGHTS grade on map >= x
-				res = (G_GetBestNightsGrade(levelnum, 0) >= valToReach);
-				break;
-			case ET_NTIME: // Requires NiGHTS time on map <= x
-				res = (G_GetBestNightsTime(levelnum, 0) <= (unsigned)valToReach);
-				break;*/
-			default: // unreachable but shuts the compiler up.
-				continue;
-		}
+		res = (G_GetBestTime(levelnum) <= (unsigned)valToReach);
 
 		emblemlocations[i].collected = res;
 		if (res)

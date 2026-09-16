@@ -69,7 +69,7 @@ FUNCINLINE static ATTRINLINE void P_ArchivePlayer(savebuffer_t *save)
 		pllives = 3; // has less than that.
 
 	WRITEUINT8(save->p, player->skincolor);
-	WRITEUINT8(save->p, player->skin);
+	WRITESKIN(save->p, player->skin);
 
 	WRITEUINT32(save->p, player->score);
 	WRITEINT32(save->p, pllives);
@@ -77,7 +77,7 @@ FUNCINLINE static ATTRINLINE void P_ArchivePlayer(savebuffer_t *save)
 
 	if (botskin)
 	{
-		WRITEUINT8(save->p, botskin);
+		WRITESKIN(save->p, botskin);
 		WRITEUINT8(save->p, botcolor);
 	}
 }
@@ -88,7 +88,7 @@ FUNCINLINE static ATTRINLINE void P_ArchivePlayer(savebuffer_t *save)
 FUNCINLINE static ATTRINLINE void P_UnArchivePlayer(savebuffer_t *save)
 {
 	savedata.skincolor = READUINT8(save->p);
-	savedata.skin = READUINT8(save->p);
+	savedata.skin = READSKIN(save->p);
 
 	savedata.score = READINT32(save->p);
 	savedata.lives = READINT32(save->p);
@@ -96,9 +96,11 @@ FUNCINLINE static ATTRINLINE void P_UnArchivePlayer(savebuffer_t *save)
 
 	if (savedata.botcolor)
 	{
-		savedata.botskin = READUINT8(save->p);
+		savedata.botskin = READSKIN(save->p);
+
 		if (savedata.botskin-1 >= numskins)
 			savedata.botskin = 0;
+
 		savedata.botcolor = READUINT8(save->p);
 	}
 	else
@@ -117,7 +119,9 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
+#ifndef PHOBOS_BUILD
 		if (resending)
+#endif
 			WRITESINT8(save->p, (SINT8)adminplayers[i]);
 
 		if (!playeringame[i])
@@ -127,7 +131,9 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 
 		// no longer send ticcmds
 
+#ifndef PHOBOS_BUILD
 		if (resending)
+#endif
 			WRITESTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
 		const player_t *player = &players[i];
@@ -156,11 +162,16 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		WRITEUINT16(save->p, player->flashpal);
 		WRITEUINT16(save->p, player->flashcount);
 
+#ifdef PHOBOS_BUILD
+		WRITEUINT8(save->p, player->skincolor);
+		WRITEINT32(save->p, player->skin);
+#else
 		if (resending)
 		{
 			WRITEUINT8(save->p, player->skincolor);
 			WRITEINT32(save->p, player->skin);
 		}
+#endif
 
 		WRITEUINT32(save->p, player->score);
 		WRITEFIXED(save->p, player->dashspeed);
@@ -309,7 +320,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
+#ifndef PHOBOS_BUILD
 		if (reloading)
+#endif
 			adminplayers[i] = (INT32)READSINT8(save->p);
 
 		// Do NOT memset player struct to 0
@@ -320,7 +333,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 
 		// NOTE: sending tics should (hopefully) no longer be necessary
 
+#ifndef PHOBOS_BUILD
 		if (reloading)
+#endif
 			READSTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
 		player_t *player = &players[i];
@@ -349,11 +364,16 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		player->flashpal = READUINT16(save->p);
 		player->flashcount = READUINT16(save->p);
 
+#ifdef PHOBOS_BUILD
+		player->skincolor = READUINT8(save->p);
+		player->skin = READINT32(save->p);
+#else
 		if (reloading)
 		{
 			player->skincolor = READUINT8(save->p);
 			player->skin = READINT32(save->p);
 		}
+#endif
 
 		player->score = READUINT32(save->p);
 		player->dashspeed = READFIXED(save->p); // dashing speed
@@ -691,7 +711,7 @@ static void ArchiveLines(savebuffer_t *save)
 		if (spawnli->special == 321 || spawnli->special == 322) // only reason li->callcount would be non-zero is if either of these are involved
 			diff |= LD_CLLCOUNT;
 
-		if (li->sidenum[0] != 0xffff)
+		if (li->sidenum[0] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[0]];
 			spawnsi = &spawnsides[li->sidenum[0]];
@@ -706,7 +726,8 @@ static void ArchiveLines(savebuffer_t *save)
 			if (si->midtexture != spawnsi->midtexture)
 				diff |= LD_S1MIDTEX;
 		}
-		if (li->sidenum[1] != 0xffff)
+
+		if (li->sidenum[1] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[1]];
 			spawnsi = &spawnsides[li->sidenum[1]];
@@ -786,6 +807,7 @@ static void UnArchiveFFloors(savebuffer_t *save, const sector_t *ss)
 		I_Error("Sector does not have any ffloors!");
 
 	fflr_i = READUINT16(save->p); // get first modified ffloor's number ready
+
 	for (;;) // for some reason the usual for (rover = x; ...) thing doesn't work here?
 	{
 		if (fflr_i == 0xffff) // end of modified ffloors list, let's stop already
@@ -1106,7 +1128,11 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	diff2 = 0;
 
 	// not the default but the most probable
+#ifdef PHOBOS_BUILD
+	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0 || mobj->pmomz !=0)
+#else
 	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0)
+#endif
 		diff |= MD_MOM;
 	if (mobj->radius != mobj->info->radius)
 		diff |= MD_RADIUS;
@@ -1234,6 +1260,9 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		WRITEFIXED(save->p, mobj->momx);
 		WRITEFIXED(save->p, mobj->momy);
 		WRITEFIXED(save->p, mobj->momz);
+#ifdef PHOBOS_BUILD
+		WRITEFIXED(save->p, mobj->pmomz);
+#endif
 	}
 	if (diff & MD_RADIUS)
 		WRITEFIXED(save->p, mobj->radius);
@@ -1295,7 +1324,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff2 & MD2_CVMEM)
 		WRITEINT32(save->p, mobj->cvmem);
 	if (diff2 & MD2_SKIN)
-		WRITEUINT8(save->p, (UINT8)((skin_t *)mobj->skin - skins));
+		WRITESKIN(save->p, (skinnum_t)((skin_t *)mobj->skin - skins));
 	if (diff2 & MD2_COLOR)
 		WRITEUINT8(save->p, mobj->color);
 	if (diff2 & MD2_EXTVAL1)
@@ -1965,21 +1994,6 @@ FUNCINLINE static ATTRINLINE player_t *LoadPlayer(UINT32 player)
 // Loads a mobj_t from a save game
 //
 
-static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
-
-static void CalculateDoomednumToMobjtype(void)
-{
-	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
-
-	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
-	{
-		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
-		{
-			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
-		}
-	}
-}
-
 static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	mobj_t *mobj;
@@ -2068,6 +2082,9 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->momx = READFIXED(save->p);
 		mobj->momy = READFIXED(save->p);
 		mobj->momz = READFIXED(save->p);
+#ifdef PHOBOS_BUILD
+		mobj->pmomz = READFIXED(save->p);
+#endif
 	} // otherwise they're zero, and the memset took care of it
 
 	if (diff & MD_RADIUS)
@@ -2168,7 +2185,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff2 & MD2_CVMEM)
 		mobj->cvmem = READINT32(save->p);
 	if (diff2 & MD2_SKIN)
-		mobj->skin = &skins[READUINT8(save->p)];
+		mobj->skin = &skins[READSKIN(save->p)];
 	if (diff2 & MD2_COLOR)
 		mobj->color = READUINT8(save->p);
 	if (diff2 & MD2_EXTVAL1)
@@ -2879,10 +2896,6 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	if (READUINT32(save->p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad $$$.sav at archive block Thinkers");
 
-	// Pre-calculate this lookup, because it was wasting
-	// a shit ton of time loading mobj thinkers.
-	CalculateDoomednumToMobjtype();
-
 	// remove all the current thinkers
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = next)
 	{
@@ -3076,7 +3089,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 				break;
 
 			default:
-				I_Error("P_UnarchiveSpecials: Unknown tclass %d in savegame", tclass);
+				I_Error("P_NetUnArchiveThinkers: Unknown tclass %d in savegame", tclass);
 		}
 	}
 
@@ -3187,7 +3200,7 @@ FUNCINLINE static ATTRINLINE void P_UnArchivePolyObjects(savebuffer_t *save)
 	numSavedPolys = READINT32(save->p);
 
 	if (numSavedPolys != numPolyObjects)
-		I_Error("P_UnArchivePolyObjects: polyobj count inconsistency\n");
+		I_Error("P_UnArchivePolyObjects: polyobj count inconsistency (expected %d, got %d)\n", numPolyObjects, numSavedPolys);
 
 	for (i = 0; i < numSavedPolys; ++i)
 		P_UnArchivePolyObj(save, &PolyObjects[i]);
@@ -3327,8 +3340,6 @@ FUNCINLINE static ATTRINLINE void P_ArchiveMisc(savebuffer_t *save)
 	else
 		WRITEINT16(save->p, gamemap);
 
-	lastmapsaved = gamemap;
-
 	WRITEUINT16(save->p, (botskin ? (emeralds|(1<<10)) : emeralds)+357);
 	WRITESTRINGN(save->p, timeattackfolder, sizeof(timeattackfolder));
 }
@@ -3351,8 +3362,6 @@ FUNCINLINE static ATTRINLINE void P_UnArchiveSPGame(savebuffer_t *save, INT16 ma
 	// so make it so
 	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
-
-	lastmapsaved = gamemap;
 
 	tokenlist = 0;
 	token = 0;
@@ -3533,7 +3542,7 @@ static void P_ReloadSaveLevelData(void)
 		li->firsttag = spawnli->firsttag;
 		li->nexttag  = spawnli->nexttag;
 
-		if (li->sidenum[0] != 0xffff)
+		if (li->sidenum[0] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[0]];
 			spawnsi = &spawnsides[li->sidenum[0]];
@@ -3544,7 +3553,7 @@ static void P_ReloadSaveLevelData(void)
 			si->midtexture = spawnsi->midtexture;
 		}
 
-		if (li->sidenum[1] != 0xffff)
+		if (li->sidenum[1] != NO_INDEX)
 		{
 			si = &sides[li->sidenum[1]];
 			spawnsi = &spawnsides[li->sidenum[1]];
@@ -3611,8 +3620,11 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 		if (!P_SetupLevel(true, reloading))
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+			P_FreeCorruptMapWarnings();
 			return false;
 		}
+
+		P_PrintCorruptMapWarnings();
 	}
 	else
 	{

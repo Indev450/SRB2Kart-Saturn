@@ -63,25 +63,15 @@ PFNglGetString pglGetString;
 #endif
 
 #ifdef USE_FBO_OGL
-
-#if defined (__unix__)
-static boolean xwaylandcrap = false;
-#endif
-
 boolean UseScreenFBO(void)
 {
-	return ((supportFBO && cv_glframebuffer.value && downsample)
-#if defined (__unix__)
-	|| (supportFBO && xwaylandcrap)
-#endif
-	);
+	return (supportFBO && cv_glframebuffer.value && downsample);
 }
 #endif
 
 /**	\brief SDL video display surface
 */
 INT32 oglflags = 0;
-SDL_GLContext sdlglcontext = NULL;
 
 void *GetGLFunc(const char *proc)
 {
@@ -147,13 +137,13 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 		GL_DBG_Printf("OpenGL %s\n", gl_version);
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
-		GL_DBG_Printf("Extensions:");
+		GL_DBG_Printf("Extensions: \n");
 
 		{
 			// Need to do it with strtok for same reason its done like that in gr_glinfo command
 
 			char *copy = strdup((const char*)gl_extensions);
-			char *ext = strtok(copy, " ");
+			char *ext;
 
 			if (copy == NULL)
 			{
@@ -161,9 +151,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			}
 			else
 			{
+				ext = strtok(copy, " ");
+
 				do
 				{
-					GL_DBG_Printf(" %s", ext);
+					GL_DBG_Printf(" - %s\n", ext);
 				} while ((ext = strtok(NULL, " ")) != NULL);
 
 				free(copy);
@@ -201,17 +193,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			supportNPO2tex = true;
 
 		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
-
-#if defined (__unix__)
-#ifdef USE_FBO_OGL
-		// TODO: delet this since nvidia fixed their shit on 575
-		char videodriver[4] = {'S','D','L',0};
-		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA")
-			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), sizeof(videodriver)-1) != '\0')
-			&& (strncasecmp("x11", videodriver, 4) == 0))
-			xwaylandcrap = true;
-#endif
-#endif
 	}
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
@@ -241,21 +222,13 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	\return	void
 */
-void OglSdlFinishUpdate(boolean waitvbl)
+void OglSdlFinishUpdate(SDL_Window *window)
 {
-	static boolean oldwaitvbl = false;
 	int sdlw, sdlh;
 
 #ifdef USE_FBO_OGL
 	const boolean usefbo = UseScreenFBO();
 #endif
-
-	if (oldwaitvbl != waitvbl)
-	{
-		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
-	}
-
-	oldwaitvbl = waitvbl;
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
 	HWR_MakeScreenFinalTexture();
@@ -267,7 +240,18 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	}
 #endif
 
-	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
+	if (HWR_ShouldUsePaletteRendering())
+	{
+		// Final postprocess step of palette rendering, after everything else has been drawn.
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
+		GL_EnableShader();
+		HWR_DrawScreenFinalTexture(sdlw, sdlh);
+		GL_UnSetShader();
+	}
+	else
+	{
+		HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	}
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
@@ -288,14 +272,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #else
 	if (!I_CheckNativeRes() || WipeInAction)
 #endif
-		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
-
-#if defined (__unix__)
-#ifdef USE_FBO_OGL
-	if (loaded_config)
-		xwaylandcrap = false;
-#endif
-#endif
+		HWR_DrawScreenFinalTexture(realwidth, realheight);
 }
 
 #endif //HWRENDER

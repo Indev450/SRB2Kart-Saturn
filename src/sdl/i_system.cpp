@@ -31,6 +31,10 @@
 
 #include <signal.h>
 
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+#include <poll.h>
+#endif
+
 #ifdef _WIN32
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
@@ -53,10 +57,13 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
+
 #if defined (__unix__) || defined (UNIXCOMMON)
+#include <sys/stat.h>
 #include <fcntl.h>
 #endif
 
@@ -79,6 +86,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
 #if defined (__linux__)
 #include <sys/vfs.h>
+#elif defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
 #else
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -168,8 +181,7 @@ const char *wadSearchPaths[] = {
 
 /**	\brief WAD file to look for
 */
-#define WADKEYWORD1 "srb2.srb"
-#define WADKEYWORD2 "srb2.wad"
+#define WADKEYWORD "srb2.srb"
 /**	\brief holds wad path
 */
 static char returnWadPath[256];
@@ -201,10 +213,6 @@ static char returnWadPath[256];
 
 #include "../s_sound.h"
 
-#ifdef MAC_ALERT
-#include "macosx/mac_alert.h"
-#endif
-
 #include "../d_main.h"
 
 #if !defined(NOMUMBLE) && defined(HAVE_MUMBLE)
@@ -213,14 +221,12 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
-SDL_bool consolevent = SDL_FALSE;
-SDL_bool framebuffer = SDL_FALSE;
+boolean consolevent = false;
+boolean framebuffer = false;
 UINT8 keyboard_started = false;
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-SDL_bool stdin_active = SDL_TRUE;
-
 typedef struct
 {
 	size_t cursor;
@@ -282,7 +288,7 @@ static void I_ShutdownConsole(void)
 	if (consolevent)
 	{
 		I_OutputMsg("Shutdown tty console\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		tcsetattr(STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
@@ -301,15 +307,15 @@ static void I_StartupConsole(void)
 	framebuffer = static_cast<SDL_bool>( M_CheckParm("-framebuffer"));
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 
 	if (!consolevent)
 		return;
 
-	if (isatty(STDIN_FILENO)!=1)
+	if (isatty(STDIN_FILENO) != 1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		return;
 	}
 
@@ -511,7 +517,7 @@ static void I_StartupConsole(void)
 	if (gotConsole)
 	{
 		SetConsoleTitleA("SRB2Kart Console");
-		consolevent = SDL_TRUE;
+		consolevent = true;
 	}
 
 	//Let get the real console HANDLE, because Mingw's Bash is bad!
@@ -544,7 +550,7 @@ static inline void I_StartupConsole(void)
 	framebuffer = M_CheckParm("-framebuffer");
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 }
 static inline void I_ShutdownConsole(void){}
 #endif
@@ -557,12 +563,12 @@ void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char *txt;
-	va_list  argptr;
+	va_list argptr;
 
 	if (!fmt)
 		return;
 
-	va_start(argptr,fmt);
+	va_start(argptr, fmt);
 	len = vsnprintf(NULL, 0, fmt, argptr);
 	va_end(argptr);
 	if (len == 0)
@@ -573,8 +579,8 @@ void I_OutputMsg(const char *fmt, ...)
 	if (!txt)
 		I_Error("I_OutputMsg: Out of memory!\n");
 
-	va_start(argptr,fmt);
-	vsprintf(txt, fmt, argptr);
+	va_start(argptr, fmt);
+	vsnprintf(txt, len+1, fmt, argptr);
 	va_end(argptr);
 
 #ifdef HAVE_TTF
@@ -582,7 +588,7 @@ void I_OutputMsg(const char *fmt, ...)
 	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
 #endif
 
-	len = strlen(txt);
+	len = strnlen(txt, len+1);
 
 #ifdef LOGMESSAGES
 	if (logstream)
@@ -693,7 +699,7 @@ void I_OutputMsg(const char *fmt, ...)
 //
 // I_GetKey
 //
-INT32 I_GetKey (void)
+INT32 I_GetKey(void)
 {
 	// Warning: I_GetKey empties the event queue till next keypress
 	event_t *ev;
@@ -728,13 +734,16 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoySet->id = -1;
-	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
+#endif
+	JoySet->hasled = false;
+	JoySet->hasrumble = false;
 }
 
 /**	\brief SDL info about joystick
 */
-SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
+SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS] = {};
 INT32 numcontrollers = 0;
 
 //
@@ -742,30 +751,26 @@ INT32 numcontrollers = 0;
 //
 void I_JoyScale(void)
 {
-	Joystick[0].bGamepadStyle = cv_joyscale[0].value==0;
-	JoyInfo[0].scale = Joystick[0].bGamepadStyle?1:cv_joyscale[0].value;
+	JoyInfo[0].scale = DigitalGamepadStyle(0) ? 1 : cv_joyscale[0].value;
 }
 
 void I_JoyScale2(void)
 {
-	Joystick[1].bGamepadStyle = cv_joyscale[1].value==0;
-	JoyInfo[1].scale = Joystick[1].bGamepadStyle?1:cv_joyscale[1].value;
+	JoyInfo[1].scale = DigitalGamepadStyle(1) ? 1 : cv_joyscale[1].value;
 }
 
 void I_JoyScale3(void)
 {
-	Joystick[2].bGamepadStyle = cv_joyscale[2].value==0;
-	JoyInfo[2].scale = Joystick[2].bGamepadStyle?1:cv_joyscale[2].value;
+	JoyInfo[2].scale = DigitalGamepadStyle(2) ? 1 : cv_joyscale[2].value;
 }
 
 void I_JoyScale4(void)
 {
-	Joystick[3].bGamepadStyle = cv_joyscale[3].value==0;
-	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale[3].value;
+	JoyInfo[3].scale = DigitalGamepadStyle(3) ? 1 : cv_joyscale[3].value;
 }
 
 // Cheat to get the device index for a joystick handle
-INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
+static INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 {
 	SDL_Joystick *joystick = NULL;
 
@@ -786,7 +791,11 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 	///////////////////////////////////////////////
 	if (JoyInfo[player].dev)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		cv_usejoystick[player].value = JoyInfo[player].id + 1;
+#else
+		cv_usejoystick[player].value = I_GetJoystickDeviceIndex(JoyInfo[player].dev) + 1;
+#endif
 	}
 	else
 	{
@@ -888,13 +897,13 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
 	{
-		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
+		CONS_Printf("Joystick subsystem not started\n");
 		return -1;
 	}
 
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
 	{
-		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
+		CONS_Printf("Game Controller subsystem not started\n");
 		return -1;
 	}
 
@@ -905,7 +914,7 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (num_joy == 0)
 	{
-		CONS_Printf("%s", M_GetText("Found no joysticks on this system\n"));
+		CONS_Printf("%s", "Found no joysticks on this system\n");
 		return -1;
 	}
 
@@ -928,38 +937,37 @@ static int joy_open(int playerIndex, int joyIndex)
 			return SDL_CONTROLLER_AXIS_MAX;
 
 		// Else, we're changing devices, so send neutral joy events
-		CONS_Debug(DBG_GAMELOGIC, "Joystick1 device is changing; resetting events...\n");
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d device is changing; resetting events...\n", playerIndex+1);
 		I_ShutdownJoystick(playerIndex);
 	}
 
 	JoyInfo[playerIndex].dev = newdev;
-	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: Couldn't open device - %s\n"), SDL_GetError());
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d: Couldn't open device - %s\n", playerIndex+1, SDL_GetError());
 		return -1;
 	}
-	else
-	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: %s\n"), SDL_GameControllerName(JoyInfo[playerIndex].dev));
-		JoyInfo[playerIndex].axises = SDL_CONTROLLER_AXIS_MAX;
 
-		if (JoyInfo[playerIndex].axises > JOYAXISSET*2)
-			JoyInfo[playerIndex].axises = JOYAXISSET*2;
+	CONS_Debug(DBG_GAMELOGIC, "Joystick %d: %s\n", playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
-		JoyInfo[playerIndex].buttons = SDL_CONTROLLER_BUTTON_MAX ; // dpad is 4 buttons
-		if (JoyInfo[playerIndex].buttons > JOYBUTTONS)
-			JoyInfo[playerIndex].buttons = JOYBUTTONS;
+#if (SDL_VERSION_ATLEAST(2,32,4))
+	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
+#endif
 
-		JoyInfo[playerIndex].hats = 4;
-		if (JoyInfo[playerIndex].hats > JOYHATS)
-			JoyInfo[playerIndex].hats = JOYHATS;
+#if (SDL_VERSION_ATLEAST(2,0,14))
+	JoyInfo[playerIndex].hasled = SDL_GameControllerHasLED(JoyInfo[playerIndex].dev);
+#endif
+#if (SDL_VERSION_ATLEAST(2,0,18))
+	JoyInfo[playerIndex].hasrumble = SDL_GameControllerHasRumble(JoyInfo[playerIndex].dev);
+#endif
 
-		JoyInfo[playerIndex].balls = 0;
+	return SDL_CONTROLLER_AXIS_MAX;
+}
 
-		return JoyInfo[playerIndex].axises;
-	}
+void I_SetJoystickFocus(void)
+{
+	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, cv_gamepadifunfocused.value ? "1" : "0");
 }
 
 //
@@ -975,6 +983,18 @@ void I_InitJoystick(UINT8 index)
 
 	if (M_CheckParm("-nojoy"))
 		return;
+
+	{
+		char dbpath[1024];
+		snprintf(dbpath, sizeof(dbpath), "%s" PATHSEP "gamecontrollerdb.txt", srb2path);
+		SDL_GameControllerAddMappingsFromFile(dbpath);
+	}
+
+	{
+		char dbpath[1024];
+		snprintf(dbpath, sizeof(dbpath), "%s" PATHSEP "gamecontrollerdb_user.txt", srb2home);
+		SDL_GameControllerAddMappingsFromFile(dbpath);
+	}
 
 	if (M_CheckParm("-noxinput"))
 		SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
@@ -1003,8 +1023,11 @@ void I_InitJoystick(UINT8 index)
 
 	JoyInfo[index].dev = NULL;
 	JoyInfo[index].oldjoy = -1;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[index].id = -1;
-	JoyInfo[index].axises = JoyInfo[index].buttons = JoyInfo[index].hats = JoyInfo[index].balls = 0;
+#endif
+	JoyInfo[index].hasled = false;
+	JoyInfo[index].hasrumble = false;
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
@@ -1018,17 +1041,27 @@ void I_InitJoystick(UINT8 index)
 			break;
 	}
 
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+#endif
 
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		cv_usejoystick[index].value = JoyInfo[index].id + 1;
+#else
+		cv_usejoystick[index].value = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+#endif
 	}
 	else if (newcontroller && joy_open(index, cv_usejoystick[index].value) != -1)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
+		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
+#else
 		// SDL's device indexes are unstable, so cv_usejoystick may not match
 		// the actual device index. So let's cheat a bit and find the device's current index.
-		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
+		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+#endif
 	}
 	else
 	{
@@ -1121,12 +1154,31 @@ const char *I_GetJoyName(INT32 joyindex)
 
 		if (tempname)
 		{
-			memcpy(joyname, tempname, 255);
-			joyname[255] = '\0';
+			snprintf(joyname, sizeof(joyname), "%s", tempname);
 		}
 	}
 
 	return joyname;
+}
+
+boolean I_GamepadHasLED(INT32 playernum)
+{
+#if !(SDL_VERSION_ATLEAST(2,0,14))
+	(void)playernum;
+	return false;
+#else
+	return (JoyInfo[playernum].dev != NULL && JoyInfo[playernum].hasled);
+#endif
+}
+
+boolean I_GamepadHasRumble(INT32 playernum)
+{
+#if !(SDL_VERSION_ATLEAST(2,0,18))
+	(void)playernum;
+	return false;
+#else
+	return (JoyInfo[playernum].dev != NULL && JoyInfo[playernum].hasrumble);
+#endif
 }
 
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
@@ -1140,6 +1192,11 @@ void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength,
 	SDL_GameController *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
+	{
+		return;
+	}
+
+	if (!I_GamepadHasRumble(playernum))
 	{
 		return;
 	}
@@ -1159,6 +1216,11 @@ void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 b
 	SDL_GameController *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
+	{
+		return;
+	}
+
+	if (!I_GamepadHasLED(playernum))
 	{
 		return;
 	}
@@ -1219,7 +1281,7 @@ static void I_SetupMumble(void)
 	int shmfd;
 	char memname[256];
 
-	snprintf(memname, 256, "/MumbleLink.%d", getuid());
+	snprintf(memname, sizeof(memname), "/MumbleLink.%d", getuid());
 	shmfd = shm_open(memname, O_RDWR, S_IRUSR | S_IWUSR);
 
 	if (shmfd < 0)
@@ -1336,19 +1398,31 @@ void I_Sleep(UINT32 ms)
 
 void I_SleepDuration(precise_t duration)
 {
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__) || defined(__OpenBSD__)
 	UINT64 precision = I_GetPrecisePrecision();
 	precise_t dest = I_GetPreciseTime() + duration;
+#ifdef __OpenBSD__
+	precise_t slack = (precision / 50); // 20 ms slack
+#else
 	precise_t slack = (precision / 5000); // 0.2 ms slack
+#endif
 	if (duration > slack)
 	{
 		duration -= slack;
 		struct timespec ts = {
 			.tv_sec = static_cast<__time_t>(duration / precision),
+#ifdef __BIONIC__
+			.tv_nsec = static_cast<long>(duration * 1000000000 / precision % 1000000000),
+#else
 			.tv_nsec = static_cast<__syscall_slong_t>(duration * 1000000000 / precision % 1000000000),
+#endif
 		};
 		int status;
+#ifdef __OpenBSD__
+		do status = nanosleep(&ts, &ts);
+#else
 		do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
+#endif
 		while (status == EINTR);
 	}
 
@@ -1388,7 +1462,7 @@ void I_SleepDuration(precise_t duration)
 #endif
 }
 
-static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg);
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_ttl);
 
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
@@ -1484,6 +1558,7 @@ static void bt_error_cb(void *data, const char *msg, int errnum)
 static void write_backtrace(bt_crash_reason_t reason)
 {
 	char sig_msg[512];
+	char sig_name[128];
 	const char *filename = va("%s" PATHSEP CRASH_LOGFILE_NAME, srb2home);
 	FILE *out = fopen(filename, "a+");
 
@@ -1540,8 +1615,8 @@ static void write_backtrace(bt_crash_reason_t reason)
 	switch (reason.type)
 	{
 		case BTCRASH_SIGNAL:
-			I_PrintSignal(reason.value.signal, false, sig_msg);
-			fprintf(out, "%s", sig_msg);
+			I_PrintSignal(reason.value.signal, false, sig_msg, sig_name);
+			fprintf(out, "%s - %s", sig_name, sig_msg);
 		break;
 
 		case BTCRASH_ERRORMSG:
@@ -1575,70 +1650,160 @@ static void write_backtrace(bt_crash_reason_t reason)
 static std::thread::id g_main_thread_id;
 #endif
 
-boolean g_in_exiting_signal_handler = false;
+static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
-static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_name)
 {
-	const char *sigmsg;
+	const char *sigmsg, *signame;
 
 	switch (signal_num)
 	{
 #ifdef SIGINT
 		case SIGINT:
-			sigmsg = ("SIGINT - SRB2Kart-Saturn was interrupted prematurely by the user.");
+			sigmsg = ("SRB2Kart-Saturn was interrupted prematurely by the user.");
+			signame = "SIGINT";
 			break;
 #endif
 		case SIGILL: // illegal instruction - invalid function image
-			sigmsg = ("SIGILL - SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			signame = "SIGILL";
 			break;
 		case SIGFPE: // mathematical exception
-			sigmsg = ("SIGFPE - SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			signame = "SIGFPE";
 			break;
 		case SIGSEGV: // segment violation
-			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			signame = "SIGSEGV";
 			break;
 #ifdef SIGTERM
-		case SIGTERM: // Software termination signal from kill
-			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
+		case SIGTERM: // Software termination signal from terminate
+			sigmsg = ("SRB2Kart-Saturn was terminated by a terminate signal.");
+			signame = "SIGTERM";
+			break;
+#endif
+#ifdef SIGKILL
+		case SIGKILL: // Software termination signal from kill
+			sigmsg = ("SRB2Kart-Saturn was terminated by a kill signal.");
+			signame = "SIGKILL";
 			break;
 #endif
 #ifdef SIGBREAK
 		case SIGBREAK: // Ctrl-Break sequence
 			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.");
+			signame = "SIGBREAK";
 			break;
 #endif
 		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
+			sigmsg = ("SRB2Kart-Saturn was terminated by an abort signal.");
+			signame = "SIGABRT";
 			break;
 		default:
-			sprintf(signal_msg, "Signal number %d", signal_num);
-			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
+			sigmsg = "SRB2Kart-Saturn was terminated by an unknown signal.";
+			signame = core_dumped ? "Unknown signal" : va("Signal number %d", signal_num);
 			break;
 	}
 
 	if (core_dumped)
 	{
 		if (sigmsg)
-			sprintf(signal_msg, "%s (core dumped)", sigmsg);
+		{
+			snprintf(signal_msg, 512, "%s (core dumped)", sigmsg);
+		}
 		else
+		{
 			strcat(signal_msg, " (core dumped)");
+		}
 	}
 	else
 	{
-		sprintf(signal_msg, "%s", sigmsg);
+		snprintf(signal_msg, 512, "%s", sigmsg);
 	}
+
+	snprintf(signal_name, 128, "%s", signame);
+}
+
+int I_OpenURL(const char *url)
+{
+#if SDL_VERSION_ATLEAST(2,0,14)
+	return SDL_OpenURL(va("%s", url));
+#else
+	return -1;
+#endif
+}
+
+static void I_ShowErrorBox(const char *title, const char *msg)
+{
+	if (M_CheckParm("-dedicated"))
+		return;
+
+	const char *reportmsg = "\n\n\nTo help us figure out the cause, please report the issue to our github page with " CRASH_LOGFILE_NAME " attached.\n\nSorry for the inconvenience!";
+
+	const SDL_MessageBoxButtonData buttons[] = {
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0,		"OK" },
+		{ 										0, 1,		"Report Issue" },
+	};
+
+	const SDL_MessageBoxData messageboxdata = {
+		SDL_MESSAGEBOX_ERROR, 			/* .flags */
+		NULL, 							/* .window */
+		title, 							/* .title */
+		va("%s %s", msg, reportmsg), 	/* .message */
+		SDL_arraysize(buttons), 		/* .numbuttons */
+		buttons, 						/* .buttons */
+		NULL 							/* .colorScheme */
+	};
+
+	int buttonid;
+
+	SDL_ShowMessageBox(&messageboxdata, &buttonid);
+
+	if (buttonid == 1)
+	{
+		int url = I_OpenURL(SATURNISSUEPAGE);
+
+		// SDL_OpenURL unsupported or failed
+		if (url == -1)
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to Open Web Page", "Please open the following page in your web browser:\n" SATURNISSUEPAGE, NULL);
+	}
+}
+
+static void I_ShowSimpleErrorBox(const char *title, char *msg)
+{
+	if (M_CheckParm("-dedicated"))
+		return;
+
+	// Implement message box with SDL_ShowSimpleMessageBox,
+	// which should fail gracefully if it can't put a message box up
+	// on the target system
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, msg, NULL);
+	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
+	// initialized at the time, so calling it after SDL_Quit() is
+	// perfectly okay! In addition, we do this on purpose so the
+	// fullscreen window is closed before displaying the error message
+	// in case the fullscreen window blocks it for some absurd reason.
 }
 
 static void I_ReportSignal(int num, int coredumped)
 {
 	char sigmsg[512];
+	char signame[128];
+	char sigttl[512] = "Process killed by signal: ";
 
-	I_PrintSignal(num, coredumped, sigmsg);
+	I_PrintSignal(num, coredumped, sigmsg, signame);
 
 	size_t len = strlen(sigmsg);
 	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
-	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Process killed by signal", sigmsg, NULL);
+
+	strcat(sigttl, signame);
+	I_OutputMsg("\n%s\n\n", sigttl);
+	//I_ShowSimpleErrorBox(sigttl, sigmsg);
+	I_ShowErrorBox(sigttl, sigmsg);
+}
+
+boolean I_In_Exiting_Signal_Handler(void)
+{
+	return g_in_exiting_signal_handler;
 }
 
 #ifndef NEWSIGNALHANDLER
@@ -1670,21 +1835,17 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
-{
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
+static volatile sig_atomic_t interrupted = false;
 
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	I_Quit();
+boolean I_Interrupted(void)
+{
+	return interrupted;
+}
+
+static void quit_handler(int num)
+{
+	(void)num;
+	interrupted = true;
 }
 
 static void I_RegisterSignals(void)
@@ -1732,24 +1893,19 @@ static void I_RegisterChildSignals(void)
 	signal(SIGABRT, signal_handler_child);
 	signal(SIGFPE,  signal_handler_child);
 }
-#endif
 
-#ifdef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 {
 	char text[128];
 
-	snprintf(text, sizeof text,
+	snprintf(text, sizeof(text),
 			"Error while setting up signal reporting: %s: %s",
 			pr,
 			strerror(errno)
 	);
 
 	I_OutputMsg("%s\n", text);
-
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"Startup error",
-		text, NULL);
+	I_ShowSimpleErrorBox("Startup error", text);
 
 	I_ShutdownConsole();
 	exit(-1);
@@ -1773,18 +1929,29 @@ static void I_Fork(void)
 			I_RegisterChildSignals();
 			break;
 		default:
+			// ignore those, those are handled by child process
+			// otherwise parent might exit before it
+			// and the below stuff wont run and your terminal will be left in an awkward state
+#ifdef SIGINT
+			signal(SIGINT,   SIG_IGN);
+#endif
+#ifdef SIGBREAK
+			signal(SIGBREAK, SIG_IGN);
+#endif
+#ifdef SIGTERM
+			signal(SIGTERM,  SIG_IGN);
+#endif
+#ifdef LOGMESSAGES
 			if (logstream)
 				fclose(logstream);/* the child has this */
-
+#endif
 			c = wait(&status);
-
 #ifdef LOGMESSAGES
 			/* By the way, exit closes files. */
 			logstream = fopen(logfilename, "at");
 #else
 			logstream = 0;
 #endif
-
 			if (c == -1)
 			{
 				kill(child, SIGKILL);
@@ -1820,6 +1987,7 @@ INT32 I_StartupSystem(void)
 	SDL_version SDLlinked;
 	SDL_VERSION(&SDLcompiled)
 	SDL_GetVersion(&SDLlinked);
+
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	// This is useful when debugging. It lets GDB attach to
@@ -1851,18 +2019,20 @@ INT32 I_StartupSystem(void)
 	return 0;
 }
 
+boolean is_quitting = false;
+
 //
 // I_Quit
 //
 FUNCNORETURN void ATTRNORETURN I_Quit(void)
 {
-	static SDL_bool quiting = SDL_FALSE;
-
 	/* prevent recursive I_Quit() */
-	if (quiting) goto death;
+	if (is_quitting)
+		abort();
+
+	is_quitting = true;
 	SDL_ShowCursor(SDL_TRUE);
-	quiting = SDL_FALSE;
-	I_ShutdownConsole();
+
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(false); // Tails 12-08-2002
@@ -1880,16 +2050,17 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	I_ShutdownInput();
 	I_ShutdownSystem();
 	SDL_Quit();
+
 	/* if option -noendtxt is set, don't print the text */
 	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM") != LUMPERROR)
 	{
 		printf("\r");
 		ShowEndTxt();
 	}
+
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
-death:
-	W_Shutdown();
+
 	exit(0);
 }
 
@@ -1908,6 +2079,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
 	va_list argptr;
 	char buffer[8192];
+	const char *sigttl = "";
 
 #ifdef HAVE_THREADS
 	if (std::this_thread::get_id() != g_main_thread_id)
@@ -1942,16 +2114,12 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 		if (errorcount > 20)
 		{
 			va_start(argptr, error);
-			vsnprintf(buffer, 8192, error, argptr);
+			vsnprintf(buffer, sizeof(buffer), error, argptr);
 			va_end(argptr);
-			// Implement message box with SDL_ShowSimpleMessageBox,
-			// which should fail gracefully if it can't put a message box up
-			// on the target system
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-				"SRB2Kart " VERSIONSTRING " Recursive Error",
-				buffer, NULL);
 
-			W_Shutdown();
+			sigttl = "SRB2Kart " VERSIONSTRING " Recursive Error";
+			I_ShowSimpleErrorBox(sigttl, buffer);
+
 			exit(-1); // recursive errors detected
 		}
 	}
@@ -1960,7 +2128,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 	// Display error message in the console before we start shutting it down
 	va_start(argptr, error);
-	vsnprintf(buffer, 8192, error, argptr);
+	vsnprintf(buffer, sizeof(buffer), error, argptr);
 	va_end(argptr);
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 
@@ -1969,8 +2137,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 #endif
 
 	// ---
-
-	I_ShutdownConsole();
 
 	M_SaveConfig(NULL); // save game config, cvars..
 	D_SaveBan(); // save the ban list
@@ -1989,17 +2155,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_ShutdownSystem();
 	SDL_Quit();
 
-	// Implement message box with SDL_ShowSimpleMessageBox,
-	// which should fail gracefully if it can't put a message box up
-	// on the target system
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "SRB2Kart " VERSIONSTRING " Error", buffer, NULL);
-	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
-	// initialized at the time, so calling it after SDL_Quit() is
-	// perfectly okay! In addition, we do this on purpose so the
-	// fullscreen window is closed before displaying the error message
-	// in case the fullscreen window blocks it for some absurd reason.
-
-	W_Shutdown();
+	sigttl = "SRB2Kart " VERSIONSTRING " Error";
+	//I_ShowSimpleErrorBox(sigttl, buffer);
+	I_ShowErrorBox(sigttl, buffer);
 
 #if defined (PARANOIA) && defined (__CYGWIN__)
 	*(INT32 *)2 = 4; //Alam: Debug!
@@ -2113,6 +2271,7 @@ void I_ShutdownSystem(void)
 	for (c = MAX_QUIT_FUNCS-1; c >= 0; c--)
 		if (quit_funcs[c])
 			(*quit_funcs[c])();
+
 #ifdef LOGMESSAGES
 	if (logstream)
 	{
@@ -2124,7 +2283,6 @@ void I_ShutdownSystem(void)
 		logstream = NULL;
 	}
 #endif
-
 }
 
 void I_GetDiskFreeSpace(INT64 *freespace)
@@ -2198,9 +2356,9 @@ char *I_GetUserName(void)
 				}
 			}
 		}
-		strncpy(username, p, MAXPLAYERNAME);
-	}
 
+		snprintf(username, sizeof(username), "%s", p);
+	}
 
 	if (!fastcmp(username, ""))
 		return username;
@@ -2220,6 +2378,24 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 	(void)dirname;
 	(void)unixright;
 	return false;
+#endif
+}
+
+INT32 I_ChDir(const char *path)
+{
+#ifdef _WIN32
+	return (SetCurrentDirectoryA(path) ? 0 : -1);
+#else
+	return chdir(path);
+#endif
+}
+
+char *I_GetCwd(char *buf, size_t size)
+{
+#ifdef _WIN32
+	return (GetCurrentDirectoryA((DWORD)size, buf) ? buf : NULL);
+#else
+	return getcwd(buf, size);
 #endif
 }
 
@@ -2244,13 +2420,15 @@ INT32 I_PutEnv(char *variable)
 INT32 I_ClipboardCopy(const char *data, size_t size)
 {
 	char storage[256];
+
 	if (size > 255)
 		size = 255;
-	memcpy(storage, data, size);
-	storage[size] = 0;
+
+	snprintf(storage, sizeof(storage), "%.*s", (int)size, data);
 
 	if (SDL_SetClipboardText(storage))
 		return 0;
+
 	return -1;
 }
 
@@ -2263,7 +2441,7 @@ const char *I_ClipboardPaste(void)
 		return NULL;
 
 	clipboard_contents = SDL_GetClipboardText();
-	strlcpy(clipboard_modified, clipboard_contents, 256);
+	snprintf(clipboard_modified, sizeof(clipboard_modified), "%s", clipboard_contents);
 	SDL_free(clipboard_contents);
 
 	while (*i)
@@ -2279,6 +2457,7 @@ const char *I_ClipboardPaste(void)
 			*i = '?'; // Nonprintable chars become question marks
 		++i;
 	}
+
 	return (const char *)&clipboard_modified;
 }
 
@@ -2292,34 +2471,34 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = static_cast<char*>(malloc(256));
+	char wad3path[256];
 
-	if (!wad3path)
-		return false;
-
-	sprintf(wad3path, pandf, path, WADKEYWORD1);
+	snprintf(wad3path, sizeof(wad3path), pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
-		free(wad3path);
 		return true;
 	}
 
-	free(wad3path);
 	return false;
 }
 
-static void pathonly(char *s)
+static void pathonly(char *s, size_t size)
 {
 	size_t j;
 
-	for (j = strlen(s); j != (size_t)-1; j--)
+	for (j = strnlen(s, size); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
-			if (s[j] == ':') s[j+1] = 0;
-			else s[j] = 0;
+			if (s[j] == ':')
+				s[j+1] = 0;
+			else
+				s[j] = 0;
+
 			return;
 		}
+	}
 }
 
 /**	\brief	search for srb2.srb in the given path
@@ -2332,14 +2511,15 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[255] = "";
+	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD1);
+	snprintf(tempsw, sizeof(tempsw), "%s", WADKEYWORD);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
+
 	if (fstemp == FS_FOUND)
 	{
-		pathonly(tempsw);
+		pathonly(tempsw, sizeof(tempsw));
 		return tempsw;
 	}
 
@@ -2377,7 +2557,7 @@ static const char *locateWad(void)
 
 #ifndef NOCWD
 	// examine current dir
-	strcpy(returnWadPath, ".");
+	snprintf(returnWadPath, sizeof(returnWadPath), "%s", ".");
 	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
@@ -2389,7 +2569,7 @@ static const char *locateWad(void)
 	// examine user jart directory
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
-		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s" PATHSEP DEFAULTDIR, envstr);
 		CHECKWADPATH(returnWadPath);
 	}
 #endif
@@ -2403,7 +2583,7 @@ static const char *locateWad(void)
 	// examine default dirs
 	for (i = 0; wadDefaultPaths[i]; i++)
 	{
-		strcpy(returnWadPath, wadDefaultPaths[i]);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s", wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
 
@@ -2418,7 +2598,7 @@ static const char *locateWad(void)
 	return NULL;
 }
 
-const char *I_LocateWad(void)
+extern "C" const char *I_LocateWad(void)
 {
 	const char *waddir = NULL;
 
@@ -2431,12 +2611,11 @@ const char *I_LocateWad(void)
 		// change to the directory where we found srb2.srb
 #if defined (_WIN32)
 		waddir = _fullpath(NULL, waddir, MAX_PATH);
-		SetCurrentDirectoryA(waddir);
 #else
 		waddir = realpath(waddir, NULL);
-		if (waddir == NULL || chdir(waddir) == -1)
-			I_OutputMsg("Couldn't change working directory\n");
 #endif
+		if (waddir == NULL || I_ChDir(waddir) == -1)
+			I_OutputMsg("Couldn't change working directory\n");
 	}
 
 	return waddir;
@@ -2496,13 +2675,13 @@ size_t I_GetFreeMem(size_t *total)
 		*total = 32 << 20;
 	return 32 << 20;
 #elif defined (_WIN32)
-	MEMORYSTATUS info;
+	MEMORYSTATUSEX info;
 
-	info.dwLength = sizeof (MEMORYSTATUS);
-	GlobalMemoryStatus( &info );
+	info.dwLength = sizeof (MEMORYSTATUSEX);
+	GlobalMemoryStatusEx( &info );
 	if (total)
-		*total = (size_t)info.dwTotalPhys;
-	return (size_t)info.dwAvailPhys;
+		*total = (size_t)info.ullTotalPhys;
+	return (size_t)info.ullAvailPhys;
 #elif defined (__OS2__)
 	UINT32 pr_arena;
 
@@ -2535,7 +2714,7 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
@@ -2544,12 +2723,12 @@ size_t I_GetFreeMem(size_t *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
 	memTag += sizeof (MEMTOTAL);
-	totalKBytes = (size_t)atoi(memTag);
+	totalKBytes = strtoul(memTag, NULL, 10);
 
 	if ((memTag = strstr(buf, MEMAVAILABLE)) == NULL)
 	{
@@ -2563,7 +2742,7 @@ size_t I_GetFreeMem(size_t *total)
 		{
 			// Error
 			if (total)
-				*total = 0L;
+				*total = 0;
 			return 0;
 		}
 		freeKBytes = MemAvailable;
@@ -2571,12 +2750,40 @@ size_t I_GetFreeMem(size_t *total)
 	else
 	{
 		memTag += sizeof (MEMAVAILABLE);
-		freeKBytes = atoi(memTag);
+		freeKBytes = strtoul(memTag, NULL, 10);
 	}
 
 	if (total)
 		*total = totalKBytes << 10;
 	return freeKBytes << 10;
+#elif defined(__APPLE__)
+	/* macOS */
+	mach_port_t host = mach_host_self();
+	kern_return_t kr;
+	mach_msg_type_number_t count;
+	vm_size_t v_page_size;
+	struct vm_statistics64 vm_stats;
+	uint64_t total_mem, free_mem;
+	size_t size;
+
+	size = sizeof(total_mem);
+	if (sysctlbyname("hw.memsize", &total_mem, &size, NULL, 0) < 0)
+		total_mem = 0;
+
+	kr = host_page_size(host, &v_page_size);
+	if (kr != KERN_SUCCESS)
+		v_page_size = 4096;
+
+	count = HOST_VM_INFO64_COUNT;
+	kr = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stats, &count);
+	if (kr == KERN_SUCCESS)
+		free_mem = (uint64_t)(vm_stats.free_count + vm_stats.inactive_count) * v_page_size;
+	else
+		free_mem = 0;
+
+	if (total)
+		*total = (size_t)total_mem;
+	return (size_t)free_mem;
 #else
 	// Guess 48 MB.
 	if (total)

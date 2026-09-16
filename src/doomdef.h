@@ -40,22 +40,45 @@
 #define ASMCALL
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "doomtype.h"
 
+#ifdef __cplusplus               /* Only when compiled as C++ */
+    #include <algorithm>        /* std::min, std::max, std::sort, … */
+#endif
+
+#ifdef __cplusplus
+// Force libc++ to expose std::min/std::max even when <cmath> is included first (Apple clang quirk)
+#ifndef _LIBCPP_ENABLE_CXX17_REMOVED_FEATURES
+#define _LIBCPP_ENABLE_CXX17_REMOVED_FEATURES
+#endif
+#ifndef _LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS
+#define _LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS
+#endif
+
+// Optional: only try <version> if it actually exists (newer Xcode)
+#if __has_include(<version>)
+#include <version>
+#endif
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstddef>
+#include <cstring>
+#include <climits>
+
+extern "C" {
+#else
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
-#define _USE_MATH_DEFINES // fixes M_PI errors in r_plane.c for Visual Studio
-#ifdef __cplusplus
-#include <cmath>
-#else
-#include <math.h>
+#include <limits.h>
 #endif
 
 #include <sys/types.h>
@@ -107,8 +130,17 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v9.2"
-#define VERSIONSTRINGW L"Saturn v9.2"
+
+#ifdef PHOBOS_BUILD
+#define CLIENTNAME  "Phobos"
+#define CLIENTNAMEW L"Phobos"
+#else
+#define CLIENTNAME  "Saturn"
+#define CLIENTNAMEW L"Saturn"
+#endif
+
+#define VERSIONSTRING  CLIENTNAME  " v10"
+#define VERSIONSTRINGW CLIENTNAMEW L" v10"
 
 //#define SATURN_TESTING // comment out for saturn release builds!
 
@@ -493,22 +525,6 @@ extern boolean capslock;
 // i_system.c, replace getchar() once the keyboard has been appropriated
 INT32 I_GetKey(void);
 
-/* http://www.cse.yorku.ca/~oz/hash.html */
-static inline
-UINT32 quickncasehash (const char *p, size_t n)
-{
-	size_t i = 0;
-	UINT32 x = 5381;
-
-	while (i < n && p[i])
-	{
-		x = (x * 33) ^ tolower(p[i]);
-		i++;
-	}
-
-	return x;
-}
-
 #ifndef __cplusplus
 #ifndef min // Double-Check with WATTCP-32's cdefs.h
 #define min(x, y) (((x) < (y)) ? (x) : (y))
@@ -566,6 +582,13 @@ UINT32 quickncasehash (const char *p, size_t n)
 // NOTE: you WILL have nasal troubles if the variable is not initialized
 #define CLEANUP(f) __attribute__((__cleanup__(f)))
 
+// the GNU constructor and destructor attributes
+// The constructor attribute causes the function to be called automatically before execution enters main ().
+// Similarly, the destructor attribute causes the function to be called automatically after main () has completed or exit () has been called.
+// Functions with these attributes are useful for initializing data that will be used implicitly during the execution of the program.
+#define CONSTRUCTOR __attribute__((constructor, used))
+#define DESTRUCTOR __attribute__((destructor, used))
+
 // An assert-type mechanism.
 #ifdef PARANOIA
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))
@@ -587,6 +610,21 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // Disabled code and code under testing
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
+
+#ifdef PHOBOS_BUILD
+// we want 32 players yesss
+#undef MAXPLAYERS
+#define MAXPLAYERS 32
+
+// raise skinlimit to 1024
+#undef MAXSKINS
+#define MAXSKINS 1024
+
+// overwrite some of those
+// when not compiling in vanilla compat mode
+#define SATURNJOIN
+#define SATURNPAK
+#endif
 
 //-- SATURN __
 /// Detect if a client is on Saturn in the clientconfig.

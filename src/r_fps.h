@@ -15,15 +15,15 @@
 #ifndef __R_FPS_H__
 #define __R_FPS_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "m_fixed.h"
 #include "p_local.h"
 #include "r_state.h"
 #include "r_things.h"
 #include "m_perfstats.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern consvar_t cv_fpscap, cv_fpscapbg;
 

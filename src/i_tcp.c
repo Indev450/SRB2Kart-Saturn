@@ -213,7 +213,7 @@ static char *get_WSAErrorStr(int e)
 		NULL);
 
 	if (!buf[0]) // provide a fallback error message if no message is available for some reason
-		sprintf(buf, "Unknown error");
+		snprintf(buf, sizeof(buf), "Unknown error");
 
 	return buf;
 }
@@ -364,12 +364,12 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 
 	if (addr == NULL)
 	{
-		sprintf(s, "No address");
+		snprintf(s, sizeof(s), "No address");
 	}
 	else if (inet_ntop(sk->any.sa_family, addr, &s[v6], sizeof (s) - v6) == NULL)
 	{
 		e = errno;
-		sprintf(s, "Unknown family type, error #%u: %s", e, strerror(e));
+		snprintf(s, sizeof(s), "Unknown family type, error #%u: %s", e, strerror(e));
 	}
 #ifdef HAVE_IPV6
 	else if(sk->any.sa_family == AF_INET6)
@@ -392,6 +392,9 @@ static const char *SOCK_GetNodeAddress(INT32 node)
 	if (node == 0)
 		return "self";
 
+	if (node < 0 || node > MAXNETNODES)
+		return NULL;
+
 	if (!nodeconnected[node])
 		return NULL;
 
@@ -413,7 +416,7 @@ static const char *SOCK_GetBanMask(size_t ban)
 	if (ban >= numbans)
 		return NULL;
 
-	if (sprintf(s,"%d",banned[ban].mask) > 0)
+	if (snprintf(s, sizeof(s), "%d",banned[ban].mask) > 0)
 		return s;
 
 	return NULL;
@@ -496,8 +499,10 @@ static void cleanupnodes(void)
 
 	// Why can't I start at zero?
 	for (j = 1; j < MAXNETNODES; j++)
+	{
 		if (!(nodeingame[j] || SV_SendingFile(j)))
 			nodeconnected[j] = false;
+	}
 }
 
 static SINT8 getfreenode(void)
@@ -507,11 +512,13 @@ static SINT8 getfreenode(void)
 	cleanupnodes();
 
 	for (j = 0; j < MAXNETNODES; j++)
+	{
 		if (!nodeconnected[j])
 		{
 			nodeconnected[j] = true;
 			return j;
 		}
+	}
 
 	/** \warning No free node? Just in case a node might not have been freed properly,
 	  *          look if there are connected nodes that aren't in game, and forget them.
@@ -615,7 +622,6 @@ static boolean hole_punch(ssize_t c)
 	{
 		return false;
 	}
-
 }
 #endif //ifdef HOLEPUNCH
 
@@ -812,7 +818,7 @@ static void SOCK_Send(void)
 static void SOCK_FreeNodenum(INT32 numnode)
 {
 	// can't disconnect from self :)
-	if (!numnode || numnode > MAXNETNODES)
+	if (numnode <= 0 || numnode > MAXNETNODES)
 		return;
 
 	DEBFILE(va("Free node %d (%s)\n", numnode, SOCK_GetNodeAddress(numnode)));
@@ -1432,14 +1438,12 @@ static void SOCK_RegisterHolePunch(void)
 
 static boolean SOCK_OpenSocket(void)
 {
-	size_t i;
+	memset(clientaddress, 0, sizeof(clientaddress));
 
-	memset(clientaddress, 0, sizeof (clientaddress));
-
+	memset(nodeconnected, false, sizeof(nodeconnected));
 	nodeconnected[0] = true; // always connected to self
-	for (i = 1; i < MAXNETNODES; i++)
-		nodeconnected[i] = false;
 	nodeconnected[BROADCASTADDR] = true;
+
 	I_NetSend = SOCK_Send;
 	I_NetGet = SOCK_Get;
 	I_NetCloseSocket = SOCK_CloseSocket;
@@ -1479,7 +1483,7 @@ static boolean SOCK_Ban(INT32 node)
 {
 	INT32 ban;
 
-	if (node > MAXNETNODES)
+	if (node < 0 || node > MAXNETNODES)
 		return false;
 
 	ban = numbans;
@@ -1510,11 +1514,8 @@ static boolean SOCK_SetBanUsername(const char *username)
 		username = "Direct IP ban";
 	}
 
-	if (banned[numbans - 1].username)
-	{
-		Z_Free(banned[numbans - 1].username);
-		banned[numbans - 1].username = NULL;
-	}
+	Z_Free(banned[numbans - 1].username);
+	banned[numbans - 1].username = NULL;
 
 	banned[numbans - 1].username = Z_StrDup(username);
 
@@ -1528,11 +1529,8 @@ static boolean SOCK_SetBanReason(const char *reason)
 		reason = "No reason given";
 	}
 
-	if (banned[numbans - 1].reason)
-	{
-		Z_Free(banned[numbans - 1].reason);
-		banned[numbans - 1].reason = NULL;
-	}
+	Z_Free(banned[numbans - 1].reason);
+	banned[numbans - 1].reason = NULL;
 
 	banned[numbans - 1].reason = Z_StrDup(reason);
 
@@ -1695,6 +1693,7 @@ boolean I_InitTcpNetwork(void)
 			hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
 		}
 	}
+
 	if (M_CheckProtoParam("ip"))
 	{
 		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartexec.cfg\" -noerror\n", srb2home));

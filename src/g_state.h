@@ -52,10 +52,10 @@ typedef enum
 } gameaction_t;
 
 extern gamestate_t gamestate;
-extern UINT8 ultimatemode; // was sk_insane
 extern gameaction_t gameaction;
 
 extern boolean botingame;
-extern UINT8 botskin, botcolor;
+extern skinnum_t botskin;
+extern UINT8 botcolor;
 
 #endif //__G_STATE__
