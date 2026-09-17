@@ -472,9 +472,7 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		strlcat(msg, COM_Argv(ix + usedargs), msgspace);
 	}
 
-	const size_t msglength = strlen(msg);
-
-	if (msglength > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
+	if (strlen(msg) > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
 		// what we're gonna do now is check if the node exists
 		// with that logic, characters 4 and 5 are our numbers:
@@ -528,7 +526,7 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		strlcpy(msg, newmsg, HU_MAXMSGLEN + 1);
 	}
 
-	SendNetXCmd(XD_SAY, buf, msglength + 1 + msg-buf);
+	SendNetXCmd(XD_SAY, buf, strlen(msg) + 1 + msg-buf);
 }
 
 /** Send a message to everyone.
@@ -779,12 +777,11 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 		return;
 	}
 
-	const size_t msglength = strlen(msg);
-
 	//check for invalid characters (0x80 or above)
 	{
 		size_t i;
-		const size_t j = msglength;
+		const size_t j = strlen(msg);
+
 		for (i = 0; i < j; i++)
 		{
 			if (msg[i] & 0x80)
@@ -831,7 +828,7 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 	}
 
 	// Handle "/me" actions, but only in messages to everyone.
-	if (target == 0 && msglength > 4 && strnicmp(msg, "/me ", 4) == 0)
+	if (target == 0 && strlen(msg) > 4 && strnicmp(msg, "/me ", 4) == 0)
 	{
 		msg += 4;
 		action = true;
