@@ -35,7 +35,7 @@ static int finalVertexArrayAllocSize = 65536;
 // not gonna use this for now, just sort by color and change state when it changes
 // later maybe when using vertex attributes if it's needed
 
-static PolygonArrayEntry* polygonArray        = NULL ;// contains the polygon data from DrawPolygon, waiting to be processed
+static PolygonArrayEntry* polygonArray        = NULL; // contains the polygon data from DrawPolygon, waiting to be processed
 static PolygonArrayEntry **polygonArraySorted = NULL; // contains sorted pointers to polygonArray
 static int polygonArraySize      = 0;
 static int polygonArrayAllocSize = 65536;
@@ -171,8 +171,8 @@ static int comparePolygons(const void *p1, const void *p2)
 
 	// special case with signedness to prevent overflowing
 	// FIXME: check for prediction slowdowns!
-	const int shader1 = poly1->hash & 0x80000000 ? -1 : poly1->shader;
-	const int shader2 = poly2->hash & 0x80000000 ? -1 : poly2->shader;
+	const int shader1 = (poly1->hash & 0x80000000) ? -1 : poly1->shader;
+	const int shader2 = (poly2->hash & 0x80000000) ? -1 : poly2->shader;
 
 	// skywalls and horizon lines must retain their order for horizon lines to work
 	if (shader1 == -1 && shader2 == -1)
@@ -214,8 +214,8 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
 	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 
-	const GLMipmap_t *texture1 = poly1->hash & 0x80000000 ? NULL : poly1->texture;
-	const GLMipmap_t *texture2 = poly2->hash & 0x80000000 ? NULL : poly2->texture;
+	const GLMipmap_t *texture1 = (poly1->hash & 0x80000000) ? NULL : poly1->texture;
+	const GLMipmap_t *texture2 = (poly2->hash & 0x80000000) ? NULL : poly2->texture;
 
 	// skywalls and horizon lines must retain their order for horizon lines to work
 	if (!texture1 && !texture2)

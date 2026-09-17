@@ -1017,7 +1017,7 @@ boolean P_IsLocalPlayer(const player_t *player)
 }
 
 //
-// P_IsLocalPlayer
+// P_IsLocalPlayerNum
 //
 // Returns true if playernum is
 // on the local machine.

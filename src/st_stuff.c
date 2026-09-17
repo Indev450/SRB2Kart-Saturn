@@ -557,7 +557,7 @@ static void ST_overlayDrawer(void)
 		{
 			if (!(multiplayer && demo.playback))
 			{
-				if(!P_IsLocalPlayer(stplyr))
+				if (!P_IsLocalPlayer(stplyr))
 				{
 					/*char name[MAXPLAYERNAME+1];
 					// shorten the name if its more than twelve characters.

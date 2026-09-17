@@ -4381,7 +4381,7 @@ static void Got_RequestAddfilecmd(const UINT8 **cp, INT32 playernum)
 		else
 			snprintf(message, sizeof(message), M_GetText("Unknown error finding wad file (%s)\n"), filename);
 
-		CONS_Printf("%s",message);
+		CONS_Printf("%s", message);
 
 		for (j = 0; j < MAXPLAYERS; j++)
 			if (adminplayers[j])

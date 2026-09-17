@@ -4419,7 +4419,6 @@ static void K_DoShrink(player_t *user)
 	}
 }
 
-
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 {
 	if (mo->player && mo->player->spectator)
