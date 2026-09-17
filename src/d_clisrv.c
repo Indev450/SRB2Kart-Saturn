@@ -1822,7 +1822,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		// Extra data
 		// Kart has extra skincolors, so we can't use this
-		//netbuffer->u.playerinfo[i].data = 0; //netbuffer->u.playerinfo[i].data = players[i].skincolor;
+		//netbuffer->u.playerinfo[i].data = 0;
 
 		// well why not, we only got like 100 of these?
 		netbuffer->u.playerinfo[i].data = players[i].skincolor;
@@ -5174,7 +5174,7 @@ static void PT_ServerInfo(SINT8 node)
 	const tic_t ticthen = (tic_t)LONG(netbuffer->u.serverinfo.time);
 	const tic_t ticdiff = (ticnow - ticthen)*1000/NEWTICRATE;
 	netbuffer->u.serverinfo.time = (tic_t)LONG(ticdiff);
-	netbuffer->u.serverinfo.servername[MAXSERVERNAME-1] = 0;
+	netbuffer->u.serverinfo.servername[MAXSERVERNAME-1] = '\0';
 	netbuffer->u.serverinfo.application
 		[sizeof netbuffer->u.serverinfo.application - 1] = '\0';
 	memcpy(servername, netbuffer->u.serverinfo.servername, MAXSERVERNAME);
@@ -7253,6 +7253,7 @@ static void DedicatedIdleUpdate(INT32 *realtics)
 		{
 			CONS_Printf("DEDICATED: Awakening from idle (Player detected...)\n");
 		}
+
 		dedicatedidle = 0;
 	}
 }

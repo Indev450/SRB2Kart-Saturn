@@ -1148,7 +1148,6 @@ static void P_SceneryXYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 		{
 			// Stolen from P_SpawnFriction
 			mo->friction = FRACUNIT - 0x100;
-			//mo->movefactor = ((0x10092 - mo->friction)*(0x70))/0x158;
 		}
 		else
 			mo->friction = ORIG_FRICTION;
@@ -3282,6 +3281,7 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 		postimgtype |= POSTIMG_FLIP;
 
 #ifdef HWRENDER
+	// the rest of those effects wont work in gl splitscreen
 	if (rendermode == render_opengl && splitscreen)
 	{
 		thiscam->postimg = postimgtype;
@@ -3506,7 +3506,6 @@ static void P_CheckFloatbobPlatforms(mobj_t *mobj)
 
 			if (!(rover->flags & FF_FLOATBOB))
 				continue;
-
 
 			if (mobj->eflags & MFE_VERTICALFLIP)
 			{
