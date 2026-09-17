@@ -107,6 +107,9 @@ void P_DoNightsScore(player_t *player)
 
 	dummymo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z+player->mo->height/2, MT_NIGHTSCORE);
 
+	if (P_MobjWasRemovedCompat(dummymo))
+		return;
+
 	if (player->bot)
 		player = &players[consoleplayer];
 
