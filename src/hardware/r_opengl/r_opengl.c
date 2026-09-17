@@ -1931,6 +1931,7 @@ static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD, UINT32 
 				{
 					if (samplePoint[p].s.alpha == 0)
 						continue;
+
 					sumR += samplePoint[p].s.red;
 					sumG += samplePoint[p].s.green;
 					sumB += samplePoint[p].s.blue;
