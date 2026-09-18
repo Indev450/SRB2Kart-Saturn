@@ -624,13 +624,26 @@ static void HWR_PrecacheLevelFlats(void)
 {
 	// lookup for flats that may´ve been already loaded
 	flatcheck flatpresent;
-	size_t i, j;
+	size_t i;
+#if 0
+	size_t j;
+#endif
 	INT32 k;
+
+	// this kinda messes up encore remapping behavior at times
+	// so just disable it for now ig
+#ifdef GLENCORE
+	if (encoremap)
+	{
+		return;
+	}
+#endif
 
 	flatcheck_init(&flatpresent);
 	flatcheck_reserve(&flatpresent, numlevelflats);
 
 	// special case for encore
+#if 0
 #ifdef GLENCORE
 	if (encoremap)
 	{
@@ -670,6 +683,7 @@ static void HWR_PrecacheLevelFlats(void)
 		}
 	}
 	else
+#endif
 #endif
 	{
 		// on non encore we have it simple
@@ -1315,6 +1329,7 @@ void HWR_SetPalette(RGBA_t *palette)
 				crushed_palette[i].s.blue = (UINT8)(fblue / 31.0f * 255.0f);
 				crushed_palette[i].s.alpha = 255;
 			}
+
 			GL_SetScreenPalette(crushed_palette);
 		}
 		else
@@ -1392,6 +1407,7 @@ void HWR_SetMapPalette(void)
 			I_Error("HWR_SetMapPalette: A programmer assumed palette lumps are at least 768 bytes long, but apparently this was a wrong assumption!\n");
 
 		RGB_data = (UINT8 *)(W_CacheLumpNum(lumpnum, PU_CACHE));
+
 		// we got the RGB palette now, but we need it in RGBA format.
 		for (i = 0; i < 256; i++)
 		{
@@ -1400,6 +1416,7 @@ void HWR_SetMapPalette(void)
 			RGBA_converted[i].s.blue = *(RGB_data++);
 			RGBA_converted[i].s.alpha = 255;
 		}
+
 		palette = RGBA_converted;
 	}
 
@@ -1407,6 +1424,7 @@ void HWR_SetMapPalette(void)
 	if (memcmp(mapPalette, palette, sizeof(mapPalette)))
 	{
 		memcpy(mapPalette, palette, sizeof(mapPalette));
+
 		// in palette rendering mode, this means that all rgba textures now have wrong colors
 		// and the lookup table is outdated
 		HWR_SetPaletteLookup(mapPalette);

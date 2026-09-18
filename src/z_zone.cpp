@@ -582,7 +582,8 @@ void Z_ChangeTag(void *ptr, INT32 tag)
 	block = MEMBLOCK(ptr);
 
 #ifdef PARANOIA
-	if (block->id != ZONEID) I_Error("Z_ChangeTag at %s:%d: wrong id", file, line);
+	if (block->id != ZONEID)
+		I_Error("Z_ChangeTag at %s:%d: wrong id", file, line);
 #endif
 
 	if (tag >= PU_PURGELEVEL && block->user == NULL)
@@ -613,7 +614,8 @@ void Z_SetUser(void *ptr, void **newuser)
 	block = MEMBLOCK(ptr);
 
 #ifdef PARANOIA
-	if (block->id != ZONEID) I_Error("Z_SetUser at %s:%d: wrong id", file, line);
+	if (block->id != ZONEID)
+		I_Error("Z_SetUser at %s:%d: wrong id", file, line);
 #endif
 
 	if (block->tag >= PU_PURGELEVEL && newuser == NULL)

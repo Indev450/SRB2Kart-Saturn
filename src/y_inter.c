@@ -256,6 +256,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		}
 
 		if (demo.recording && !rankingsmode)
+		{
 			G_WriteStanding(
 				data.pos[data.numplayers],
 				data.name[data.numplayers],
@@ -263,6 +264,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 				*data.color[data.numplayers],
 				data.val[data.numplayers]
 			);
+		}
 
 		data.numplayers++;
 	}
