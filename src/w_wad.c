@@ -1106,8 +1106,7 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	if (!TestValidLump(wad, 0))
 		return INT16_MAX;
 
-	namelen = strlen(name);
-	namelen = min(namelen, 8); // :chaosleep:
+	namelen = strnlen(name, 8); // :chaosleep:
 	hash = W_HashLumpNameLen(name, namelen);
 
 	//
