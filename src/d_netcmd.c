@@ -148,10 +148,10 @@ static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
 static void SetPrefcolor(int splitplayer);
-static void Command_Prefcolor(void);
-static void Command_Prefcolor2(void);
-static void Command_Prefcolor3(void);
-static void Command_Prefcolor4(void);
+static void Command_UsePrefcolor(void);
+static void Command_UsePrefcolor2(void);
+static void Command_UsePrefcolor3(void);
+static void Command_UsePrefcolor4(void);
 static void Command_ListWADS_f(void);
 static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
@@ -871,10 +871,10 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("localskin", Command_GLocalSkin);
 
-	COM_AddCommand("prefcolor", Command_Prefcolor);
-	COM_AddCommand("prefcolor2", Command_Prefcolor2);
-	COM_AddCommand("prefcolor3", Command_Prefcolor3);
-	COM_AddCommand("prefcolor4", Command_Prefcolor4);
+	COM_AddCommand("useprefcolor", Command_UsePrefcolor);
+	COM_AddCommand("useprefcolor2", Command_UsePrefcolor2);
+	COM_AddCommand("useprefcolor3", Command_UsePrefcolor3);
+	COM_AddCommand("useprefcolor4", Command_UsePrefcolor4);
 
 	K_RegisterClientKartStuff(); // SRB2kart
 
@@ -4367,22 +4367,22 @@ static void SetPrefcolor(int splitplayer)
 	}
 }
 
-static void Command_Prefcolor(void)
+static void Command_UsePrefcolor(void)
 {
 	SetPrefcolor(0);
 }
 
-static void Command_Prefcolor2(void)
+static void Command_UsePrefcolor2(void)
 {
 	SetPrefcolor(1);
 }
 
-static void Command_Prefcolor3(void)
+static void Command_UsePrefcolor3(void)
 {
 	SetPrefcolor(2);
 }
 
-static void Command_Prefcolor4(void)
+static void Command_UsePrefcolor4(void)
 {
 	SetPrefcolor(3);
 }
