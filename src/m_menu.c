@@ -9295,9 +9295,11 @@ static void M_Setup4PJoystickMenu(INT32 choice)
 static void M_DoAssignJoystick(UINT8 pnum, INT32 choice)
 {
 	INT32 oldchoice, oldstringchoice;
-	const int joynum = atoi(cv_usejoystick[pnum].string);
 
-	oldchoice = oldstringchoice = joynum > numcontrollers ? joynum : cv_usejoystick[pnum].value;
+#define joynum atoi(cv_usejoystick[pnum].string)
+#define joyoldchoice (joynum > numcontrollers ? joynum : cv_usejoystick[pnum].value)
+
+	oldchoice = oldstringchoice = joyoldchoice;
 	CV_SetValue(&cv_usejoystick[pnum], choice);
 
 	// Just in case last-minute changes were made to cv_usejoystick.value,
@@ -9313,16 +9315,21 @@ static void M_DoAssignJoystick(UINT8 pnum, INT32 choice)
 		if (oldchoice != choice)
 		{
 			if (choice && oldstringchoice > numcontrollers) // if we did not select "None", we likely selected a used device
+			{
 				CV_SetValue(&cv_usejoystick[pnum], (oldstringchoice > numcontrollers ? oldstringchoice : oldchoice));
+			}
 
-			if (oldstringchoice ==
-				(joynum > numcontrollers ? joynum : cv_usejoystick[pnum].value))
+			if (oldstringchoice == joyoldchoice)
+			{
 				M_StartMessage("This joystick is used by another\n"
 				"player. Reset the joystick\n"
 				"for that player first.\n\n"
 				"(Press a key)\n", NULL, MM_NOTHING);
+			}
 		}
 	}
+#undef joynum
+#undef joyoldchoice
 }
 #endif
 
