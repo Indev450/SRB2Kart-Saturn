@@ -568,7 +568,7 @@ void Z_CheckHeap(INT32 tag)
 #endif
 			if (block->tag != j)
 			{
-				HeapError(va(" block is contained in the wrong headlist (got: %d expected: %zu)", block->tag, j));
+				HeapError(va(" block is contained in the wrong headlist (got: %d expected: %s)", block->tag, sizeu1(j)));
 			}
 		}
 	}
