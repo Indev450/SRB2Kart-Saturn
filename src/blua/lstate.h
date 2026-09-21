@@ -88,8 +88,8 @@ typedef struct global_State {
   lua_CFunction panic;  /* to be called in unprotected errors */
   TValue l_registry;
   struct lua_State *mainthread;
-  UpVal uvhead;  /* head of double-linked list of all open upvalues */
   TString *memerrmsg;  /* memory-error message */
+  UpVal uvhead;  /* head of double-linked list of all open upvalues */
   struct Table *mt[NUM_TAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
   TString *strcache[STRCACHE_N][STRCACHE_M];  /* cache for strings in API */
