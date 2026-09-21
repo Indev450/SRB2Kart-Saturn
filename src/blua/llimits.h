@@ -41,25 +41,6 @@ typedef unsigned char lu_byte;
 */
 #define IntPoint(p)  ((unsigned int)(lu_mem)(p))
 
-/*
-** conversion of pointer to unsigned integer: this is for hashing only;
-** there is no problem if the integer cannot hold the whole pointer
-** value. (In strict ISO C this may cause undefined behavior, but no
-** actual machine seems to bother.)
-*/
-#if !defined(LUA_USE_C89) && defined(__STDC_VERSION__) && \
-    __STDC_VERSION__ >= 199901L
-#include <stdint.h>
-#if defined(UINTPTR_MAX)  /* even in C99 this type is optional */
-#define L_P2I	uintptr_t
-#else  /* no 'intptr'? */
-#define L_P2I	uintmax_t  /* use the largest available integer */
-#endif
-#else  /* C89 option */
-#define L_P2I	size_t
-#endif
-
-#define point2uint(p)	((unsigned int)((L_P2I)(p) & UINT_MAX))
 
 
 /* type to ensure maximum alignment */
@@ -116,17 +97,6 @@ typedef lu_int32 Instruction;
 /* minimum size for the string table (must be power of 2) */
 #ifndef MINSTRTABSIZE
 #define MINSTRTABSIZE	32
-#endif
-
-
-/*
-** Size of cache for strings in the API. 'N' is the number of
-** sets (better be a prime) and "M" is the size of each set (M == 1
-** makes a direct cache.)
-*/
-#ifndef STRCACHE_N
-#define STRCACHE_N	53
-#define STRCACHE_M	2
 #endif
 
 
