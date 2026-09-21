@@ -191,7 +191,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 ** check hits.
 */
 TString *luaS_new (lua_State *L, const char *str) {
-  unsigned int i = IntPoint(str) % STRCACHE_N;  /* hash */
+  unsigned int i = point2uint(str) % STRCACHE_N;  /* hash */
   int j;
   TString **p = G(L)->strcache[i];
   for (j = 0; j < STRCACHE_M; j++) {
