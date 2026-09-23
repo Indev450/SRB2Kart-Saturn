@@ -1027,6 +1027,8 @@ void I_InitJoystick(UINT8 index)
 		}
 	}
 
+#if 0 // no dont do this
+	// reset everything just in case
 	JoyInfo[index].dev = NULL;
 	JoyInfo[index].oldjoy = -1;
 #if (SDL_VERSION_ATLEAST(2,32,4))
@@ -1034,6 +1036,7 @@ void I_InitJoystick(UINT8 index)
 #endif
 	JoyInfo[index].hasled = false;
 	JoyInfo[index].hasrumble = false;
+#endif
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
