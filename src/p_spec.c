@@ -5474,7 +5474,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 					else
 						sectors[s].flags &= ~SF_GRAVITYFLIP;
 
-					CheckForReverseGravity = (sectors[s].flags & SF_GRAVITYFLIP);
+					CheckForReverseGravity = (boolean)(sectors[s].flags & SF_GRAVITYFLIP);
 				}
 				break;
 
