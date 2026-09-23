@@ -9205,7 +9205,7 @@ static void M_DrawJoystick(void)
 		compareval4 = cv_usejoystick[3].value;
 		compareval3 = cv_usejoystick[2].value;
 		compareval2 = cv_usejoystick[1].value;
-		compareval = cv_usejoystick[0].value;
+		compareval  = cv_usejoystick[0].value;
 #endif
 
 		if    ((setupcontrolplayer == 4 && (i == compareval4))
@@ -9244,14 +9244,13 @@ void M_SetupJoystickMenu(INT32 choice)
 		//
 		// Update cv_usejoystick.string here so that the user can
 		// properly change this value.
-		if (i == cv_usejoystick[0].value)
-			CV_SetValue(&cv_usejoystick[0], i);
-		if (i == cv_usejoystick[1].value)
-			CV_SetValue(&cv_usejoystick[1], i);
-		if (i == cv_usejoystick[2].value)
-			CV_SetValue(&cv_usejoystick[2], i);
-		if (i == cv_usejoystick[3].value)
-			CV_SetValue(&cv_usejoystick[3], i);
+		for (INT32 f = 0; f < MAXSPLITSCREENPLAYERS; f++)
+		{
+			if (i == cv_usejoystick[f].value)
+			{
+				CV_SetValue(&cv_usejoystick[f], i);
+			}
+		}
 #endif
 	}
 
@@ -9290,9 +9289,11 @@ static void M_Setup4PJoystickMenu(INT32 choice)
 static void M_DoAssignJoystick(UINT8 pnum, INT32 choice)
 {
 	INT32 oldchoice, oldstringchoice;
-	const int joynum = atoi(cv_usejoystick[pnum].string);
 
-	oldchoice = oldstringchoice = joynum > numcontrollers ? joynum : cv_usejoystick[pnum].value;
+#define joystrnum (atoi(cv_usejoystick[pnum].string))
+#define joyoldchoice ((joystrnum > numcontrollers) ? joystrnum : cv_usejoystick[pnum].value)
+
+	oldchoice = oldstringchoice = joyoldchoice;
 	CV_SetValue(&cv_usejoystick[pnum], choice);
 
 	// Just in case last-minute changes were made to cv_usejoystick.value,
@@ -9302,59 +9303,37 @@ static void M_DoAssignJoystick(UINT8 pnum, INT32 choice)
 	{
 		CV_SetValue(&cv_usejoystick[pnum], cv_usejoystick[pnum].value);
 
-		if (oldchoice > numcontrollers)  /* reset this so the comparison is valid*/
+		// reset this so the comparison is valid
+		if (oldchoice > numcontrollers)
 			oldchoice = cv_usejoystick[pnum].value;
 
 		if (oldchoice != choice)
 		{
 			if (choice && oldstringchoice > numcontrollers) // if we did not select "None", we likely selected a used device
-				CV_SetValue(&cv_usejoystick[pnum], (oldstringchoice > numcontrollers ? oldstringchoice : oldchoice));
+			{
+				CV_SetValue(&cv_usejoystick[pnum], ((oldstringchoice > numcontrollers) ? oldstringchoice : oldchoice));
+			}
 
-			if (oldstringchoice ==
-				(joynum > numcontrollers ? joynum : cv_usejoystick[pnum].value))
+			if (oldstringchoice == joyoldchoice)
+			{
 				M_StartMessage("This joystick is used by another\n"
 				"player. Reset the joystick\n"
 				"for that player first.\n\n"
 				"(Press a key)\n", NULL, MM_NOTHING);
+			}
 		}
 	}
+#undef joystrnum
+#undef joyoldchoice
 }
 #endif
 
 static void M_AssignJoystick(INT32 choice)
 {
 #ifdef JOYSTICK_HOTPLUG
-	switch (setupcontrolplayer)
-	{
-		case 4:
-			M_DoAssignJoystick(3, choice);
-			break;
-		case 3:
-			M_DoAssignJoystick(2, choice);
-			break;
-		case 2:
-			M_DoAssignJoystick(1, choice);
-			break;
-		case 1:
-			M_DoAssignJoystick(0, choice);
-			break;
-	}
+	M_DoAssignJoystick((setupcontrolplayer-1), choice);
 #else
-	switch (setupcontrolplayer)
-	{
-		case 4:
-			CV_SetValue(&cv_usejoystick[3], choice);
-			break;
-		case 3:
-			CV_SetValue(&cv_usejoystick[2], choice);
-			break;
-		case 2:
-			CV_SetValue(&cv_usejoystick[1], choice);
-			break;
-		case 1:
-			CV_SetValue(&cv_usejoystick[0], choice);
-			break;
-	}
+	CV_SetValue(&cv_usejoystick[(setupcontrolplayer-1)], choice);
 #endif
 }
 
@@ -9392,7 +9371,7 @@ static void M_SetupControlsMenu(UINT8 pnum)
 	{
 		// Hide P1-only controls
 		OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // Chat
-		OP_AllControlsMenu[10].status = IT_GRAYEDOUT2; // Rankings
+		OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // Rankings
 		OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Pause
 		OP_AllControlsMenu[22].status = IT_GRAYEDOUT2; // Screenshot
 		OP_AllControlsMenu[23].status = IT_GRAYEDOUT2; // GIF
@@ -9404,7 +9383,7 @@ static void M_SetupControlsMenu(UINT8 pnum)
 	{
 		// Unhide P1-only controls
 		OP_AllControlsMenu[19].status = IT_CONTROL; // Chat
-		OP_AllControlsMenu[10].status = IT_CONTROL; // Rankings
+		OP_AllControlsMenu[20].status = IT_CONTROL; // Rankings
 		OP_AllControlsMenu[21].status = IT_CONTROL; // Pause
 		OP_AllControlsMenu[22].status = IT_CONTROL; // Screenshot
 		OP_AllControlsMenu[23].status = IT_CONTROL; // GIF

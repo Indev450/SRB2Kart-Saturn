@@ -75,7 +75,7 @@ typedef struct memblock_s
 #define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - ALIGNPAD - sizeof(memblock_t))
 
 // both the head and tail of the zone memory block list
-static memblock_t head;
+static memblock_t headlist[NUM_PURGETAGS];
 
 static constexpr size_t kLevelLargePoolBlockSize = sizeof(mobj_t);
 static constexpr size_t kLevelMedPoolBlockSize = sizeof(precipmobj_t);
@@ -107,10 +107,14 @@ static void Command_Memdump_f(void);
 void Z_Init(void)
 {
 	size_t total, memfree;
+	size_t i;
 
-	memset(&head, 0x00, sizeof(head));
+	memset(&headlist, 0x00, sizeof(headlist));
 
-	head.next = head.prev = &head;
+	for (i = 0; i < NUM_PURGETAGS; i++)
+	{
+		headlist[i].next = headlist[i].prev = &headlist[i];
+	}
 
 	memfree = I_GetFreeMem(&total)>>20;
 
@@ -204,7 +208,7 @@ static void *xm(size_t size)
 	if (p == NULL)
 	{
 		// Oh crumbs: we're out of heap. Try purging the cache and reallocating.
-		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
+		Z_FreeTags(PU_PURGELEVEL, NUM_PURGETAGS-1);
 		p = malloc(padedsize);
 
 		if (p == NULL)
@@ -245,9 +249,9 @@ void *Z_Malloc(size_t size, INT32 tag, void *user)
 	ptr = MEMORY(block);
 	I_Assert((intptr_t)ptr % alignof (max_align_t) == 0);
 
-	block->next = head.next;
-	block->prev = &head;
-	head.next = block;
+	block->next = headlist[tag].next;
+	block->prev = &headlist[tag];
+	headlist[tag].next = block;
 	block->next->prev = block;
 
 	block->tag = tag;
@@ -411,6 +415,7 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 #endif
 {
 	memblock_t *block, *next;
+	INT32 i;
 
 #ifdef ZDEBUG
 	Z_CheckHeap2(file, line);
@@ -427,11 +432,13 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 		g_level_tiny_pool.release();
 	}
 
-	for (block = head.next; block != &head; block = next)
+	for (i = lowtag; i <= hightag; i++)
 	{
-		next = block->next; // get link before freeing
-		if (block->tag >= lowtag && block->tag <= hightag)
+		for (block = headlist[i].next; block != &headlist[i]; block = next)
+		{
+			next = block->next; // get link before freeing
 			Z_Free(MEMORY(block));
+		}
 	}
 }
 
@@ -444,18 +451,20 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *))
 {
 	memblock_t *block, *next;
+	INT32 i;
 
 	if (!iterfunc)
 		I_Error("Z_IterateTags: no iterator function was given");
 
-	for (block = head.next; block != &head; block = next)
+	for (i = lowtag; i <= hightag; i++)
 	{
-		next = block->next; // get link before possibly freeing
-
-		if (block->tag >= lowtag && block->tag <= hightag)
+		for (block = headlist[i].next; block != &headlist[i]; block = next)
 		{
+			next = block->next; // get link before possibly freeing
+
 			void *mem = MEMORY(block);
 			boolean free = iterfunc(mem);
+
 			if (free)
 				Z_Free(mem);
 		}
@@ -486,7 +495,7 @@ void Z_CheckMemCleanup(void)
 	if (nextcleanup-- == 0)
 	{
 		nextcleanup = CLEANUPCOUNT;
-		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
+		Z_FreeTags(PU_PURGELEVEL, NUM_PURGETAGS-1);
 	}
 }
 
@@ -504,6 +513,7 @@ void Z_CheckHeap(INT32 tag)
 {
 	memblock_t *block;
 	UINT32 blocknumon = 0;
+	size_t j;
 	void *given;
 
 #ifndef ZDEBUG
@@ -520,40 +530,47 @@ void Z_CheckHeap(INT32 tag)
 			blocknumon, block->ownerfile, block->ownerline, msg)
 #endif
 
-	for (block = head.next; block != &head; block = block->next)
+	for (j = 0; j < NUM_PURGETAGS; j++)
 	{
-		blocknumon++;
-		given = MEMORY(block);
+		for (block = headlist[j].next; block != &headlist[j]; block = block->next)
+		{
+			blocknumon++;
+			given = MEMORY(block);
 #ifdef ZDEBUG2
-		CONS_Debug(DBG_MEMORY, "block %u owned by %s:%d\n",
-			blocknumon, block->ownerfile, block->ownerline);
+			CONS_Debug(DBG_MEMORY, "block %u owned by %s:%d\n",
+				blocknumon, block->ownerfile, block->ownerline);
 #endif
 #ifdef HAVE_VALGRIND
-		if (RUNNING_ON_VALGRIND && !VALGRIND_MEMPOOL_EXISTS(block))
-		{
-			HeapError(" should not exist");
-		}
+			if (RUNNING_ON_VALGRIND && !VALGRIND_MEMPOOL_EXISTS(block))
+			{
+				HeapError(" should not exist");
+			}
 #endif
-		if (block->user != NULL && *(block->user) != given)
-		{
-			HeapError(" doesn't have a proper user");
-		}
+			if (block->user != NULL && *(block->user) != given)
+			{
+				HeapError(" doesn't have a proper user");
+			}
 
-		if (block->next->prev != block)
-		{
-			HeapError(" lacks proper backlink");
-		}
+			if (block->next->prev != block)
+			{
+				HeapError(" lacks proper backlink");
+			}
 
-		if (block->prev->next != block)
-		{
-			HeapError(" lacks proper forward link");
-		}
+			if (block->prev->next != block)
+			{
+				HeapError(" lacks proper forward link");
+			}
 #ifdef PARANOIA
-		if (block->id != ZONEID)
-		{
-			HeapError(" has the wrong ID");
-		}
+			if (block->id != ZONEID)
+			{
+				HeapError(" has the wrong ID");
+			}
 #endif
+			if (block->tag != j)
+			{
+				HeapError(va(" block is contained in the wrong headlist (got: %d expected: %s)", block->tag, sizeu1(j)));
+			}
+		}
 	}
 }
 
@@ -589,6 +606,14 @@ void Z_ChangeTag(void *ptr, INT32 tag)
 	if (tag >= PU_PURGELEVEL && block->user == NULL)
 		I_Error("Internal memory management error: "
 			"tried to make block purgable but it has no owner");
+
+	block->prev->next = block->next;
+	block->next->prev = block->prev;
+
+	block->next = headlist[tag].next;
+	block->prev = &headlist[tag];
+	headlist[tag].next = block;
+	block->next->prev = block;
 
 	block->tag = tag;
 }
@@ -640,17 +665,20 @@ void Z_SetUser(void *ptr, void **newuser)
 size_t Z_TagsUsage(INT32 lowtag, INT32 hightag)
 {
 	size_t cnt = 0;
-	memblock_t *rover;
+	memblock_t *head; // why was this called rover before?????
+	INT32 i;
 
-	for (rover = head.next; rover != &head; rover = rover->next)
+	for (i = lowtag; i <= hightag; i++)
 	{
-		if (rover->tag < lowtag || rover->tag > hightag)
-			continue;
-		cnt += rover->size + sizeof(memblock_t);
+		for (head = headlist[i].next; head != &headlist[i]; head = head->next)
+		{
+			cnt += head->size + sizeof *head;
+		}
 	}
 
 	return cnt;
 }
+
 
 // -----------------------
 // Miscellaneous functions
@@ -665,8 +693,8 @@ static void Command_Memfree_f(void)
 
 	Z_CheckHeap(-1);
 	CONS_Printf("\x82%s", M_GetText("Memory Info\n"));
-	CONS_Printf(M_GetText("Total heap used        : %7s KB\n"), sizeu1(Z_TotalUsage()>>10));
-	CONS_Printf(M_GetText("Lua                    : %7s KB\n"), sizeu1(Z_TagUsage(PU_LUA)>>10));
+	CONS_Printf(M_GetText("Total heap used        : %7s KB\n"), sizeu1((Z_TotalUsage()>>10) + LUA_MemoryUsage()));
+	CONS_Printf(M_GetText("Lua                    : %7s KB\n"), sizeu1(LUA_MemoryUsage())); // No longer uses z_zone memory but for consistency keep it here
 	CONS_Printf(M_GetText("Static                 : %7s KB\n"), sizeu1(Z_TagUsage(PU_STATIC)>>10));
 	CONS_Printf(M_GetText("Static (sound)         : %7s KB\n"), sizeu1(Z_TagUsage(PU_SOUND)>>10));
 	CONS_Printf(M_GetText("Static (music)         : %7s KB\n"), sizeu1(Z_TagUsage(PU_MUSIC)>>10));
@@ -680,7 +708,7 @@ static void Command_Memfree_f(void)
 	CONS_Printf(M_GetText("Level (pooled)         : %7s KB\n"), sizeu1(Z_LevelPoolUsage()>>10));
 	CONS_Printf(M_GetText("Special thinker        : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC)>>10));
 	CONS_Printf(M_GetText("All purgable           : %7s KB\n"),
-		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX)>>10));
+		sizeu1(Z_TagsUsage(PU_PURGELEVEL, NUM_PURGETAGS-1)>>10));
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
@@ -709,21 +737,24 @@ static void Command_Memfree_f(void)
 static void Command_Memdump_f(void)
 {
 	memblock_t *block;
-	INT32 mintag = 0, maxtag = INT32_MAX;
+	INT32 mintag = 0, maxtag = NUM_PURGETAGS-1;
+	INT32 check;
 	INT32 i;
 
-	if ((i = COM_CheckParm("-min")))
-		mintag = atoi(COM_Argv(i + 1));
+	if ((check = COM_CheckParm("-min")))
+		mintag = atoi(COM_Argv(check + 1));
 
-	if ((i = COM_CheckParm("-max")))
-		maxtag = atoi(COM_Argv(i + 1));
+	if ((check = COM_CheckParm("-max")))
+		maxtag = atoi(COM_Argv(check + 1));
 
-	for (block = head.next; block != &head; block = block->next)
-		if (block->tag >= mintag && block->tag <= maxtag)
+	for (i = mintag; i <= maxtag; i++)
+	{
+		for (block = headlist[i].next; block != &headlist[i]; block = block->next)
 		{
 			const char *filename = strrchr(block->ownerfile, PATHSEP[0]);
-			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d\n", block->tag, sizeu1(block->size + sizeof(memblock_t)), sizeu2(block->size), filename ? filename + 1 : block->ownerfile, block->ownerline);
+			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d tag: %d (%d)\n", block->tag, sizeu1(block->size + sizeof(memblock_t)), sizeu2(block->size), filename ? filename + 1 : block->ownerfile, block->ownerline, block->tag, i);
 		}
+	}
 }
 #endif
 
