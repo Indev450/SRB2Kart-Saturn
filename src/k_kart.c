@@ -4706,10 +4706,6 @@ void K_DropKitchenSink(player_t *player)
 // When an item in the hnext chain dies.
 void K_RepairOrbitChain(mobj_t *orbit)
 {
-	// Prevent orbit from being freed
-	mobj_t *dummy = NULL;
-	P_SetTarget(&dummy, orbit);
-
 	mobj_t *cachenext = orbit->hnext;
 
 	// First, repair the chain
@@ -4746,8 +4742,6 @@ void K_RepairOrbitChain(mobj_t *orbit)
 		if (!P_MobjWasRemovedCompat(orbit->target))
 			orbit->target->player->kartstuff[k_itemamount] = num;
 	}
-
-	P_SetTarget(&dummy, NULL);
 }
 
 // Simplified version of a code bit in P_MobjFloorZ
