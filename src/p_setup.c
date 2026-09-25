@@ -3337,6 +3337,7 @@ static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
 
 	return false;
 }
+
 //
 // P_CheckReplacMapReplacements
 //
