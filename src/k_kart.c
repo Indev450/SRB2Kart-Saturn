@@ -4399,8 +4399,7 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source)
 	mobj_t *cachenext;
 
 killnext:
-
-	if (!banana)
+	if (P_MobjWasRemovedCompat(banana))
 		return;
 
 	cachenext = banana->hnext;
@@ -4439,10 +4438,21 @@ void K_UpdateHnextList(player_t *player, boolean clean)
 		nextwork = work->hnext;
 
 		if (!clean && (!work->movedir || work->movedir <= (UINT16)player->kartstuff[k_itemamount]))
+		{
 			continue;
+		}
 
 		P_RemoveMobj(work);
 	}
+
+#ifdef PHOBOS_BUILD
+	if (P_MobjWasRemoved(player->mo->hnext))
+	{
+		// Like below, try to clean up the pointer if it's NULL.
+		// Maybe this was a cause of the shrink/eggbox fails?
+		P_SetTarget(&player->mo->hnext, NULL);
+	}
+#endif
 }
 
 // For getting hit!
@@ -4507,7 +4517,9 @@ void K_DropHnextList(player_t *player)
 		}
 
 		dropwork = P_SpawnMobj(work->x, work->y, work->z, type);
+
 		P_SetTarget(&dropwork->target, player->mo);
+
 		dropwork->angle = work->angle;
 		dropwork->flags2 = work->flags2;
 		dropwork->flags |= MF_NOCLIPTHING;
@@ -4575,10 +4587,13 @@ void K_DropHnextList(player_t *player)
 
 	// we need this here too because this is done in afterthink - pointers are cleaned up at the START of each tic...
 	P_SetTarget(&player->mo->hnext, NULL);
+
 	player->kartstuff[k_bananadrag] = 0;
 
 	if (player->kartstuff[k_eggmanheld])
+	{
 		player->kartstuff[k_eggmanheld] = 0;
+	}
 	else if (player->kartstuff[k_itemheld]
 		&& (dropall || (--player->kartstuff[k_itemamount] <= 0)))
 	{
@@ -4879,7 +4894,9 @@ static void K_MoveHeldObjects(player_t *player)
 		player->kartstuff[k_bananadrag] = 0;
 
 		if (player->kartstuff[k_eggmanheld])
+		{
 			player->kartstuff[k_eggmanheld] = 0;
+		}
 		else if (player->kartstuff[k_itemheld])
 		{
 			player->kartstuff[k_itemamount] = player->kartstuff[k_itemheld] = 0;
@@ -4896,7 +4913,9 @@ static void K_MoveHeldObjects(player_t *player)
 		player->kartstuff[k_bananadrag] = 0;
 
 		if (player->kartstuff[k_eggmanheld])
+		{
 			player->kartstuff[k_eggmanheld] = 0;
+		}
 		else if (player->kartstuff[k_itemheld])
 		{
 			player->kartstuff[k_itemamount] = player->kartstuff[k_itemheld] = 0;

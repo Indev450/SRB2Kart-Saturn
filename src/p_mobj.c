@@ -10338,13 +10338,25 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	if (!P_MobjWasRemoved(mobj->hnext))
 	{
-		P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
+#ifdef PHOBOS_BUILD
+		if (mobj->hnext->hprev == mobj)
+#endif
+		{
+			P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
+		}
+
 		P_SetTarget(&mobj->hnext, NULL);
 	}
 
 	if (!P_MobjWasRemoved(mobj->hprev))
 	{
-		P_SetTarget(&mobj->hprev->hnext, cachenext);
+#ifdef PHOBOS_BUILD
+		if (mobj->hprev->hnext == mobj)
+#endif
+		{
+			P_SetTarget(&mobj->hprev->hnext, cachenext);
+		}
+
 		P_SetTarget(&mobj->hprev, NULL);
 	}
 
