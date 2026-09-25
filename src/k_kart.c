@@ -4931,7 +4931,12 @@ static void K_MoveHeldObjects(player_t *player)
 		case MT_JAWZ_SHIELD:
 			{
 				mobj_t *cur = player->mo->hnext;
-				fixed_t speed = ((8 - min(4, player->kartstuff[k_itemamount])) * cur->info->speed) / 7;
+				fixed_t speed = 0;
+
+				if (cur == NULL)
+					return;
+
+				speed = ((8 - min(4, player->kartstuff[k_itemamount])) * cur->info->speed) / 7;
 
 				player->kartstuff[k_bananadrag] = 0; // Just to make sure
 
@@ -4978,7 +4983,12 @@ static void K_MoveHeldObjects(player_t *player)
 					cur->flags &= ~MF_NOCLIPTHING;
 
 					if (!P_TryMove(cur, player->mo->x + cur->momx, player->mo->y + cur->momy, true))
+					{
 						P_SlideMove(cur, true);
+
+						if (P_MobjWasRemovedCompat(cur))
+							continue;
+					}
 
 					if (P_IsObjectOnGround(player->mo))
 					{
