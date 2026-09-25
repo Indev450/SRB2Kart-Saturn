@@ -5012,20 +5012,24 @@ static void K_MoveHeldObjects(player_t *player)
 		case MT_ORBINAUT_SHIELD: // Kart orbit items
 		case MT_JAWZ_SHIELD:
 			{
-				mobj_t *cur = player->mo->hnext;
-				fixed_t speed = ((8 - min(4, player->kartstuff[k_itemamount])) * cur->info->speed) / 7;
+				mobj_t *cur = NULL, *next = player->mo->hnext;
+				fixed_t speed = 0;
+
+				if (next == NULL)
+					return;
+
+				speed = ((8 - min(4, player->kartstuff[k_itemamount])) * next->info->speed) / 7;
 
 				player->kartstuff[k_bananadrag] = 0; // Just to make sure
 
-				while (!P_MobjWasRemoved(cur))
+				while ((cur = next) != NULL && !P_MobjWasRemoved(cur))
 				{
 					fixed_t z;
 
+					next = cur->hnext;
+
 					if (!cur->health)
-					{
-						cur = cur->hnext;
 						continue;
-					}
 
 					const fixed_t radius = FixedHypot(player->mo->radius, player->mo->radius) + FixedHypot(cur->radius, cur->radius); // mobj's distance from its Target, or Radius.
 
@@ -5060,7 +5064,12 @@ static void K_MoveHeldObjects(player_t *player)
 					cur->flags &= ~MF_NOCLIPTHING;
 
 					if (!P_TryMove(cur, player->mo->x + cur->momx, player->mo->y + cur->momy, true))
+					{
 						P_SlideMove(cur, true);
+
+						if (P_MobjWasRemovedCompat(cur))
+							continue;
+					}
 
 					if (P_IsObjectOnGround(player->mo))
 					{
@@ -5082,8 +5091,6 @@ static void K_MoveHeldObjects(player_t *player)
 					cur->z = z;
 					cur->momx = cur->momy = 0;
 					cur->angle += ANGLE_90;
-
-					cur = cur->hnext;
 				}
 			}
 			break;
