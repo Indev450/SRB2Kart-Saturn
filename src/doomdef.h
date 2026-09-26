@@ -128,8 +128,13 @@ extern char  logfilename[1024];
 // most interface strings are ignored in development mode.
 // we use comprevision and compbranch instead.
 #else
+#ifdef PHOBOS_BUILD
+#define VERSION    1 // Game version
+#define SUBVERSION 69 // more precise version number
+#else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
+#endif
 
 #ifdef PHOBOS_BUILD
 #define CLIENTNAME  "Phobos"
