@@ -147,6 +147,11 @@ static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
+static void SetPrefcolor(int splitplayer);
+static void Command_UsePrefcolor(void);
+static void Command_UsePrefcolor2(void);
+static void Command_UsePrefcolor3(void);
+static void Command_UsePrefcolor4(void);
 static void Command_ListWADS_f(void);
 static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
@@ -865,6 +870,11 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("minigen", M_MinimapGenerate);
 
 	COM_AddCommand("localskin", Command_GLocalSkin);
+
+	COM_AddCommand("useprefcolor", Command_UsePrefcolor);
+	COM_AddCommand("useprefcolor2", Command_UsePrefcolor2);
+	COM_AddCommand("useprefcolor3", Command_UsePrefcolor3);
+	COM_AddCommand("useprefcolor4", Command_UsePrefcolor4);
 
 	K_RegisterClientKartStuff(); // SRB2kart
 
@@ -4332,6 +4342,49 @@ static void Command_GLocalSkin(void)
 
 		return;
 	}
+}
+
+static void SetPrefcolor(int splitplayer)
+{
+	// splitscreen
+	if (splitscreen < splitplayer)
+		return;
+
+	const INT32 pnum = P_GetLocalPlayerNumForNum(splitplayer);
+
+	player_t *player = &players[pnum];
+	consvar_t *colorvars[] = {&cv_playercolor, &cv_playercolor2, &cv_playercolor3, &cv_playercolor4};
+	consvar_t *playercolor = colorvars[splitplayer];
+
+	if (skins[player->skin].prefcolor)
+	{
+		CV_SetValue(playercolor, skins[player->skin].prefcolor);
+		CONS_Printf("Set color to %s%s\n", HU_SkinColorToConsoleColor(skins[player->skin].prefcolor), KartColor_Names[skins[player->skin].prefcolor]);
+	}
+	else
+	{
+		CONS_Printf("\x86Your skin has no prefcolor set\n");
+	}
+}
+
+static void Command_UsePrefcolor(void)
+{
+	SetPrefcolor(0);
+}
+
+static void Command_UsePrefcolor2(void)
+{
+	SetPrefcolor(1);
+}
+
+static void Command_UsePrefcolor3(void)
+{
+	SetPrefcolor(2);
+}
+
+static void Command_UsePrefcolor4(void)
+{
+	SetPrefcolor(3);
 }
 
 static void Got_RequestAddfilecmd(const UINT8 **cp, INT32 playernum)

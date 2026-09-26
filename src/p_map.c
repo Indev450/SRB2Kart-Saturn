@@ -3984,19 +3984,51 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
  Lots of new Boom functions that work faster and add functionality.
 */
 
+#ifndef PHOBOS_BUILD
+static msecnode_t *headsecnode = NULL;
+#endif
+
+void P_Initsecnode(void)
+{
+#ifndef PHOBOS_BUILD
+	headsecnode = NULL;
+#endif
+}
+
 // P_GetSecnode() retrieves a node from the freelist. The calling routine
 // should make sure it sets all fields properly.
 
 static msecnode_t *P_GetSecnode(void)
 {
+#ifdef PHOBOS_BUILD
 	return Z_LevelPoolCalloc(sizeof(msecnode_t));
+#else
+	msecnode_t *node;
+
+	if (headsecnode)
+	{
+		// vanilla does not clear this
+		// so for compat reasons we also dont
+		// means we just reuse stale data which causes weird interactions with orbiting items in some cases
+		node = headsecnode;
+		headsecnode = headsecnode->m_thinglist_next;
+	}
+	else
+		node = Z_LevelPoolCalloc(sizeof(msecnode_t));
+
+	return node;
+#endif
 }
 
 // P_PutSecnode() returns a node to the freelist.
-
 static inline void P_PutSecnode(msecnode_t *node)
 {
+#ifdef PHOBOS_BUILD
 	Z_LevelPoolFree(node, sizeof(msecnode_t));
+#else
+	node->m_thinglist_next = headsecnode;
+	headsecnode = node;
+#endif
 }
 
 // P_AddSecnode() searches the current list to see if this sector is
