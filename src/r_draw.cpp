@@ -174,15 +174,10 @@ static void BlendTab_Translucent(UINT8 *table, int style, UINT8 blendamt)
 		{
 			frontrgba = pGammaCorrectedPalette[fg];
 
-#if 0 // perfect implementation
 			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
 			result.rgba = ASTBlendPixel(result, frontrgba, AST_TRANSLUCENT, blendamt);
-			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
-#else // performance scrabbler
-			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
-			result.rgba = ASTBlendPixel(result, frontrgba, AST_TRANSLUCENT, blendamt);
+
 			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut_corrected, result.s.red, result.s.green, result.s.blue); // pGammaCorrectedPalette
-#endif
 		}
 	}
 }
@@ -190,6 +185,7 @@ static void BlendTab_Translucent(UINT8 *table, int style, UINT8 blendamt)
 static void BlendTab_Subtractive(UINT8 *table, int style, UINT8 blendamt)
 {
 	INT16 bg, fg;
+	RGBA_t backrgba, frontrgba, result;
 
 	if (table == NULL)
 		I_Error("BlendTab_Subtractive: input table was NULL!");
@@ -202,11 +198,11 @@ static void BlendTab_Subtractive(UINT8 *table, int style, UINT8 blendamt)
 
 	for (bg = 0; bg < 0x100; bg++)
 	{
+		backrgba = pLocalPalette[bg]; // intentionally uses pLocalPalette
+
 		for (fg = 0; fg < 0x100; fg++)
 		{
-			RGBA_t backrgba = V_GetColor(bg);
-			RGBA_t frontrgba = V_GetColor(fg);
-			RGBA_t result;
+			frontrgba = pLocalPalette[fg];
 
 			result.rgba    = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
 			result.s.red   = std::max(0, result.s.red - blendamt);
@@ -221,17 +217,19 @@ static void BlendTab_Subtractive(UINT8 *table, int style, UINT8 blendamt)
 static void BlendTab_Modulative(UINT8 *table)
 {
 	INT16 bg, fg;
+	RGBA_t backrgba, frontrgba, result;
 
 	if (table == NULL)
 		I_Error("BlendTab_Modulative: input table was NULL!");
 
 	for (bg = 0; bg < 0x100; bg++)
 	{
+		backrgba = pGammaCorrectedPalette[bg];
+
 		for (fg = 0; fg < 0x100; fg++)
 		{
-			RGBA_t backrgba = V_GetColor(bg);
-			RGBA_t frontrgba = V_GetColor(fg);
-			RGBA_t result;
+			frontrgba = pGammaCorrectedPalette[fg];
+
 			result.rgba = ASTBlendPixel(backrgba, frontrgba, AST_MODULATE, 0);
 			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut_corrected, result.s.red, result.s.green, result.s.blue);
 		}
