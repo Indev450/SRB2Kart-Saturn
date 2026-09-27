@@ -586,7 +586,7 @@ if(${SRB2_CONFIG_SATURNJOIN})
 	add_definitions(-DDOSATURNJOIN)
 endif()
 
-if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_SCREENFBO})
+if(${SRB2_CONFIG_PHOBOS})
 	add_definitions(-DPHOBOS_BUILD)
 endif()
 
