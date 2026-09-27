@@ -128,8 +128,13 @@ extern char  logfilename[1024];
 // most interface strings are ignored in development mode.
 // we use comprevision and compbranch instead.
 #else
+#ifdef PHOBOS_BUILD
+#define VERSION    1 // Game version
+#define SUBVERSION 69 // more precise version number
+#else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
+#endif
 
 #ifdef PHOBOS_BUILD
 #define CLIENTNAME  "Phobos"
@@ -139,8 +144,8 @@ extern char  logfilename[1024];
 #define CLIENTNAMEW L"Saturn"
 #endif
 
-#define VERSIONSTRING  CLIENTNAME  " v10"
-#define VERSIONSTRINGW CLIENTNAMEW L" v10"
+#define VERSIONSTRING  CLIENTNAME  " v10.1"
+#define VERSIONSTRINGW CLIENTNAMEW L" v10.1"
 
 #define SATURN_TESTING // comment out for saturn release builds!
 

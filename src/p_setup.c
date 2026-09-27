@@ -3001,6 +3001,9 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	CON_Drawer(); // let the user know what we are going to do
 	I_FinishUpdate(); // page flip or blit buffer
 
+	// Initialize sector node list.
+	P_Initsecnode();
+
 	if (netgame || multiplayer)
 		cv_debug = botskin = 0;
 
@@ -3328,6 +3331,7 @@ static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
 
 	return false;
 }
+
 //
 // P_CheckReplacMapReplacements
 //

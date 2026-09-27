@@ -2016,7 +2016,7 @@ static inline void P_NiGHTSDamage(mobj_t *target, mobj_t *source)
 	}
 }
 
-static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
+static boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	player_t *player = target->player;
 	(void)damage; //unused parm

@@ -257,7 +257,7 @@ set(SRB2_CONFIG_SATURNJOIN ON CACHE BOOL
 set(SRB2_CONFIG_SCREENFBO ON CACHE BOOL
 	"Enable hardware renderer (OpenGL) FBO downsampling support")
 
-set(SRB2_CONFIG_PHOBOS ON CACHE BOOL
+set(SRB2_CONFIG_PHOBOS OFF CACHE BOOL
 	" Compile the Phobos client. Which contains things not compatible with vanilla, such as raised skinlimits, 32 player support, bugfixes, etc.")
 
 if(${SRB2_CONFIG_DEDICATED})
@@ -586,7 +586,7 @@ if(${SRB2_CONFIG_SATURNJOIN})
 	add_definitions(-DDOSATURNJOIN)
 endif()
 
-if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_SCREENFBO})
+if(${SRB2_CONFIG_PHOBOS})
 	add_definitions(-DPHOBOS_BUILD)
 endif()
 
