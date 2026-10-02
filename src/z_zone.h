@@ -173,6 +173,8 @@ char *Z_StrDup(const char *in);
 size_t Z_LevelPoolUsage(void);
 void *Z_LevelPoolMalloc(size_t size);
 void *Z_LevelPoolCalloc(size_t size);
+#define Z_IsMobjValid(p) Z_IsMobjValid2(p, __FILE__, __LINE__)
+boolean Z_IsMobjValid2(void *p, const char *file, INT32 line);
 void Z_LevelPoolFree(void *p, size_t size);
 
 // for use with CLEANUP macro

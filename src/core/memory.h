@@ -65,6 +65,7 @@ public:
 	constexpr size_t allocated_bytes() const noexcept { return allocated_blocks_ * block_size_; };
 
 	void release();
+	bool ptrcheck(const void* p) const;
 };
 
 } // namespace srb2
