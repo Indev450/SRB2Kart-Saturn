@@ -806,8 +806,8 @@ void* Z_LevelPoolMalloc(size_t size)
 
 boolean Z_IsMobjValid2(void *p, const char *file, INT32 line)
 {
-	(void)file;
-	(void)line;
+	//(void)file;
+	//(void)line;
 
 	// mobj was removed
 	// no need to worry here
@@ -818,6 +818,7 @@ boolean Z_IsMobjValid2(void *p, const char *file, INT32 line)
 	if (!g_level_large_pool.ptrcheck(p))
 	{
 		//I_Error("invalid mobj! at %s:%d", file, line);
+		CONS_Alert(CONS_ERROR, "invalid mobj! at %s:%d", file, line);
 		return false;
 	}
 
