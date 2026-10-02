@@ -149,6 +149,30 @@ void PoolAllocator::release()
 	allocated_blocks_ = 0;
 }
 
+bool PoolAllocator::ptrcheck(const void* p) const
+{
+	const uintptr_t paddr = reinterpret_cast<uintptr_t>(p);
+
+	ChunkFooter* next = nullptr;
+	for (ChunkFooter* chunk = first_chunk_; chunk != nullptr; chunk = next)
+	{
+		const uintptr_t blockstart = reinterpret_cast<uintptr_t>(chunk->start);
+		const uintptr_t blockend = blockstart + blocks_ * block_size_;
+
+		//CONS_Printf("mobj ptr %lu, block start %lu end %lu\n", paddr, blockstart, blockend);
+
+		if (paddr >= blockstart && paddr < blockend)
+		{
+			return true;
+		}
+
+		next = chunk->next;
+	}
+
+	return false;
+}
+
+
 static LinearMemory g_frame_memory {4 * 1024 * 1024};
 
 void* Z_Frame_Alloc(size_t size)
