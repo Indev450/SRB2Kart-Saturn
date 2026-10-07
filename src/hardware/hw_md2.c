@@ -1146,8 +1146,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 	// Look at HWR_ProjectSprite for more
 	{
-		md2_t *md2s;
-		int skinnum;
+		md2_t *md2s = NULL;
+		int skinnum = 0;
 		patch_t *gpatch, *blendgpatch;
 		GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
 		INT32 durs = spr->mobj->state->tics;
@@ -1221,7 +1221,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				skinnum = (skin_t *)spr->mobj->localskin - skins;
 			}
 		}
-		else
+		else if (spr->mobj->skin)
 		{
 			md2s = md2_playermodels;
 			skinnum = (skin_t *)spr->mobj->skin - skins;
