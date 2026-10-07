@@ -366,6 +366,15 @@ typedef struct squishdance_s
 	fixed_t bounce;    // hehe squishy
 } squishdance_t;
 
+typedef struct salty_s
+{
+	bool ready;
+	bool tapping;
+	fixed_t zoffset;
+	fixed_t momz;
+	bool jump;
+} salty_t;
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -560,6 +569,9 @@ typedef struct player_s
 	tic_t driftsparkGrowTimer;
 
 	fixed_t spinoutrot; // When a player spins out, this value increments modulus 360.
+
+	// saltyhop! hardcode edition
+	salty_t salty;
 
 	squishdance_t squishdance;
 

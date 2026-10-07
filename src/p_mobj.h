@@ -275,16 +275,6 @@ typedef enum {
 	NUMMOBJVFX,
 } mobjvfx_t;
 
-typedef struct salty_s
-{
-	bool init;
-	bool ready;
-	bool tapping;
-	fixed_t zoffset;
-	fixed_t momz;
-	bool jump;
-} salty_t;
-
 // Map Object definition.
 typedef struct mobj_s
 {
@@ -420,9 +410,6 @@ typedef struct mobj_s
 	boolean mirrored; // The object's rotations will be mirrored left to right, e.g., see frame AL from the right and AR from the left
 
 	tic_t slamsoundtimer; // Funni slam sound when landing
-
-	// saltyhop! hardcode edition
-	salty_t salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
 	struct mobj_s *vfx[NUMMOBJVFX];
