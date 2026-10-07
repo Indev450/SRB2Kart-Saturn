@@ -361,9 +361,6 @@ typedef struct squishdance_s
 {
 	tic_t   countdown; // hold "custom 3" for 2 seconds to engange le dance
 	tic_t   time;
-	fixed_t work;
-	fixed_t ang;
-	fixed_t bounce;    // hehe squishy
 } squishdance_t;
 
 typedef struct salty_s
