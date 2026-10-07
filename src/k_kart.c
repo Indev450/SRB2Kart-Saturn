@@ -71,35 +71,17 @@ consvar_t cv_stairjank = {"stairjank", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistor
 consvar_t cv_stairjanksfx = {"stairjanksfx", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
-static void saltyhop_onchange(void);
-consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t saltyheight_t[] = {{FRACUNIT/4, "MIN"}, {2*FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, saltyheight_t, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE, saltyheight_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyroll = {"hardcodehoproll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_squishdance = {"squishdance", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t squishdancespeed_cons_t[] = {{20, "MIN"}, {280, "MAX"}, {0, NULL}};
 consvar_t cv_squishdancespeed = {"squishdance_speed", "140", CV_SAVE, squishdancespeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static void saltyhop_onchange(void)
-{
-	// reset everything when toggling saltyhop
-	if (gamestate != GS_LEVEL)
-		return;
-
-	for (INT32 i = 0; i < MAXPLAYERS; i++)
-	{
-		player_t *player = &players[i];
-
-		if (!player || P_MobjWasRemoved(player->mo))
-			continue;
-
-		memset(&player->mo->salty, 0, sizeof(player->mo->salty));
-	}
-}
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -2194,7 +2176,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 		// Technically, all mobjs that think can cause desynchs if they are spawned conditionally, so best we can do
 		// is to hide them if you are in saltyhop jump
-		if (dust && player->mo->salty.jump)
+		if (dust && player->salty.jump)
 			dust->flags2 |= MF2_DONTDRAW;
 
 		if (leveltime % 6 == 0)
@@ -3404,88 +3386,92 @@ static void K_SaltySquish(player_t *player)
 
 static void K_QuiteSaltyHop(player_t *player)
 {
-	if (!cv_saltyhop.value)
-		return;
+	I_Assert(player != NULL);
+	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	// what the fuck is this haya
 	mobj_t *pmo = player->mo;
-	salty_t *psalt = &pmo->salty;
+	salty_t *psalty = &player->salty;
+
+	if (!cv_saltyhop.value)
+	{
+		// reset before we leave
+		psalty->jump = psalty->ready = psalty->tapping = false;
+		psalty->momz = psalty->zoffset = 0;
+		return;
+	}
+
 	const boolean onground = P_IsObjectOnGround(pmo);
 
 	// ready?
 	if (!player->kartstuff[k_jmp])
 	{
-		psalt->ready = true;
-		psalt->tapping = false;
+		psalty->ready = true;
+		psalty->tapping = false;
 	}
-	else if (psalt->ready)
+	else if (psalty->ready)
 	{
-		psalt->ready = false;
-		psalt->tapping = true;
+		psalty->ready = false;
+		psalty->tapping = true;
 	}
 	else
 	{
-		psalt->tapping = false;
+		psalty->tapping = false;
 	}
 
 	// GO!
-	if (!psalt->init)
-	{
-		psalt->jump = false;
-		psalt->zoffset = 0;
-		psalt->momz = 0;
-		psalt->init = true;
-	}
-	else if (psalt->jump)
+	if (psalty->jump)
 	{
 		if (pmo->eflags & MFE_JUSTHITFLOOR)
 		{
-			psalt->zoffset = 0;
+			psalty->zoffset = 0;
 		}
 		else if (onground)
 		{
-			psalt->zoffset += psalt->momz;
-			psalt->momz -= (FRACUNIT*3/2);
+			psalty->zoffset += psalty->momz;
+			psalty->momz -= (FRACUNIT*3/2);
 		}
 		else
 		{
-			psalt->zoffset *= (49/50)*FRACUNIT;
-			psalt->momz = 0;
+			//psalty->zoffset *= (49/50)*FRACUNIT; // this just rounds down to 0 lol
+			psalty->zoffset = 0;
+			psalty->momz = 0;
 		}
 
-		if (psalt->zoffset <= 0)
+		if (psalty->zoffset <= 0)
 		{
 			if (cv_saltyhopsfx.value && !(pmo->eflags & MFE_JUSTHITFLOOR) && onground)
 				S_StartSound(pmo, sfx_s268);
-			psalt->jump = false;
-			psalt->zoffset = 0;
-			psalt->momz = 0;
+			psalty->jump = false;
+			psalty->zoffset = 0;
+			psalty->momz = 0;
 			// shlamma damma
 			if (cv_saltysquish.value)
 				pmo->stretchslam += 8*FRACUNIT;
 		}
-		else if (cv_saltysquish.value && psalt->zoffset >= 0)
+		else if (psalty->zoffset > 0)
 		{
-			// goofy ahh hack
-			pmo->spriteyscale += (FRACUNIT/8);
-			pmo->spritexscale -= (FRACUNIT/8);
+			if (cv_saltysquish.value)
+			{
+				// goofy ahh hack
+				pmo->spriteyscale += (FRACUNIT/8);
+				pmo->spritexscale -= (FRACUNIT/8);
+			}
 		}
 
-		pmo->spriteyoffset += FixedMul(psalt->zoffset, cv_saltyheight.value);
+		pmo->spriteyoffset += FixedMul(psalty->zoffset, cv_saltyheight.value);
 
-		if (cv_saltyhopsfx.value)
-		{
-			if (S_SoundPlaying(pmo, sfx_screec))
-				S_StopSoundByID(pmo, sfx_screec);
-			if (S_SoundPlaying(pmo, sfx_drift))
-				S_StopSoundByID(pmo, sfx_drift);
-		}
+		// Stop any and all drift sounds when hopping.
+		if (S_SoundPlaying(pmo, sfx_screec))
+			S_StopSoundByID(pmo, sfx_screec);
+		if (S_SoundPlaying(pmo, sfx_drift))
+			S_StopSoundByID(pmo, sfx_drift);
 	}
-	else if (psalt->tapping && onground && !player->kartstuff[k_spinouttimer] && !player->kartstuff[k_squishedtimer])
+	else if (psalty->tapping && onground && !player->kartstuff[k_spinouttimer] && !player->kartstuff[k_squishedtimer])
 	{
-		psalt->jump = true;
-		psalt->zoffset = 0;
-		psalt->momz = 6*FRACUNIT;
+		psalty->jump = true;
+		psalty->zoffset = 0;
+		psalty->momz = 6*FRACUNIT;
 		if (cv_saltyhopsfx.value)
 			S_StartSound(pmo, sfx_s25a);
 	}
@@ -3512,7 +3498,7 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 		return false;
 
 	// seeing a character rotate mid-hop looks really janky
-	if (!cv_saltyroll.value && mobj->player && mobj->player->mo->salty.jump)
+	if (!cv_saltyroll.value && mobj->player && mobj->player->salty.jump)
 		return false;
 
 	return K_CheckSlopeRollDist(mobj);
