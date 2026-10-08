@@ -100,7 +100,7 @@ static UINT8 cheatf_devmode(void)
 	if (menuactive && currentMenu != &MainDef)
 		return 0; // Only on the main menu!
 
-	S_StartSound(0, sfx_itemup);
+	S_StartSound(NULL, sfx_itemup);
 
 	// Just unlock all the things and turn on -debug and console devmode.
 	G_SetGameModified(false, false); // might need to revist the latter later
