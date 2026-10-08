@@ -3947,9 +3947,9 @@ void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar
 	}
 
 	if (!color && !modeattacking)
-		color = skins[pickedchar].prefcolor;
+		color = skins[pickedchar]->prefcolor;
 	SetPlayerSkinByNum(consoleplayer, pickedchar);
-	CV_StealthSet(&cv_skin, skins[pickedchar].name);
+	CV_StealthSet(&cv_skin, skins[pickedchar]->name);
 
 	if (color)
 		CV_StealthSetValue(&cv_playercolor, color);

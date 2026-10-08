@@ -394,10 +394,12 @@ int mobj_skin_getter(lua_State *L)
     // HUD ONLY!!!!!!!!!!
     if (hud_running && cv_luaimmersion.value)
     {
-        lua_pushstring(L, K_GetMobjSkin(mo)->name);
+        lua_pushstring(L, R_GetMobjSkin(mo)->name);
     }
     else
+    {
         lua_pushstring(L, ((skin_t *)mo->skin)->name);
+    }
 
     return 1;
 }
@@ -412,9 +414,9 @@ int mobj_skin_setter(lua_State *L)
     strlwr(skin); // all skin names are lowercase
     for (i = 0; i < numskins; i++)
     {
-        if (fastcmp(skins[i].name, skin))
+        if (fastcmp(skins[i]->name, skin))
         {
-            mo->skin = &skins[i];
+            mo->skin = skins[i];
             return 0;
         }
     }
@@ -454,9 +456,9 @@ int mobj_localskin_setter(lua_State *L)
 			// Try localskins
 			for (i = 0; i < numlocalskins; i++)
 			{
-				if (fasticmp(localskins[i].name, skin))
+				if (fasticmp(localskins[i]->name, skin))
 				{
-					mo->localskin = &localskins[i];
+					mo->localskin = localskins[i];
 					mo->skinlocal = true;
 					return 0;
 				}
@@ -465,9 +467,9 @@ int mobj_localskin_setter(lua_State *L)
 			// Try other skins
 			for (i = 0; i < numskins; i++)
 			{
-				if (fasticmp(skins[i].name, skin))
+				if (fasticmp(skins[i]->name, skin))
 				{
-					mo->localskin = &skins[i];
+					mo->localskin = skins[i];
 					mo->skinlocal = false;
 					return 0;
 				}

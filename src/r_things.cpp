@@ -1281,7 +1281,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || thing->temprollangle || sliprollrotate);
 #endif
 
-	sprskin = K_GetMobjSkin(thing);
+	sprskin = R_GetMobjSkin(thing);
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if (sprskin && thing->sprite == SPR_PLAY)

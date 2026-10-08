@@ -3594,7 +3594,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
 	this_scale = FixedToFloat(spr->mobj->scale);
 
-	const skin_t *moskin = K_GetMobjSkin(spr->mobj);
+	const skin_t *moskin = R_GetMobjSkin(spr->mobj);
 	if (moskin && moskin->flags & SF_HIRES)
 		this_scale *= FixedToFloat(moskin->highresscale);
 
@@ -4743,17 +4743,28 @@ static void HWR_DrawSprites(void)
 			{
 				if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 				{
-					md2_t *md2;
+					md2_t *md2 = NULL;
+					skinnum_t skinnum = 0;
 
+					/* fuck you */
 					if (spr->mobj->localskin)
 					{
+						skinnum = ((skin_t *)(spr->mobj->localskin))->skinnum;
+
 						if (spr->mobj->skinlocal)
-							md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+						{
+							md2 = &localskins[skinnum]->playermodel;
+						}
 						else
-							md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+						{
+							md2 = &skins[skinnum]->playermodel;
+						}
 					}
 					else
-						md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
+					{
+						skinnum = ((skin_t *)(spr->mobj->skin))->skinnum;
+						md2 = &skins[skinnum]->playermodel;
+					}
 
 					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
 					if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
@@ -4975,7 +4986,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	rot = (thing->frame & FF_FRAMEMASK);
 
-	sprskin = K_GetMobjSkin(thing);
+	sprskin = R_GetMobjSkin(thing);
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if (sprskin && thing->sprite == SPR_PLAY)

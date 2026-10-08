@@ -639,7 +639,7 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 	if (color >= MAXTRANSLATIONS)
 		I_Error("Invalid skin color #%hu.", (UINT16)color);
 
-	starttranscolor = (skinnum != TC_DEFAULT) ? K_GetSkinArray(local)[skinnum].starttranscolor : DEFAULT_STARTTRANSCOLOR;
+	starttranscolor = (skinnum != TC_DEFAULT) ? R_GetSkinArray(local)[skinnum]->starttranscolor : DEFAULT_STARTTRANSCOLOR;
 
 	if (starttranscolor >= NUM_PALETTE_ENTRIES)
 		I_Error("Invalid startcolor #%d.", starttranscolor);
@@ -677,60 +677,6 @@ UINT8 K_GetKartColorByName(const char *name)
 			return color;
 
 	return 0;
-}
-
-//
-// returns the players skinnumber
-// accounts for localskins
-//
-INT32 K_GetSkinNum(player_t *player)
-{
-	return player->localskin ? (player->localskin - 1) : player->skin;
-}
-
-//
-// returns the mobj skinnumber
-// accounts for localskins ?
-//
-INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local)
-{
-	return skin - K_GetSkinArray(local);
-}
-
-//
-// returns the mobj skinnumber
-// accounts for localskins
-//
-INT32 K_GetMobjLocalSkinNum(const skin_t *skin, const skin_t *localskin, boolean local)
-{
-	return localskin ? (localskin - K_GetSkinArray(local)) : (skin - skins);
-}
-
-//
-// returns the players skinnumber
-// accounts for localskins
-//
-skin_t *K_GetMobjSkin(const mobj_t *mobj)
-{
-	return mobj->localskin ? mobj->localskin : mobj->skin;
-}
-
-//
-// returns the skin array to use
-// accounts for localskins
-//
-skin_t *K_GetSkinArray(boolean local)
-{
-	return local ? localskins : skins;
-}
-
-//
-// returns the players skin
-// accounts for localskins
-//
-skin_t *K_GetPlayerSkin(player_t *player)
-{
-	return &K_GetSkinArray(player->skinlocal)[K_GetSkinNum(player)];
 }
 
 //}
@@ -2004,7 +1950,7 @@ static void K_PlayGenericCombatSound(mobj_t *source, mobj_t *other, sfxenum_t sf
 	// I HATE LOCALSKINS! I HATE LOCALSKINS! :AAAAAAAAAA:
 	if (source->player)
 	{
-		skin = K_GetPlayerSkin(source->player);
+		skin = R_GetPlayerSkin(source->player);
 	}
 
 	if (!skin)

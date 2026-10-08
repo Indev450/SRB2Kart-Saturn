@@ -2312,7 +2312,7 @@ void A_1upThinker(void *thing)
 		}
 	}
 
-	if (closestplayer == -1 || skins[players[closestplayer].skin].spritedef.numframes <= states[S_PLAY_BOX1].frame)
+	if (closestplayer == -1 || skins[players[closestplayer].skin]->spritedef.numframes <= states[S_PLAY_BOX1].frame)
 	{ // Closest player not found (no players in game?? may be empty dedicated server!), or does not have correct sprite.
 		actor->frame = 0;
 
@@ -2337,7 +2337,7 @@ void A_1upThinker(void *thing)
 	}
 
 	actor->tracer->color = players[closestplayer].mo->color;
-	actor->tracer->skin = &skins[players[closestplayer].skin];
+	actor->tracer->skin = skins[players[closestplayer].skin];
 }
 
 // Function: A_MonitorPop
@@ -2448,7 +2448,7 @@ void A_MonitorPop(void *thing)
 						P_SetTarget(&newmobj->tracer, remains);
 
 						remains->color = newmobj->target->player->mo->color;
-						remains->skin = &skins[newmobj->target->player->skin];
+						remains->skin = skins[newmobj->target->player->skin];
 						P_SetMobjState(remains, newmobj->info->seestate);
 					}
 				}
@@ -3995,14 +3995,14 @@ void A_SignPlayer(void *thing)
 
 	P_SetTarget(&ov->target, actor);
 	ov->color = actor->target->player->skincolor;
-	ov->skin = &skins[actor->target->player->skin];
+	ov->skin = skins[actor->target->player->skin];
 
 	// needs - 1 or else it pukes an error out
 	// same thing happens on p_mobj.c
 	if (actor->target->skinlocal)
-		ov->localskin = &localskins[actor->target->player->localskin - 1];
+		ov->localskin = localskins[actor->target->player->localskin - 1];
 	else if (actor->target->player->localskin)
-		ov->localskin = &skins[actor->target->player->localskin - 1];
+		ov->localskin = skins[actor->target->player->localskin - 1];
 	ov->skinlocal = actor->target->skinlocal;
 
 	P_SetMobjState(ov, actor->info->seestate); // S_PLAY_SIGN

@@ -40,7 +40,9 @@ CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2] = {}; // huehuehuehuehue
 INT32 numskins = 0;
 INT32 numallskins = 0;
 INT32 numlocalskins = 0;
-skin_t skins[MAXSKINS];
+skin_t **skins = NULL;
+skin_t **localskins = NULL;
+skin_t **allskins = NULL;
 
 skinnum_t skinstats[9][9][MAXSKINS];
 skinnum_t skinstatscount[9][9] = {
@@ -56,17 +58,8 @@ skinnum_t skinstatscount[9][9] = {
 };
 
 skinnum_t skinsorted[MAXSKINS] = {};
-skin_t localskins[MAXLOCALSKINS] = {};
-skin_t allskins[MAXSKINS+MAXLOCALSKINS] = {};
 
-// FIXTHIS: don't work because it must be inistilised before the config load
-//#define SKINVALUES
-#ifdef SKINVALUES
-CV_PossibleValue_t skin_cons_t[MAXSKINS+1] = {};
-CV_PossibleValue_t localskin_cons_t[MAXLOCALSKINS+1] = {};
-#endif
-
-static void Sk_SetDefaultValue(skin_t *skin, boolean local)
+static void Sk_SetDefaultValue(skin_t *skin)
 {
 	INT32 i;
 	//
@@ -74,7 +67,7 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 	//
 	memset(skin, 0, sizeof(skin_t));
 
-	snprintf(skin->name, sizeof skin->name, "skin %u", K_GetMobjSkinNum(skin, local));
+	snprintf(skin->name, sizeof skin->name, "skin %u", skin->skinnum); // this will always be "skin 0" cause of the memset above lmao
 	skin->name[sizeof skin->name - 1] = '\0';
 
 	skin->wadnum = INT16_MAX;
@@ -112,35 +105,22 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 void R_InitSkins(void)
 {
 	skin_t *skin;
-#ifdef SKINVALUES
-	INT32 i;
 
-	for (i = 0; i <= MAXSKINS; i++)
-	{
-		skin_cons_t[i].value = 0;
-		skin_cons_t[i].strvalue = NULL;
-	}
-	for (i = 0; i <= MAXLOCALSKINS; i++)
-	{
-		localskin_cons_t[i].value = 0;
-		localskin_cons_t[i].strvalue = NULL;
-	}
-#endif
+	skins = Z_Calloc(sizeof(skin_t *), PU_STATIC, NULL);
+	//localskins = Z_Calloc(sizeof(skin_t *), PU_STATIC, NULL);
+	allskins = Z_Calloc(sizeof(skin_t *), PU_STATIC, NULL);
 
 	// skin[0] = Sonic skin
-	skin = &skins[0];
-	numskins = 1;
-	Sk_SetDefaultValue(skin, false);
+	skin = skins[0] = Z_Calloc(sizeof(skin_t), PU_STATIC, NULL);
+
+	Sk_SetDefaultValue(skin);
+	skin->skinnum = 0;
 
 	memset(skinstats, 0, sizeof(skinstats));
 	memset(skinsorted, 0, sizeof(skinsorted));
 
 	// Hardcoded S_SKIN customizations for Sonic.
 	strcpy(skin->name,       DEFAULTSKIN);
-#ifdef SKINVALUES
-	skin_cons_t[0].strvalue = skins[0].name;
-#endif
-
 	strcpy(skin->realname,   "Sonic");
 	strcpy(skin->hudname,    "SONIC");
 
@@ -153,7 +133,6 @@ void R_InitSkins(void)
 	skin->wadnum = 0; // god what have you brought to this world
 	skin->prefcolor = SKINCOLOR_BLUE;
 	skin->localskin = false;
-	skin->localnum = 0;
 
 	// SRB2kart
 	skin->kartspeed = 8;
@@ -163,7 +142,7 @@ void R_InitSkins(void)
 	skin->spritedef.numframes = sprites[SPR_PLAY].numframes;
 	skin->spritedef.spriteframes = sprites[SPR_PLAY].spriteframes;
 	skin->sprinfo = spriteinfo[SPR_PLAY];
-	ST_LoadFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, 0);
+	ST_LoadFaceGraphics(skin);
 
 	// Set values for Sonic skin
 	Forceskin_cons_t[1].value = 0;
@@ -177,6 +156,8 @@ void R_InitSkins(void)
 
 	// lets set it
 	allskins[0] = skins[0];
+
+	numskins = 1;
 	numallskins = 1;
 }
 
@@ -188,7 +169,7 @@ INT32 R_SkinAvailable(const char *name)
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (fasticmp(skins[i].name, name))
+		if (fasticmp(skins[i]->name, name))
 			return i;
 	}
 
@@ -203,7 +184,7 @@ INT32 R_AnySkinAvailable(const char *name)
 
 	for (i = 0; i < numallskins; i++)
 	{
-		if (fasticmp(allskins[i].name, name))
+		if (fasticmp(allskins[i]->name, name))
 			return i;
 	}
 
@@ -218,7 +199,7 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local)
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
-			if (fasticmp(localskins[i].name, name))
+			if (fasticmp(localskins[i]->name, name))
 				return i;
 		}
 
@@ -236,7 +217,7 @@ boolean SetPlayerSkin(INT32 playernum, const char *skinname)
 	for (i = 0; i < numskins; i++)
 	{
 		// search in the skin list
-		if (fasticmp(skins[i].name, skinname))
+		if (fasticmp(skins[i]->name, skinname))
 		{
 			SetPlayerSkinByNum(playernum, i);
 			return true;
@@ -262,14 +243,14 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		for (i = 0; i < numlocalskins; i++)
 		{
 			// search in the localskin list
-			if (fasticmp(localskins[i].name, skinname))
+			if (fasticmp(localskins[i]->name, skinname))
 			{
 				player->localskin = 1 + i;
 				player->skinlocal = true;
 
 				if (player->mo)
 				{
-					player->mo->localskin = &localskins[i];
+					player->mo->localskin = localskins[i];
 					player->mo->skinlocal = true;
 				}
 
@@ -280,14 +261,14 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		for (i = 0; i < numskins; i++)
 		{
 			// search in the skin list
-			if (fasticmp(skins[i].name, skinname))
+			if (fasticmp(skins[i]->name, skinname))
 			{
 				player->localskin = 1 + i;
 				player->skinlocal = false;
 
 				if (player->mo)
 				{
-					player->mo->localskin = &skins[i];
+					player->mo->localskin = skins[i];
 					player->mo->skinlocal = false;
 				}
 
@@ -312,9 +293,9 @@ setcvar:
 	{
 		if (player->localskin > 0)
 		{
-			CV_StealthSet(&cv_fakelocalskin, K_GetSkinArray(player->skinlocal)[player->localskin-1].name);
-			CV_StealthSet(cvar, K_GetSkinArray(player->skinlocal)[player->localskin-1].name);
-
+			skin_t *lskin = R_GetSkinArray(player->skinlocal)[player->localskin-1];
+			CV_StealthSet(&cv_fakelocalskin, lskin->name);
+			CV_StealthSet(cvar, lskin->name);
 		}
 		else
 		{
@@ -329,7 +310,7 @@ setcvar:
 void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 {
 	player_t *player = &players[playernum];
-	skin_t *skin = &skins[skinnum];
+	skin_t *skin = skins[skinnum];
 
 	if (skinnum >= 0 && skinnum < numskins) // Make sure it exists!
 	{
@@ -400,8 +381,8 @@ static int skinSortFunc(const void *a, const void *b) // tbh i have no clue what
 	int diff = 0;
 	const skinnum_t val_a = *(const skinnum_t *)a;
 	const skinnum_t val_b = *(const skinnum_t *)b;
-	const skin_t *in1 = &skins[val_a];
-	const skin_t *in2 = &skins[val_b];
+	const skin_t *in1 = skins[val_a];
+	const skin_t *in2 = skins[val_b];
 
 	// return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
 
@@ -488,7 +469,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	char *stoken;
 	char *value;
 	size_t size;
-	skin_t *skin;
+	skin_t *skin = NULL;
 	boolean hudname, realname;
 
 #define lnumskins (local ? numlocalskins : numskins)
@@ -502,11 +483,14 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		// advance by default
 		lastlump = lump + 1;
 
+		// gotta keep this for vanilla compat reasons
 		if (!local && numskins >= MAXSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add skin, too many characters are loaded (%d maximum)\n"), MAXSKINS);
 			continue; // so we know how many skins couldn't be added
 		}
+
+		// TODO: get rid of all the other static arrays so we can have as many localskins as we want to!
 		if (local && numlocalskins >= MAXLOCALSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add localskin, too many localskins are loaded (%d maximum)\n"), MAXLOCALSKINS);
@@ -524,8 +508,19 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		buf2[size] = '\0';
 
 		// set defaults
-		skin = &K_GetSkinArray(local)[lnumskins];
-		Sk_SetDefaultValue(skin, local);
+		if (!local)
+		{
+			skins = Z_Realloc(skins, sizeof(skin_t *) * (numskins + 1), PU_STATIC, NULL);
+		}
+		else
+		{
+			localskins = Z_Realloc(localskins, sizeof(skin_t *) * (numlocalskins + 1), PU_STATIC, NULL);
+		}
+
+		skin = R_GetSkinArray(local)[lnumskins] = Z_Calloc(sizeof(skin_t), PU_STATIC, NULL);
+		Sk_SetDefaultValue(skin);
+		skin->skinnum = lnumskins;
+		skin->allskinnum = numallskins;
 		skin->wadnum = wadnum;
 		hudname = realname = false;
 
@@ -777,24 +772,19 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		//R_FlushTranslationColormapCache();
 
 		CONS_Printf(M_GetText("Added skin '%s'\n"), skin->name);
-#ifdef SKINVALUES
-		(local ? localskin_cons_t : skin_cons_t)[lnumskins].value = lnumskins;
-		(local ? localskin_cons_t : skin_cons_t)[lnumskins].strvalue = skin->name;
-#endif
+
 		if (!local)
 		{
 			// Update the forceskin possiblevalues
 			Forceskin_cons_t[numskins+1].value = numskins;
-			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
+			Forceskin_cons_t[numskins+1].strvalue = skins[numskins]->name;
 			skin->localskin = false;
-			skin->localnum = numskins;
-			ST_LoadFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numskins);
+			ST_LoadFaceGraphics(skin);
 		}
 		else
 		{
 			skin->localskin = true;
-			skin->localnum = numlocalskins;
-			ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numlocalskins);
+			ST_LoadFaceGraphics(skin);
 		}
 
 #ifdef HWRENDER
@@ -810,7 +800,8 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			skinsorted[numskins] = numskins;
 		}
 
-		allskins[numallskins] = K_GetSkinArray(local)[lnumskins];
+		allskins = Z_Realloc(allskins, sizeof(skin_t*) * (numallskins + 1), PU_STATIC, NULL);
+		allskins[numallskins] = R_GetSkinArray(local)[lnumskins];
 
 		local ? numlocalskins++ : numskins++;
 		numallskins++;
@@ -819,4 +810,49 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 #undef lnumskins
 
 	return;
+}
+
+//
+// returns the skin array to use
+// accounts for localskins
+//
+skin_t **R_GetSkinArray(boolean local)
+{
+	return local ? localskins : skins;
+}
+
+//
+// returns the players skin
+// accounts for localskins
+//
+skin_t *R_GetPlayerSkin(player_t *player)
+{
+	return R_GetSkinArray(player->skinlocal)[R_GetPlayerSkinNum(player)];
+}
+
+//
+// returns the players skinnumber
+// accounts for localskins
+//
+INT32 R_GetPlayerSkinNum(player_t *player)
+{
+	return player->localskin ? (player->localskin - 1) : player->skin;
+}
+
+//
+// returns the mobj skinnumber
+// accounts for localskins
+//
+INT32 R_GetMobjLocalSkinNum(const mobj_t *mobj)
+{
+	return (mobj->localskin && mobj->skinlocal) ? mobj->localskin->skinnum : mobj->skin->skinnum;
+}
+
+//
+// returns the mobjs skin
+// accounts for localskins
+//
+skin_t *R_GetMobjSkin(const mobj_t *mobj)
+{
+	return mobj->localskin ? mobj->localskin : mobj->skin;
 }

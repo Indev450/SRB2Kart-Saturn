@@ -16,6 +16,7 @@
 #ifndef __R_SKINS__
 #define __R_SKINS__
 
+#include "doomtype.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,6 +24,10 @@ extern "C" {
 #include "d_player.h"
 #include "sounds.h"
 #include "r_patch.h"
+
+#ifdef HWRENDER
+#include "hardware/hw_md2.h"
+#endif
 
 // "Left" and "Right" character symbols for additional rotation functionality
 #define ROT_L ('L' - '0')
@@ -35,7 +40,7 @@ extern "C" {
 #define DEFAULTSKIN3 "knuckles" // third player
 #define DEFAULTSKIN4 "eggman" // fourth player
 
-typedef struct
+typedef struct skin_s
 {
 	char name[SKINNAMESIZE+1]; // INT16 descriptive name of the skin
 	spritedef_t spritedef;
@@ -47,6 +52,10 @@ typedef struct
 	char realname[SKINNAMESIZE+1]; // Display name for level completion.
 	char hudname[SKINNAMESIZE+1]; // HUD name to display (officially exactly 5 characters long)
 	char facerank[9], facewant[9], facemmap[9]; // Arbitrarily named patch lumps
+
+	patch_t *facerankprefix; // ranking
+	patch_t *facewantprefix; // wanted
+	patch_t *facemmapprefix; // minimap
 
 	// SRB2kart
 	UINT8 kartspeed;
@@ -61,8 +70,13 @@ typedef struct
 	// specific sounds per skin
 	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
 
+#ifdef HWRENDER
+	md2_t playermodel;
+#endif
+
 	boolean localskin;
-	INT32 localnum;
+	skinnum_t skinnum;
+	UINT16 allskinnum;
 } skin_t;
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
@@ -70,13 +84,13 @@ extern CV_PossibleValue_t Forceskin_cons_t[];
 extern INT32 numskins;
 extern INT32 numlocalskins;
 extern INT32 numallskins;
-extern skin_t skins[MAXSKINS];
+extern skin_t **skins;
+extern skin_t **localskins;
+extern skin_t **allskins;
+
 extern skinnum_t skinstats[9][9][MAXSKINS];
 extern skinnum_t skinstatscount[9][9];
 extern skinnum_t skinsorted[MAXSKINS];
-
-extern skin_t localskins[MAXLOCALSKINS];
-extern skin_t allskins[MAXSKINS+MAXLOCALSKINS];
 
 //faB: find sprites in wadfile, replace existing, add new ones
 //     (only sprites from namelist are added or replaced)
@@ -90,13 +104,11 @@ INT32 R_AnySkinAvailable(const char *name);
 INT32 R_LocalSkinAvailable(const char *name, boolean local);
 
 // had to move those here Zzz...
-INT32 K_GetSkinNum(player_t *player);
-INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local);
-INT32 K_GetMobjLocalSkinNum(const skin_t *skin, const skin_t *localskin, boolean local);
-skin_t *K_GetPlayerSkin(player_t *player);
-skin_t *K_GetMobjSkin(const mobj_t *mobj);
-patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum);
-skin_t *K_GetSkinArray(boolean local);
+skin_t **R_GetSkinArray(boolean local);
+skin_t *R_GetPlayerSkin(player_t *player);
+INT32 R_GetPlayerSkinNum(player_t *player);
+INT32 R_GetMobjLocalSkinNum(const mobj_t *mobj);
+skin_t *R_GetMobjSkin(const mobj_t *mobj);
 
 void sortSkinGrid(void);
 

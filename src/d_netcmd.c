@@ -1174,14 +1174,14 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	for (i = 0; i < numskins; i++)
 	{
 		// Perfect match with some skin name, no need to find matching realname
-		if (strncasecmp(value, skins[i].name, sizeof skins[i].name) == 0)
+		if (strncasecmp(value, skins[i]->name, sizeof skins[i]->name) == 0)
 			return;
 
-		const char *match = strcasestr(skins[i].realname, value);
+		const char *match = strcasestr(skins[i]->realname, value);
 		if (match != NULL)
 		{
 			matches[nummatches] = i;
-			matches_pos[nummatches] = match - skins[i].realname;
+			matches_pos[nummatches] = match - skins[i]->realname;
 			++nummatches;
 		}
 	}
@@ -1189,7 +1189,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	if (nummatches == 1)
 	{
 		// Change the cvar to be the value of the name.
-		CV_StealthSet(cvar, skins[matches[0]].name);
+		CV_StealthSet(cvar, skins[matches[0]]->name);
 	}
 	else if (nummatches > 1)
 	{
@@ -1203,7 +1203,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 
 		for (i = 0; i < nummatches; ++i)
 		{
-			const char *realname = skins[matches[i]].realname;
+			const char *realname = skins[matches[i]]->realname;
 
 			if (matches_pos[i] == 0)
 				start[0] = 0;
@@ -1218,7 +1218,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 
 			end = realname + matches_pos[i] + query_length;
 
-			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]].name);
+			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]]->name);
 		}
 
 		CONS_Printf("\x86Try be more specific\n");
@@ -1553,13 +1553,13 @@ static void ForceAllSkins(INT32 forcedskin)
 		if (!dedicated) // But don't do this for dedicated servers, of course.
 		{
 			if (i == consoleplayer)
-				CV_StealthSet(&cv_skin, skins[forcedskin].name);
+				CV_StealthSet(&cv_skin, skins[forcedskin]->name);
 			else if (i == displayplayers[1])
-				CV_StealthSet(&cv_skin2, skins[forcedskin].name);
+				CV_StealthSet(&cv_skin2, skins[forcedskin]->name);
 			else if (i == displayplayers[2])
-				CV_StealthSet(&cv_skin3, skins[forcedskin].name);
+				CV_StealthSet(&cv_skin3, skins[forcedskin]->name);
 			else if (i == displayplayers[3])
-				CV_StealthSet(&cv_skin4, skins[forcedskin].name);
+				CV_StealthSet(&cv_skin4, skins[forcedskin]->name);
 		}
 	}
 }
@@ -1613,8 +1613,8 @@ static void SendNameAndColor(UINT8 splitplayer)
 	{
 		if (player->skincolor)
 			CV_StealthSetValue(playercolor, player->skincolor);
-		else if (skins[player->skin].prefcolor)
-			CV_StealthSetValue(playercolor, skins[player->skin].prefcolor);
+		else if (skins[player->skin]->prefcolor)
+			CV_StealthSetValue(playercolor, skins[player->skin]->prefcolor);
 		else
 			CV_StealthSet(playercolor, playercolor->defaultvalue);
 	}
@@ -1625,7 +1625,7 @@ static void SendNameAndColor(UINT8 splitplayer)
 
 	if (fastcmp(playername->string, player_names[pnum])
 		&& playercolor->value == player->skincolor
-		&& fastcmp(playerskin->string, skins[player->skin].name))
+		&& fastcmp(playerskin->string, skins[player->skin]->name))
 		return;
 
 	if (playerisbot)
@@ -1654,12 +1654,12 @@ static void SendNameAndColor(UINT8 splitplayer)
 		{
 			playerskin->value = foundskin;
 			SetPlayerSkin(pnum, playerskin->string);
-			CV_StealthSet(playerskin, skins[playerskin->value].name);
+			CV_StealthSet(playerskin, skins[playerskin->value]->name);
 		}
 		else
 		{
 			playerskin->value = player->skin;
-			CV_StealthSet(playerskin, skins[player->skin].name);
+			CV_StealthSet(playerskin, skins[player->skin]->name);
 			// will always be same as current
 			SetPlayerSkin(pnum, playerskin->string);
 		}
@@ -1684,7 +1684,7 @@ static void SendNameAndColor(UINT8 splitplayer)
 
 	// Don't change skin if the server doesn't want you to.
 	if (!CanChangeSkin(pnum))
-		CV_StealthSet(playerskin, skins[player->skin].name);
+		CV_StealthSet(playerskin, skins[player->skin]->name);
 
 	// check if player has the skin loaded (cv_skin may have
 	// the name of a skin that was available in the previous game)
@@ -1692,7 +1692,7 @@ static void SendNameAndColor(UINT8 splitplayer)
 	if (playerskin->value < 0)
 	{
 		INT32 skinnum = player->skin;
-		CV_StealthSet(playerskin, skins[skinnum].name);
+		CV_StealthSet(playerskin, skins[skinnum]->name);
 		playerskin->value = skinnum;
 	}
 
@@ -1780,13 +1780,13 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 
 		// TODO: make cv_skin an array
 		if (playernum == consoleplayer)
-			CV_StealthSet(&cv_skin, skins[forcedskin].name);
+			CV_StealthSet(&cv_skin, skins[forcedskin]->name);
 		else if (playernum == displayplayers[1])
-			CV_StealthSet(&cv_skin2, skins[forcedskin].name);
+			CV_StealthSet(&cv_skin2, skins[forcedskin]->name);
 		else if (playernum == displayplayers[2])
-			CV_StealthSet(&cv_skin3, skins[forcedskin].name);
+			CV_StealthSet(&cv_skin3, skins[forcedskin]->name);
 		else if (playernum == displayplayers[3])
-			CV_StealthSet(&cv_skin4, skins[forcedskin].name);
+			CV_StealthSet(&cv_skin4, skins[forcedskin]->name);
 	}
 	else
 		SetPlayerSkinByNum(playernum, skin);
@@ -4356,10 +4356,10 @@ static void SetPrefcolor(int splitplayer)
 	consvar_t *colorvars[] = {&cv_playercolor, &cv_playercolor2, &cv_playercolor3, &cv_playercolor4};
 	consvar_t *playercolor = colorvars[splitplayer];
 
-	if (skins[player->skin].prefcolor)
+	if (skins[player->skin]->prefcolor)
 	{
-		CV_SetValue(playercolor, skins[player->skin].prefcolor);
-		CONS_Printf("Set color to %s%s\n", HU_SkinColorToConsoleColor(skins[player->skin].prefcolor), KartColor_Names[skins[player->skin].prefcolor]);
+		CV_SetValue(playercolor, skins[player->skin]->prefcolor);
+		CONS_Printf("Set color to %s%s\n", HU_SkinColorToConsoleColor(skins[player->skin]->prefcolor), KartColor_Names[skins[player->skin]->prefcolor]);
 	}
 	else
 	{
@@ -5632,7 +5632,7 @@ static void Skin_OnChange(void)
 	if (!(cv_debug || devparm) && !(multiplayer || netgame) // In single player.
 		&& (gamestate != GS_WAITINGPLAYERS)) // allows command line -warp x +skin y
 	{
-		CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin].name);
+		CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin]->name);
 		return;
 	}
 
@@ -5641,7 +5641,7 @@ static void Skin_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin].name);
+		CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin]->name);
 	}
 }
 
@@ -5662,7 +5662,7 @@ static void Skin2_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin2, skins[players[displayplayers[1]].skin].name);
+		CV_StealthSet(&cv_skin2, skins[players[displayplayers[1]].skin]->name);
 	}
 }
 
@@ -5678,7 +5678,7 @@ static void Skin3_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin3, skins[players[displayplayers[2]].skin].name);
+		CV_StealthSet(&cv_skin3, skins[players[displayplayers[2]].skin]->name);
 	}
 }
 
@@ -5694,7 +5694,7 @@ static void Skin4_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin4, skins[players[displayplayers[3]].skin].name);
+		CV_StealthSet(&cv_skin4, skins[players[displayplayers[3]].skin]->name);
 	}
 }
 
@@ -5737,7 +5737,7 @@ static void Command_ListSkins(void)
 	for (i = page * 10; i < numskins && i < (page + 1) * 10; i++)
 	{
 		int length;
-		skin_t *skin = &skins[i];
+		skin_t *skin = skins[i];
 
 		if ((length = strlen(skin->name)) > longest_name)
 			longest_name = length;
@@ -5745,7 +5745,7 @@ static void Command_ListSkins(void)
 
 	for (i = page * 10; i < numskins && i < (page + 1) * 10; i++)
 	{
-		skin_t *skin = &skins[i];
+		skin_t *skin = skins[i];
 
 		CONS_Printf(
 			"%s[%-*s]\x80 %s\n",
@@ -5775,7 +5775,7 @@ static void Command_SkinSearch(void)
 	{
 		for (s = 0; s < numskins; s++)
 		{
-			skin_t *skininput = &skins[s];
+			skin_t *skininput = skins[s];
 
 			if (strcasestr(skininput->realname, COM_Argv(i)))
 			{
@@ -5799,7 +5799,7 @@ static void Color_OnChange(void)
 
 	if (!(cv_debug || devparm) && !(multiplayer || netgame || modeattacking)) // In single player.
 	{
-		CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin].name);
+		CV_StealthSet(&cv_skin, skins[players[consoleplayer].skin]->name);
 		return;
 	}
 

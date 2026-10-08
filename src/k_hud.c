@@ -1221,10 +1221,8 @@ boolean K_UseHighResPortraits(void)
 // accounts for localskins
 patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum)
 {
-	if (!player->skinlocal)
-		return (K_UseHighResPortraits() ? facewantprefix[skinnum] : facerankprefix[skinnum]);
-	else
-		return (K_UseHighResPortraits() ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
+	const skin_t *skin = R_GetSkinArray(player->skinlocal)[skinnum];
+	return (K_UseHighResPortraits() ? skin->facewantprefix : skin->facerankprefix);
 }
 
 INT32 K_calcSplitFlags(INT32 snapflags)
@@ -1426,7 +1424,7 @@ static void K_drawKartStats(void)
 		flags |= V_HUDTRANS;
 		flags2 = flags|V_ALLOWLOWERCASE|V_SkinColorToHighlightcolor(stplyr->skincolor);
 
-		fakeskin = K_GetPlayerSkin(stplyr);
+		fakeskin = R_GetPlayerSkin(stplyr);
 
 		// Skin name
 		if (cv_showstats_skinname.value)
@@ -3116,7 +3114,7 @@ static void K_drawNameTags(void)
 		cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
 		tagcolor = colortranslations[players[i].mo->color][7];
 		vflags = trans | V_NOSCALESTART;
-		usenametagrestat = ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2);
+		usenametagrestat = ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin]->kartspeed || players[i].kartweight != skins[players[i].skin]->kartweight)) || cv_nametagrestat.value == 2);
 		tagwidthsmall = cv_smallnametags.value ? V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
 		tagwidth = vid.dup*tagwidthsmall;
 
@@ -3601,12 +3599,12 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	INT32 rot = 0;
 #endif
 
-	skin = K_GetMobjSkin(mo);
+	skin = R_GetMobjSkin(mo);
 
 	if (!skin)
 		return;
 
-	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
+	minimaphead = skin->facemmapprefix;
 
 	if (minimaphead == NULL)
 		return;
@@ -3836,10 +3834,10 @@ static void K_drawKartMinimap(void)
 				}
 				else
 				{
-					const INT32 skinnum = K_GetMobjLocalSkinNum(mobj->skin, mobj->localskin, mobj->skinlocal);
+					const INT32 skinnum = R_GetMobjLocalSkinNum(mobj);
 
 					// special case if startcolor is not the default (160 / Green)
-					if (skinnum && skins[skinnum].starttranscolor != skins[0].starttranscolor)
+					if (skinnum && skins[skinnum]->starttranscolor != skins[0]->starttranscolor)
 					{
 						colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 					}
@@ -4914,7 +4912,7 @@ void K_drawKartHUD(void)
 		for (c = 1; c < MAXSKINCOLORS; c++)
 		{
 			UINT8 *cm = R_GetTranslationColormap(TC_RAINBOW, c, GTC_CACHE);
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT>>1, 0, facewantprefix[stplyr->skin], cm);
+			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT>>1, 0, skins[stplyr->skin]->facewantprefix, cm);
 
 			x += 16;
 			if (x > BASEVIDWIDTH-16)

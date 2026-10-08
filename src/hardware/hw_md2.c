@@ -73,8 +73,6 @@
 #endif
 
 md2_t md2_models[NUMSPRITES] = {};
-md2_t md2_playermodels[MAXSKINS] = {};
-md2_t md2_localplayermodels[MAXLOCALSKINS] = {};
 
 /*
  * free model
@@ -421,6 +419,7 @@ static void md2_loadTexture(md2_t *model)
 			}
 		}
 	}
+
 	GL_SetTexture(glPatch->mipmap);
 	HWR_UnlockCachedPatch(glPatch);
 }
@@ -478,6 +477,7 @@ static void md2_loadBlendTexture(md2_t *model)
 		glPatch->mipmap->width = (UINT16)w;
 		glPatch->mipmap->height = (UINT16)h;
 	}
+
 	GL_SetTexture(glPatch->mipmap); // We do need to do this so that it can be cleared and knows to recreate it when necessary
 	HWR_UnlockCachedPatch(glPatch);
 
@@ -496,34 +496,39 @@ void HWR_InitMD2(void)
 	float scale, offset;
 
 	CONS_Printf("InitMD2()...\n");
-	for (s = 0; s < MAXSKINS; s++)
+
+	for (s = 0; s < numskins; s++)
 	{
-		md2_playermodels[s].scale = -1.0f;
-		md2_playermodels[s].model = NULL;
-		md2_playermodels[s].glpatch = NULL;
-		md2_playermodels[s].skin = -1;
-		md2_playermodels[s].notexturefile = false;
-		md2_playermodels[s].noblendfile = false;
-		md2_playermodels[s].notfound = true;
-		md2_playermodels[s].error = false;
+		skin_t *skin = skins[s];
+		skin->playermodel.scale = -1.0f;
+		skin->playermodel.model = NULL;
+		skin->playermodel.glpatch = NULL;
+		skin->playermodel.skinnum = -1;
+		skin->playermodel.notexturefile = false;
+		skin->playermodel.noblendfile = false;
+		skin->playermodel.notfound = true;
+		skin->playermodel.error = false;
 	}
-	for (s = 0; s < MAXLOCALSKINS; s++)
+
+	for (s = 0; s < numlocalskins; s++)
 	{
-		md2_localplayermodels[s].scale = -1.0f;
-		md2_localplayermodels[s].model = NULL;
-		md2_localplayermodels[s].glpatch = NULL;
-		md2_localplayermodels[s].skin = -1;
-		md2_localplayermodels[s].notexturefile = false;
-		md2_localplayermodels[s].noblendfile = false;
-		md2_localplayermodels[s].notfound = true;
-		md2_localplayermodels[s].error = false;
+		skin_t *skin = localskins[s];
+		skin->playermodel.scale = -1.0f;
+		skin->playermodel.model = NULL;
+		skin->playermodel.glpatch = NULL;
+		skin->playermodel.skinnum = -1;
+		skin->playermodel.notexturefile = false;
+		skin->playermodel.noblendfile = false;
+		skin->playermodel.notfound = true;
+		skin->playermodel.error = false;
 	}
+
 	for (i = 0; i < NUMSPRITES; i++)
 	{
 		md2_models[i].scale = -1.0f;
 		md2_models[i].model = NULL;
 		md2_models[i].glpatch = NULL;
-		md2_models[i].skin = -1;
+		md2_models[i].skinnum = -1;
 		md2_models[s].notexturefile = false;
 		md2_models[s].noblendfile = false;
 		md2_models[i].notfound = true;
@@ -544,6 +549,7 @@ void HWR_InitMD2(void)
 			return;
 		}
 	}
+
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
 		for (i = 0; i < NUMSPRITES; i++)
@@ -558,18 +564,21 @@ void HWR_InitMD2(void)
 			}
 		}
 
-		for (s = 0; s < MAXSKINS; s++)
+		for (s = 0; s < numskins; s++)
 		{
-			if (fasticmp(name, skins[s].name))
+			skin_t *skin = skins[s];
+
+			if (fasticmp(name, skin->name))
 			{
-				md2_playermodels[s].skin = s;
-				md2_playermodels[s].scale = scale;
-				md2_playermodels[s].offset = offset;
-				md2_playermodels[s].notfound = false;
-				strcpy(md2_playermodels[s].filename, filename);
+				skin->playermodel.skinnum = s;
+				skin->playermodel.scale = scale;
+				skin->playermodel.offset = offset;
+				skin->playermodel.notfound = false;
+				strcpy(skin->playermodel.filename, filename);
 				goto md2found;
 			}
 		}
+
 		// no sprite/player skin name found?!?D
 		CONS_Printf("Unknown sprite/player skin %s detected in mdls.dat\n", name);
 md2found:
@@ -579,12 +588,11 @@ md2found:
 	fclose(f);
 }
 
-void HWR_AddPlayerMD2(INT32 skin, boolean local) // For MD2's that were added after startup
+void HWR_AddPlayerMD2(INT32 skinnum, boolean local) // For MD2's that were added after startup
 {
 	FILE *f;
 	char name[20], filename[32];
 	float scale, offset;
-	md2_t *md2s;
 
 	if (nomd2s)
 		return;
@@ -598,6 +606,7 @@ void HWR_AddPlayerMD2(INT32 skin, boolean local) // For MD2's that were added af
 	if (!f)
 	{
 		f = fopen(va("%s"PATHSEP"%s", srb2path, "mdls.dat"), "rt");
+
 		if (!f)
 		{
 			CONS_Printf("%s %s\n", M_GetText("Error while loading mdls.dat:"), strerror(errno));
@@ -606,25 +615,36 @@ void HWR_AddPlayerMD2(INT32 skin, boolean local) // For MD2's that were added af
 		}
 	}
 
-	md2s = (local ? md2_localplayermodels : md2_playermodels);
+	skin_t *skin = R_GetSkinArray(local)[skinnum];
+
+	skin->playermodel.scale = -1.0f;
+	skin->playermodel.model = NULL;
+	skin->playermodel.glpatch = NULL;
+	skin->playermodel.skinnum = -1;
+	skin->playermodel.notexturefile = false;
+	skin->playermodel.noblendfile = false;
+	skin->playermodel.notfound = true;
+	skin->playermodel.error = false;
 
 	// Check for any MD2s that match the names of player skins!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		if (fasticmp(name, K_GetSkinArray(local)[skin].name))
+		if (fasticmp(name, skin->name))
 		{
-			md2s[skin].skin = skin;
-			md2s[skin].scale = scale;
-			md2s[skin].offset = offset;
-			md2s[skin].notfound = false;
-			strcpy(md2s[skin].filename, filename);
+			skin->playermodel.skinnum = skinnum;
+			skin->playermodel.scale = scale;
+			skin->playermodel.offset = offset;
+			skin->playermodel.notfound = false;
+			strcpy(skin->playermodel.filename, filename);
 			goto playermd2found;
 		}
 	}
 
-	//CONS_Printf("MD2 for player skin %s not found\n", skins[skin].name);
-	md2s[skin].notfound = true;
+	//CONS_Printf("MD2 for player skin %s not found\n", skins[skinnum].name);
+	skin->playermodel.notfound = true;
+
 playermd2found:
+
 	fclose(f);
 }
 
@@ -674,6 +694,7 @@ void HWR_AddSpriteMD2(size_t spritenum) // For MD2s that were added after startu
 
 	//CONS_Printf("MD2 for sprite %s not found\n", sprnames[spritenum]);
 	md2_models[spritenum].notfound = true;
+
 spritemd2found:
 	fclose(f);
 }
@@ -1210,29 +1231,29 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		/* fuck you */
 		if (spr->mobj->localskin)
 		{
+			skinnum = ((skin_t *)(spr->mobj->localskin))->skinnum;
+
 			if (spr->mobj->skinlocal)
 			{
-				md2s = md2_localplayermodels;
-				skinnum = (skin_t *)spr->mobj->localskin - localskins;
+				md2s = &localskins[skinnum]->playermodel;
 			}
 			else
 			{
-				md2s = md2_playermodels;
-				skinnum = (skin_t *)spr->mobj->localskin - skins;
+				md2s = &skins[skinnum]->playermodel;
 			}
 		}
 		else if (spr->mobj->skin)
 		{
-			md2s = md2_playermodels;
-			skinnum = (skin_t *)spr->mobj->skin - skins;
+			skinnum = ((skin_t *)(spr->mobj->skin))->skinnum;
+			md2s = &skins[skinnum]->playermodel;
 		}
 
 		// 1. load model+texture if not already loaded
 		// 2. draw model with correct position, rotation,...
-		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY && !md2s[skinnum].notfound) // Use the player MD2 list if the mobj has a skin and is using the player sprites
+		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY && !md2s->notfound) // Use the player MD2 list if the mobj has a skin and is using the player sprites
 		{
-			md2 = &md2s[skinnum];
-			md2->skin = skinnum;
+			md2 = md2s;
+			md2->skinnum = skinnum;
 			sprinfo = &spriteinfo[spr->mobj->sprite];
 		}
 		else
@@ -1313,10 +1334,12 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 					if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 					{
 						if (spr->mobj->colorized)
+						{
 							tcskinnum = TC_RAINBOW;
+						}
 						else
 						{
-							tcskinnum = (INT32)(K_GetMobjSkinNum(K_GetMobjSkin(spr->mobj), spr->mobj->skinlocal));
+							tcskinnum = (INT32)(R_GetMobjSkin(spr->mobj)->skinnum);
 						}
 					}
 					else tcskinnum = TC_DEFAULT;
@@ -1383,7 +1406,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			p.z = FIXED_TO_FLOAT(interp.z);
 
 		if ((spr->mobj->skin || spr->mobj->localskin) && spr->mobj->sprite == SPR_PLAY)
-			sprdef = &K_GetMobjSkin(spr->mobj)->spritedef;
+			sprdef = &R_GetMobjSkin(spr->mobj)->spritedef;
 		else
 			sprdef = &sprites[spr->mobj->sprite];
 
