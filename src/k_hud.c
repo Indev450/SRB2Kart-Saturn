@@ -3830,9 +3830,10 @@ static void K_drawKartMinimap(void)
 				else
 				{
 					const INT32 skinnum = K_GetMobjLocalSkinNum(mobj->skin, mobj->localskin, mobj->skinlocal);
+					const skin_t *skin = &K_GetSkinArray(mobj->skinlocal)[skinnum];
 
 					// special case if startcolor is not the default (160 / Green)
-					if (skinnum && skins[skinnum].starttranscolor != skins[0].starttranscolor)
+					if (skinnum && skin->starttranscolor != skins[0].starttranscolor)
 					{
 						colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 					}
