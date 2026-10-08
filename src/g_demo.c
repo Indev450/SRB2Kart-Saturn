@@ -203,7 +203,7 @@ static INT32 GetSkinNumClosestToStats(UINT8 kartspeed, UINT8 kartweight)
 
 	for (i = 0; i < numskins; i++)
 	{
-		stat_diff = abs(skins[i].kartspeed - kartspeed) + abs(skins[i].kartweight - kartweight);
+		stat_diff = abs(skins[i]->kartspeed - kartspeed) + abs(skins[i]->kartweight - kartweight);
 
 		if (stat_diff < closest_stats)
 		{
@@ -266,7 +266,7 @@ void G_ReadDemoExtraData(void)
 			kartspeed = READUINT8(demobuf.p);
 			kartweight = READUINT8(demobuf.p);
 
-			if (!fasticmp(skins[player->skin].name, name))
+			if (!fasticmp(skins[player->skin]->name, name))
 				FindClosestSkinForStats(p, kartspeed, kartweight);
 
 			player->kartspeed = kartspeed;
@@ -396,12 +396,12 @@ void G_WriteDemoExtraData(void)
 			{
 				// Skin
 				memset(name, 0, 16);
-				strncpy(name, skins[players[i].skin].name, 16);
+				strncpy(name, skins[players[i].skin]->name, 16);
 				memcpy(demobuf.p, name, 16);
 				demobuf.p += 16;
 
-				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
-				WRITEUINT8(demobuf.p, skins[players[i].skin].kartweight);
+				WRITEUINT8(demobuf.p, skins[players[i].skin]->kartspeed);
+				WRITEUINT8(demobuf.p, skins[players[i].skin]->kartweight);
 			}
 
 			if (demo_extradata[i] & DXD_COLOR)
@@ -1807,7 +1807,7 @@ void G_BeginRecording(void)
 
 		// Skin
 		memset(name, 0, 16);
-		strncpy(name, skins[player->skin].name, 16);
+		strncpy(name, skins[player->skin]->name, 16);
 		memcpy(demobuf.p, name, 16);
 		demobuf.p += 16;
 
@@ -1821,8 +1821,8 @@ void G_BeginRecording(void)
 		WRITEUINT32(demobuf.p, player->score);
 
 		// Kart speed and weight
-		WRITEUINT8(demobuf.p, skins[player->skin].kartspeed);
-		WRITEUINT8(demobuf.p, skins[player->skin].kartweight);
+		WRITEUINT8(demobuf.p, skins[player->skin]->kartspeed);
+		WRITEUINT8(demobuf.p, skins[player->skin]->kartweight);
 	}
 
 	WRITEUINT8(demobuf.p, 0xFF); // Denote the end of the player listing
@@ -1878,7 +1878,7 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT
 
 	// Skin
 	memset(temp, 0, 16);
-	strncpy(temp, skins[skinnum].name, 16);
+	strncpy(temp, skins[skinnum]->name, 16);
 	memcpy(demobuf.p, temp, 16);
 	demobuf.p += 16;
 
@@ -2351,7 +2351,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 		for (i = 0; i < numskins; i++)
 		{
-			if (fasticmp(skins[i].name, temp))
+			if (fasticmp(skins[i]->name, temp))
 			{
 				pdemo->standings[count].skin = i;
 				break;
@@ -3029,7 +3029,7 @@ void G_DoPlayDemo(char *defdemoname)
 		kartspeed[p] = READUINT8(demobuf.p);
 		kartweight[p] = READUINT8(demobuf.p);
 
-		if (!fasticmp(skins[players[p].skin].name, skin))
+		if (!fasticmp(skins[players[p].skin]->name, skin))
 			FindClosestSkinForStats(p, kartspeed[p], kartweight[p]);
 
 		// Look for the next player
@@ -3106,7 +3106,7 @@ void G_AddGhost(char *defdemoname)
 	CLEANUP(Z_Pfree) UINT8 *buffer = NULL;
 	mapthing_t *mthing;
 	UINT16 count, ghostversion;
-	skin_t *ghskin = &skins[0];
+	skin_t *ghskin = skins[0];
 	UINT8 kartspeed = UINT8_MAX, kartweight = UINT8_MAX;
 
 	name[16] = '\0';
@@ -3313,9 +3313,9 @@ void G_AddGhost(char *defdemoname)
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (fasticmp(skins[i].name, skin))
+		if (fasticmp(skins[i]->name, skin))
 		{
-			ghskin = &skins[i];
+			ghskin = skins[i];
 			break;
 		}
 	}
@@ -3323,7 +3323,7 @@ void G_AddGhost(char *defdemoname)
 	if (i == numskins)
 	{
 		if (kartspeed != UINT8_MAX && kartweight != UINT8_MAX)
-			ghskin = &skins[GetSkinNumClosestToStats(kartspeed, kartweight)];
+			ghskin = skins[GetSkinNumClosestToStats(kartspeed, kartweight)];
 
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Invalid character. Falling back to %s.\n"), pdemoname, ghskin->name);
 	}

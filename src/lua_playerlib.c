@@ -296,7 +296,7 @@ int player_localskin_getter(lua_State *L)
 	player_t *plr = GETPLAYER();
 
 	if (plr->localskin)
-		lua_pushstring(L, K_GetPlayerSkin(plr)->name);
+		lua_pushstring(L, R_GetPlayerSkin(plr)->name);
 	else
 		lua_pushnil(L);
 

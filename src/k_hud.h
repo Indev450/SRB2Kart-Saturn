@@ -78,6 +78,8 @@ INT32 K_getMinimapTrans(void);
 void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getMinimapDrawinfo(drawinfo_t *out);
 
+patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

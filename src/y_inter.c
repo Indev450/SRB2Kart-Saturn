@@ -1190,8 +1190,7 @@ void Y_VoteDrawer(void)
 			if (player->skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(player->skin, player->skincolor, GTC_CACHE);
-
-				patch_t *faceprefix = K_GetFacePrefix(player, K_GetSkinNum(player));
+				patch_t *faceprefix = K_GetFacePrefix(player, R_GetPlayerSkinNum(player));
 
 				if (K_UseHighResPortraits())
 					V_DrawSmallMappedPatch(x+24, y+9, V_SNAPTOLEFT, faceprefix, colormap);

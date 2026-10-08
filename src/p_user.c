@@ -498,7 +498,7 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 
 			// I HATE LOCALSKINS! I HATE LOCALSKINS! :AAAAAAAAAA:
 			if (source->player)
-				sfx = K_GetPlayerSkin(source->player)->soundsid[SKSKPAN1 + key];
+				sfx = R_GetPlayerSkin(source->player)->soundsid[SKSKPAN1 + key];
 
 			S_StartSound(NULL, sfx);
 		}
@@ -1271,7 +1271,7 @@ void P_DoPlayerExit(player_t *player)
 
 			if (islocalplayer)
 			{
-				sfxenum_t sfx_id = K_GetMobjSkin(player->mo)->soundsid[S_sfx[soundid].skinsound];
+				sfxenum_t sfx_id = R_GetMobjSkin(player->mo)->soundsid[S_sfx[soundid].skinsound];
 				S_StartSound(NULL, sfx_id);
 			}
 			else

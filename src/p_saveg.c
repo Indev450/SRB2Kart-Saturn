@@ -1324,7 +1324,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff2 & MD2_CVMEM)
 		WRITEINT32(save->p, mobj->cvmem);
 	if (diff2 & MD2_SKIN)
-		WRITESKIN(save->p, (skinnum_t)((skin_t *)mobj->skin - skins));
+		WRITESKIN(save->p, (skinnum_t)((skin_t *)mobj->skin)->skinnum);
 	if (diff2 & MD2_COLOR)
 		WRITEUINT8(save->p, mobj->color);
 	if (diff2 & MD2_EXTVAL1)
@@ -2185,7 +2185,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff2 & MD2_CVMEM)
 		mobj->cvmem = READINT32(save->p);
 	if (diff2 & MD2_SKIN)
-		mobj->skin = &skins[READSKIN(save->p)];
+		mobj->skin = skins[READSKIN(save->p)];
 	if (diff2 & MD2_COLOR)
 		mobj->color = READUINT8(save->p);
 	if (diff2 & MD2_EXTVAL1)

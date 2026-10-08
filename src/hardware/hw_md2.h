@@ -33,13 +33,11 @@ typedef struct
 	void        *blendglpatch;
 	boolean     noblendfile; // true if blend texture file was not found
 	boolean     notfound;
-	INT32       skin;
+	INT32       skinnum;
 	boolean     error;
 } md2_t;
 
 extern md2_t md2_models[NUMSPRITES];
-extern md2_t md2_playermodels[MAXSKINS];
-extern md2_t md2_localplayermodels[MAXLOCALSKINS];
 
 void HWR_InitMD2(void);
 void HWR_DrawMD2(gl_vissprite_t *spr);

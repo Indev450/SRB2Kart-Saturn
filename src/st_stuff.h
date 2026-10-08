@@ -58,8 +58,7 @@ void ST_UnloadGraphics(void);
 void ST_LoadGraphics(void);
 
 // face load graphics, called when skin changes
-void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 playernum);
-void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 playernum);
+void ST_LoadFaceGraphics(skin_t *skin);
 void ST_ReloadSkinFaceGraphics(void);
 
 // return if player a is in the same team as player b
@@ -75,14 +74,6 @@ extern player_t *stplyr; // for splitscreen correct palette changes and overlay
 extern UINT8 stplyrnum;
 
 extern lumpnum_t st_borderpatchnum;
-
-// patches, also used in intermission
-extern patch_t *facerankprefix[MAXSKINS]; // ranking
-extern patch_t *facewantprefix[MAXSKINS]; // wanted
-extern patch_t *facemmapprefix[MAXSKINS]; // minimap
-extern patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
-extern patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
-extern patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
 
 /** HUD location information (don't move this comment)
   */

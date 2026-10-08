@@ -267,6 +267,8 @@ typedef enum {
 } precipflag_t;
 
 
+typedef struct skin_s skin_t;
+
 // Map Object definition.
 typedef struct mobj_s
 {
@@ -342,9 +344,9 @@ typedef struct mobj_s
 	struct mobj_s *hnext;
 	struct mobj_s *hprev;
 
-	void *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
-	void *localskin;
-	boolean skinlocal;
+	skin_t *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
+	skin_t *localskin;
+	boolean skinlocal; // if the skin is from a LOCALLY loaded skin
 
 	// Player and mobj sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.

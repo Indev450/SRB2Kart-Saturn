@@ -487,7 +487,7 @@ static int libd_getSpritePatch(lua_State *L)
 		{
 			const char *name = luaL_checkstring(L, 1);
 			for (skn = 0; skn < numskins; skn++)
-				if (fastcmp(skins[skn].name, name))
+				if (fastcmp(skins[skn]->name, name))
 					break;
 			if (skn >= numskins)
 				return 0;
@@ -527,9 +527,9 @@ static int libd_getSpritePatch(lua_State *L)
 	}
 	else // player skin
 	{
-		sprdef = &skins[skn].spritedef;
+		sprdef = &skins[skn]->spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &skins[skn].sprinfo;
+		sprinfo = &skins[skn]->sprinfo;
 #endif
 	}
 

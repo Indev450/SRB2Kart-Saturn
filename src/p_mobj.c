@@ -10916,9 +10916,9 @@ void P_SpawnPlayer(INT32 playernum)
 	// set 'spritedef' override in mobj for player skins.. (see ProjectSprite)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
-	mobj->skin = &skins[p->skin];
+	mobj->skin = skins[p->skin];
 
-	mobj->localskin = (p->localskin ? K_GetPlayerSkin(p) : NULL);
+	mobj->localskin = (p->localskin ? R_GetPlayerSkin(p) : NULL);
 	mobj->skinlocal = p->skinlocal;
 
 	mobj->health = p->health;

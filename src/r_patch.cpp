@@ -236,10 +236,10 @@ static void R_ParseSpriteInfo(boolean spr2)
 					{
 						size_t skinnum = skinnumbers[i];
 						skin_t *skin;
-						if (allskins[skinnum].localskin)
-							skin = &localskins[allskins[skinnum].localnum];
+						if (allskins[skinnum]->localskin)
+							skin = localskins[allskins[skinnum]->skinnum];
 						else
-							skin = &skins[allskins[skinnum].localnum];
+							skin = skins[allskins[skinnum]->skinnum];
 						memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
 					}
 				}

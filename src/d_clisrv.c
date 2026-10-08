@@ -811,7 +811,7 @@ static void resynch_read_player(resynch_pak *rsp)
 	players[i].mo->scalespeed = (fixed_t)LONG(rsp->scalespeed);
 
 	// And finally, SET THE MOBJ SKIN damn it.
-	players[i].mo->skin = &skins[players[i].skin];
+	players[i].mo->skin = skins[players[i].skin];
 	players[i].mo->color = players[i].skincolor;
 
 	P_SetThingPosition(players[i].mo);

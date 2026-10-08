@@ -324,7 +324,7 @@ void F_IntroTicker(void)
 			// Need to use M_Random otherwise it always uses the same sound
 			INT32 rskin = M_RandomKey(numskins);
 			UINT8 rtaunt = M_RandomKey(2);
-			sfxenum_t rsound = skins[rskin].soundsid[SKSKBST1+rtaunt];
+			sfxenum_t rsound = skins[rskin]->soundsid[SKSKBST1+rtaunt];
 			S_StartSound(NULL, rsound);
 		}
 	}
@@ -1162,17 +1162,17 @@ void F_StartWaitingPlayers(void)
 	finalecount = 0;
 
 	randskin = M_RandomKey(numskins);
-	boolean waithires = skins[randskin].flags && SF_HIRES;
+	boolean waithires = skins[randskin]->flags && SF_HIRES;
 
 	Z_Free(waitcolormap);
-	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
+	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin]->prefcolor, 0);
 
 	if (waithires)
-		waitscale = waitscale * FIXED_TO_FLOAT(skins[randskin].highresscale); // need to set scale here cause im lazy
+		waitscale = waitscale * FIXED_TO_FLOAT(skins[randskin]->highresscale); // need to set scale here cause im lazy
 
 	for (i = 0; i < 2; i++)
 	{
-		sprframe = &skins[randskin].spritedef.spriteframes[(6+(i*3)) & FF_FRAMEMASK];
+		sprframe = &skins[randskin]->spritedef.spriteframes[(6+(i*3)) & FF_FRAMEMASK];
 		driver[i] = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
 	}
 }
