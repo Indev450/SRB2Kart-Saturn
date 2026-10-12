@@ -53,4 +53,6 @@ boolean LUA_HudEnabled(enum hud option);
 
 void LUA_SetHudHook(int hook, huddrawlist_h list);
 
+#define LOCALSKINIMMERSION (hud_running && cv_luaimmersion.value)
+
 #endif // __LUA_HUD_H__
