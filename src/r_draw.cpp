@@ -441,47 +441,26 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
 
 UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local)
 {
-	const INT32 skinnum = (INT32)((localskin && local) ? localskin->skinnum : skin->skinnum);
+	const INT32 skinnum = (INT32)((localskin && local) ? localskin->skinnum : (skin != NULL ? skin->skinnum : 0));
 	return RGetTranslationColormap(skinnum, color, flags, (localskin && local));
 }
 
-patch_t* R_GetSkinFaceRank(player_t* ply)
+patch_t* R_GetSkinFaceRank(player_t* player)
 {
-	if (ply->localskin)
-	{
-		if (ply->skinlocal)
-			return localskins[ply->localskin - 1]->facerankprefix;
-
-		return skins[ply->localskin - 1]->facerankprefix;
-	}
-
-	return skins[ply->skin]->facerankprefix;
+	const skin_t *skin = R_GetPlayerSkin(player);
+	return skin->facerankprefix;
 }
 
-patch_t* R_GetSkinFaceWant(player_t* ply)
+patch_t* R_GetSkinFaceWant(player_t* player)
 {
-	if (ply->localskin)
-	{
-		if (ply->skinlocal)
-			return localskins[ply->localskin - 1]->facewantprefix;
-
-		return skins[ply->localskin - 1]->facewantprefix;
-	}
-
-	return skins[ply->skin]->facewantprefix;
+	const skin_t *skin = R_GetPlayerSkin(player);
+	return skin->facewantprefix;
 }
 
-patch_t* R_GetSkinFaceMini(player_t* ply)
+patch_t* R_GetSkinFaceMini(player_t* player)
 {
-	if (ply->localskin)
-	{
-		if (ply->skinlocal)
-			return localskins[ply->localskin - 1]->facemmapprefix;
-
-		return skins[ply->localskin - 1]->facemmapprefix;
-	}
-
-	return skins[ply->skin]->facemmapprefix;
+	const skin_t *skin = R_GetPlayerSkin(player);
+	return skin->facemmapprefix;
 }
 
 /**	\brief	Flushes cache of translation colormaps.

@@ -107,7 +107,7 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local);
 skin_t **R_GetSkinArray(boolean local);
 skin_t *R_GetPlayerSkin(player_t *player);
 INT32 R_GetPlayerSkinNum(player_t *player);
-INT32 R_GetMobjLocalSkinNum(const mobj_t *mobj);
+INT32 R_GetMobjSkinNum(const mobj_t *mobj);
 skin_t *R_GetMobjSkin(const mobj_t *mobj);
 
 void sortSkinGrid(void);

@@ -9909,7 +9909,7 @@ static void M_DrawLocalSkinMenu(void)
 	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
 #undef charw
 
-	// FIXME: is skins[displayskin.localnum] even correct?
+	// FIXME: is using just "skins" array even correct?
 	UINT8 *colormap = R_GetLocalTranslationColormap(skins[displayskin->skinnum], (displayskin->localskin ? localskins[displayskin->skinnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, displayskin->localskin);
 
 	V_DrawMappedPatch(mx, my+50, 0, (patch_t *)W_CachePatchName(displayskin->facewant, PU_PATCH), colormap);

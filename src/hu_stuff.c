@@ -2654,9 +2654,12 @@ static inline void HU_DrawSpectatorTicker(void)
 
 				if (player->mo && player->mo->color)
 				{
-					const UINT8 *colormap = R_GetTranslationColormap(player->skin, player->mo->color, GTC_CACHE);
+					const UINT8 *colormap = NULL;
+
 					if (player->mo->colorized)
 						colormap = R_GetTranslationColormap(TC_RAINBOW, player->mo->color, GTC_CACHE);
+					else
+						colormap = R_GetTranslationColormap(player->skin, player->mo->color, GTC_CACHE);
 
 					if (K_UseHighResPortraits())
 						V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(player), colormap);
