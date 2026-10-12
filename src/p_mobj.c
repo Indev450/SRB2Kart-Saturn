@@ -6219,7 +6219,7 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 
 	if (mobj->skin && mobj->sprite == SPR_PLAY)
 	{
-		sprdef = &((skin_t *)mobj->skin)->spritedef;
+		sprdef = &mobj->skin->spritedef;
 
 		if (rot >= sprdef->numframes)
 			sprdef = &sprites[mobj->sprite];

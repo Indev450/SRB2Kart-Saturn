@@ -389,7 +389,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 
 	if (mo->skin && mo->sprite == SPR_PLAY)
 	{
-		sprdef = &((skin_t *)mo->skin)->spritedef;
+		sprdef = &mo->skin->spritedef;
 
 		if (rot >= sprdef->numframes)
 			sprdef = &sprites[mo->sprite];

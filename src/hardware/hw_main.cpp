@@ -4749,7 +4749,7 @@ static void HWR_DrawSprites(void)
 					/* fuck you */
 					if (spr->mobj->localskin)
 					{
-						skinnum = ((skin_t *)(spr->mobj->localskin))->skinnum;
+						skinnum = spr->mobj->localskin->skinnum;
 
 						if (spr->mobj->skinlocal)
 						{
@@ -4762,7 +4762,7 @@ static void HWR_DrawSprites(void)
 					}
 					else
 					{
-						skinnum = ((skin_t *)(spr->mobj->skin))->skinnum;
+						skinnum = spr->mobj->skin->skinnum;
 						md2 = &skins[skinnum]->playermodel;
 					}
 

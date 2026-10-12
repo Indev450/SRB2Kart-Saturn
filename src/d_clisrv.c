@@ -4128,7 +4128,7 @@ static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 						if (!players[i].mo->skin)
 							CONS_Printf("Mobj skin: NULL!\n");
 						else
-							CONS_Printf("Mobj skin: %s\n", ((skin_t *)players[i].mo->skin)->name);
+							CONS_Printf("Mobj skin: %s\n", players[i].mo->skin->name);
 						CONS_Printf("Position: %d, %d, %d\n", players[i].mo->x, players[i].mo->y, players[i].mo->z);
 						if (!players[i].mo->state)
 							CONS_Printf("State: S_NULL\n");
