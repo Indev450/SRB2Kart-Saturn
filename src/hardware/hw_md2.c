@@ -1229,23 +1229,26 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		// before: polygons models are not sorted
 
 		/* fuck you */
-		if (spr->mobj->localskin)
+		if (spr->mobj->skin)
 		{
-			skinnum = ((skin_t *)(spr->mobj->localskin))->skinnum;
-
-			if (spr->mobj->skinlocal)
+			if (spr->mobj->localskin)
 			{
-				md2s = &localskins[skinnum]->playermodel;
+				skinnum = spr->mobj->localskin->skinnum;
+
+				if (spr->mobj->skinlocal)
+				{
+					md2s = &localskins[skinnum]->playermodel;
+				}
+				else
+				{
+					md2s = &skins[skinnum]->playermodel;
+				}
 			}
 			else
 			{
+				skinnum = spr->mobj->skin->skinnum;
 				md2s = &skins[skinnum]->playermodel;
 			}
-		}
-		else if (spr->mobj->skin)
-		{
-			skinnum = ((skin_t *)(spr->mobj->skin))->skinnum;
-			md2s = &skins[skinnum]->playermodel;
 		}
 
 		// 1. load model+texture if not already loaded

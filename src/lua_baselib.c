@@ -2631,7 +2631,8 @@ static int lib_kLossSound(lua_State *L)
 	if (!mobj->player)
 		return luaL_error(L, "K_PlayLossSound: mobj_t isn't a player object.");
 
-	sfx_id = ((skin_t *)mobj->skin)->soundsid[S_sfx[sfx_klose].skinsound];
+	// FIXME: shouldnt this also account for localskins?
+	sfx_id = mobj->skin->soundsid[S_sfx[sfx_klose].skinsound];
 	S_StartSound(mobj, sfx_id);
 	return 0;
 }

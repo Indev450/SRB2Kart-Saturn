@@ -2436,7 +2436,7 @@ void A_MonitorPop(void *thing)
 				if (actor->tracer) // Remove the old lives icon.
 					P_RemoveMobj(actor->tracer);
 
-				if (!newmobj->target->skin || ((skin_t *)newmobj->target->skin)->spritedef.numframes <= states[S_PLAY_BOX1].frame)
+				if (!newmobj->target->skin || newmobj->target->skin->spritedef.numframes <= states[S_PLAY_BOX1].frame)
 					newmobj->frame -= 2; // No lives icon for this player, use the default.
 				else
 				{ // Spawn the lives icon.

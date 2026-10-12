@@ -962,7 +962,7 @@ static void res_botai(Hook_State *hook)
 
 int LUA_HookBotAI(mobj_t *sonic, mobj_t *tails, ticcmd_t *cmd)
 {
-	const char *skin = ((skin_t *)tails->skin)->name;
+	const char *skin = tails->skin->name;
 
 	Hook_State hook = {};
 	BotAI_State botai = {};

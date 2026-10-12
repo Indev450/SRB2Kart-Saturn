@@ -398,7 +398,7 @@ int mobj_skin_getter(lua_State *L)
     }
     else
     {
-        lua_pushstring(L, ((skin_t *)mo->skin)->name);
+        lua_pushstring(L, mo->skin->name);
     }
 
     return 1;
@@ -429,7 +429,7 @@ int mobj_localskin_getter(lua_State *L)
 	mobj_t *mo = GETMO();
 
 	if (mo->localskin)
-		lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+		lua_pushstring(L, mo->localskin->name);
 	else
 		lua_pushnil(L);
 
