@@ -392,7 +392,7 @@ int mobj_skin_getter(lua_State *L)
         return 0;
 
     // HUD ONLY!!!!!!!!!!
-    if (hud_running && cv_luaimmersion.value)
+    if LOCALSKINIMMERSION
     {
         lua_pushstring(L, R_GetMobjSkin(mo)->name);
     }

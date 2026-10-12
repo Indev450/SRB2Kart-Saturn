@@ -18,6 +18,10 @@
 
 #include "lua_script.h"
 #include "lua_libs.h"
+#include "lua_hud.h" // hud_running errors
+
+#define SKINARR (LOCALSKINIMMERSION ? allskins : skins)
+#define NSKINS (LOCALSKINIMMERSION ? numallskins : numskins)
 
 enum skin {
 	skin_valid = 0,
@@ -150,13 +154,15 @@ static int skin_num(lua_State *L)
 	// skins are always valid, only added, never removed
 	I_Assert(skin != NULL);
 
-	lua_pushinteger(L, skin->skinnum); // shouldnt this be skin->allskinnum?
+	lua_pushinteger(L, LOCALSKINIMMERSION ? skin->allskinnum : skin->skinnum);
 	return 1;
 }
 
 static int lib_iterateSkins(lua_State *L)
 {
 	INT32 i;
+	skin_t **skinar = SKINARR;
+	const INT32 nskins = NSKINS;
 
 	if (lua_gettop(L) < 2)
 	{
@@ -169,14 +175,17 @@ static int lib_iterateSkins(lua_State *L)
 	lua_remove(L, 1); // state is unused.
 
 	if (!lua_isnil(L, 1))
-		i = (INT32)((*((skin_t **)luaL_checkudata(L, 1, META_SKIN)))->allskinnum) + 1;
+	{
+		skin_t *skin = (*((skin_t **)luaL_checkudata(L, 1, META_SKIN)));
+		i = (INT32)(LOCALSKINIMMERSION ? skin->allskinnum : skin->skinnum) + 1;
+	}
 	else
 		i = 0;
 
 	// skins are always valid, only added, never removed
-	if (i < numallskins)
+	if (i < nskins)
 	{
-		LUA_PushUserdata(L, allskins[i], META_SKIN);
+		LUA_PushUserdata(L, skinar[i], META_SKIN);
 		return 1;
 	}
 
@@ -188,32 +197,40 @@ static int lib_getSkin(lua_State *L)
 	const char *field;
 	INT32 i;
 
+	skin_t **skinar = SKINARR;
+	const INT32 nskins = NSKINS;
+
 	// find skin by number
 	if (lua_type(L, 2) == LUA_TNUMBER)
 	{
+		const INT32 skinmax = LOCALSKINIMMERSION ? numallskins : MAXSKINS;
+
 		i = luaL_checkinteger(L, 2);
-		if (i < 0 || i >= MAXSKINS)
-			return luaL_error(L, "skins[] index %d out of range (0 - %d)", i, MAXSKINS-1);
-		if (i >= numallskins)
+
+		if (i < 0 || i >= skinmax)
+			return luaL_error(L, "skins[] index %d out of range (0 - %d)", i, skinmax-1);
+		if (i >= nskins)
 			return 0;
-		LUA_PushUserdata(L, allskins[i], META_SKIN);
+
+		LUA_PushUserdata(L, skinar[i], META_SKIN);
+
 		return 1;
 	}
 
 	field = luaL_checkstring(L, 2);
 
 	// special function iterate
-	if (fastcmp(field,"iterate"))
+	if (fastcmp(field, "iterate"))
 	{
 		lua_pushcfunction(L, lib_iterateSkins);
 		return 1;
 	}
 
 	// find skin by name
-	for (i = 0; i < numallskins; i++)
-		if (fastcmp(allskins[i]->name, field))
+	for (i = 0; i < nskins; i++)
+		if (fastcmp(skinar[i]->name, field))
 		{
-			LUA_PushUserdata(L, allskins[i], META_SKIN);
+			LUA_PushUserdata(L, skinar[i], META_SKIN);
 			return 1;
 		}
 
@@ -222,7 +239,7 @@ static int lib_getSkin(lua_State *L)
 
 static int lib_numSkins(lua_State *L)
 {
-	lua_pushinteger(L, numallskins);
+	lua_pushinteger(L, NSKINS);
 	return 1;
 }
 
