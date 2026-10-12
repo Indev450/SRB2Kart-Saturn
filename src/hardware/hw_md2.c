@@ -1167,8 +1167,6 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 	// Look at HWR_ProjectSprite for more
 	{
-		md2_t *md2s = NULL;
-		int skinnum = 0;
 		patch_t *gpatch, *blendgpatch;
 		GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
 		INT32 durs = spr->mobj->state->tics;
@@ -1228,39 +1226,29 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
 
-		/* fuck you */
-		if (spr->mobj->skin)
-		{
-			if (spr->mobj->localskin)
-			{
-				skinnum = spr->mobj->localskin->skinnum;
-
-				if (spr->mobj->skinlocal)
-				{
-					md2s = &localskins[skinnum]->playermodel;
-				}
-				else
-				{
-					md2s = &skins[skinnum]->playermodel;
-				}
-			}
-			else
-			{
-				skinnum = spr->mobj->skin->skinnum;
-				md2s = &skins[skinnum]->playermodel;
-			}
-		}
-
 		// 1. load model+texture if not already loaded
 		// 2. draw model with correct position, rotation,...
-		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY && !md2s->notfound) // Use the player MD2 list if the mobj has a skin and is using the player sprites
+
+		// Use the player MD2 list if the mobj has a skin and is using the player sprites
+		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 		{
-			md2 = md2s;
-			md2->skinnum = skinnum;
-			sprinfo = &spriteinfo[spr->mobj->sprite];
+			/* fuck you */
+			md2_t *md2s = &R_GetMobjSkin(spr->mobj)->playermodel;
+
+			if (!md2s->notfound)
+			{
+				md2 = md2s;
+				md2->skinnum = R_GetMobjSkinNum(spr->mobj);
+				sprinfo = &spriteinfo[spr->mobj->sprite];
+			}
+			else // if we can't find the player md2, use SPR_PLAY's MD2.
+			{
+				md2 = &md2_models[spr->mobj->sprite];
+				sprinfo = &spriteinfo[spr->mobj->sprite];
+			}
 		}
 		else
-		{	// if we can't find the player md2, use SPR_PLAY's MD2.
+		{
 			md2 = &md2_models[spr->mobj->sprite];
 			sprinfo = &spriteinfo[spr->mobj->sprite];
 		}
@@ -1342,7 +1330,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 						}
 						else
 						{
-							tcskinnum = (INT32)(R_GetMobjSkin(spr->mobj)->skinnum);
+							tcskinnum = (INT32)R_GetMobjSkinNum(spr->mobj);
 						}
 					}
 					else tcskinnum = TC_DEFAULT;

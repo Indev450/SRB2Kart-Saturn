@@ -847,7 +847,7 @@ skin_t *R_GetPlayerSkin(player_t *player)
 //
 INT32 R_GetMobjSkinNum(const mobj_t *mobj)
 {
-	return (mobj->localskin && mobj->skinlocal) ? mobj->localskin->skinnum : mobj->skin->skinnum;
+	return mobj->localskin ? mobj->localskin->skinnum : mobj->skin->skinnum;
 }
 
 //

@@ -4361,28 +4361,8 @@ static void HWR_DrawSprites(void)
 			{
 				if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 				{
-					md2_t *md2 = NULL;
-					skinnum_t skinnum = 0;
-
 					/* fuck you */
-					if (spr->mobj->localskin)
-					{
-						skinnum = spr->mobj->localskin->skinnum;
-
-						if (spr->mobj->skinlocal)
-						{
-							md2 = &localskins[skinnum]->playermodel;
-						}
-						else
-						{
-							md2 = &skins[skinnum]->playermodel;
-						}
-					}
-					else
-					{
-						skinnum = spr->mobj->skin->skinnum;
-						md2 = &skins[skinnum]->playermodel;
-					}
+					md2_t *md2 = &R_GetMobjSkin(spr->mobj)->playermodel;
 
 					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
 					if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
