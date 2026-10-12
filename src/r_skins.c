@@ -812,6 +812,8 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	return;
 }
 
+// Helper functions for skin stuff
+
 //
 // returns the skin array to use
 // accounts for localskins
@@ -819,15 +821,6 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 skin_t **R_GetSkinArray(boolean local)
 {
 	return local ? localskins : skins;
-}
-
-//
-// returns the players skin
-// accounts for localskins
-//
-skin_t *R_GetPlayerSkin(player_t *player)
-{
-	return R_GetSkinArray(player->skinlocal)[R_GetPlayerSkinNum(player)];
 }
 
 //
@@ -840,10 +833,19 @@ INT32 R_GetPlayerSkinNum(player_t *player)
 }
 
 //
+// returns the players skin
+// accounts for localskins
+//
+skin_t *R_GetPlayerSkin(player_t *player)
+{
+	return R_GetSkinArray(player->skinlocal)[R_GetPlayerSkinNum(player)];
+}
+
+//
 // returns the mobj skinnumber
 // accounts for localskins
 //
-INT32 R_GetMobjLocalSkinNum(const mobj_t *mobj)
+INT32 R_GetMobjSkinNum(const mobj_t *mobj)
 {
 	return (mobj->localskin && mobj->skinlocal) ? mobj->localskin->skinnum : mobj->skin->skinnum;
 }
