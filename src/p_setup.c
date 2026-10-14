@@ -3433,7 +3433,13 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	{
 		// check if someone tries to load maps locally lol
 		// do this here so we can skip loading the file anyways
-		if (W_CheckAutoLoadContainsMap(wadfilename))
+		int retmap = W_CheckAutoLoadContainsMap(wadfilename);
+		if (retmap == -1)
+		{
+			CONS_Alert(CONS_WARNING, "addilelocal: file %s was not found or not valid.\n", wadfilename);
+			return UINT16_MAX;
+		}
+		if (retmap > 0)
 		{
 			CONS_Alert(CONS_WARNING, "addilelocal: locally added file %s contains map data, this WILL cause crashes and desynchs! not added.\n", wadfilename);
 			return UINT16_MAX;
