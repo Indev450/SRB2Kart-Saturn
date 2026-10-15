@@ -1109,6 +1109,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
 		return;
 
+	// do not send over locally spawned mobjs
+	if (mobj->islocal)
+		return;
+
 	if (mobj->spawnpoint && mobj->info->doomednum != -1)
 	{
 		// spawnpoint is not modified but we must save it since it is an identifier
