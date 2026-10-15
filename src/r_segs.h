@@ -22,6 +22,11 @@ extern "C" {
 #pragma interface
 #endif
 
+FUNCINLINE static ATTRINLINE lighttable_t** R_GetWallLight(INT32 llevel)
+{
+	return scalelight[CLAMP(llevel, 0, LIGHTLEVELS-1)];
+}
+
 void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2);
 void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pffloor);
 void R_StoreWallRange(INT32 start, INT32 stop);
