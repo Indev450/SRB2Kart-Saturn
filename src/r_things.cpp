@@ -1062,12 +1062,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		{
 			INT32 lightnum = R_GetSoftLightlevel(*sector->lightlist[i].lightlevel);
 
-			if (lightnum < 0)
-				spritelights = scalelight[0];
-			else if (lightnum >= LIGHTLEVELS)
-				spritelights = scalelight[LIGHTLEVELS-1];
-			else
-				spritelights = scalelight[lightnum];
+			spritelights = R_GetWallLight(lightnum);
 
 			newsprite->extra_colormap = sector->lightlist[i].extra_colormap;
 
@@ -1753,12 +1748,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			}
 		}
 
-		if (lightnum < 0)
-			lights_array = scalelight[0];
-		else if (lightnum >= LIGHTLEVELS)
-			lights_array = scalelight[LIGHTLEVELS-1];
-		else
-			lights_array = scalelight[lightnum];
+		lights_array = R_GetWallLight(lightnum);
 	}
 
 	// store information in a vissprite
@@ -2095,16 +2085,11 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 
 	if (!sec->numlights)
 	{
-		if (sec->heightsec == -1) lightlevel = sec->lightlevel;
+		if (sec->heightsec == -1)
+			lightlevel = sec->lightlevel;
 
 		lightnum = R_GetSoftLightlevel(lightlevel);
-
-		if (lightnum < 0)
-			spritelights = scalelight[0];
-		else if (lightnum >= LIGHTLEVELS)
-			spritelights = scalelight[LIGHTLEVELS-1];
-		else
-			spritelights = scalelight[lightnum];
+		spritelights = R_GetWallLight(lightnum);
 	}
 
 	// Handle all things in sector.

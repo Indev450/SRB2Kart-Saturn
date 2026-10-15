@@ -61,7 +61,6 @@ fixed_t rw_distance = 0;
 static INT32 rw_x, rw_stopx;
 static angle_t rw_centerangle;
 static fixed_t rw_offset;
-static fixed_t rw_offset2; // for splats
 static fixed_t rw_scale, rw_scalestep;
 static fixed_t rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
 static INT32 worldtop, worldbottom, worldhigh, worldlow;
@@ -264,12 +263,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 		else if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
 
-		if (lightnum < 0)
-			walllights = scalelight[0];
-		else if (lightnum >= LIGHTLEVELS)
-			walllights = scalelight[LIGHTLEVELS - 1];
-		else
-			walllights = scalelight[lightnum];
+		walllights = R_GetWallLight(lightnum);
 	}
 
 	if (frontsector->heightsec != -1)
@@ -371,12 +365,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 
 					lightnum = rlight->lightnum;
 
-					if (lightnum < 0)
-						xwalllights = scalelight[0];
-					else if (lightnum >= LIGHTLEVELS)
-						xwalllights = scalelight[LIGHTLEVELS-1];
-					else
-						xwalllights = scalelight[lightnum];
+					xwalllights = R_GetWallLight(lightnum);
 
 					pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
@@ -824,12 +813,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		else if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
 
-		if (lightnum < 0)
-			walllights = scalelight[0];
-		else if (lightnum >= LIGHTLEVELS)
-			walllights = scalelight[LIGHTLEVELS-1];
-		else
-			walllights = scalelight[lightnum];
+		walllights = R_GetWallLight(lightnum);
 	}
 
 	maskedtexturecol = drawseg->thicksidecol;
@@ -971,12 +955,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 
 				lightnum = rlight->lightnum;
 
-				if (lightnum < 0)
-					xwalllights = scalelight[0];
-				else if (lightnum >= LIGHTLEVELS)
-					xwalllights = scalelight[LIGHTLEVELS-1];
-				else
-					xwalllights = scalelight[lightnum];
+				xwalllights = R_GetWallLight(lightnum);
 
 				pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
@@ -1467,12 +1446,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 				else if (P_ApplyLightOffset(lightnum, curline->frontsector))
 					lightnum += curline->lightOffset;
 
-				if (lightnum < 0)
-					xwalllights = scalelight[0];
-				else if (lightnum >= LIGHTLEVELS)
-					xwalllights = scalelight[LIGHTLEVELS-1];
-				else
-					xwalllights = scalelight[lightnum];
+				xwalllights = R_GetWallLight(lightnum);
 
 				pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
@@ -2551,7 +2525,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			rw_offset = -rw_offset;
 
 		/// don't use texture offset for splats
-		rw_offset2 = rw_offset + curline->offset;
 		rw_offset += sidedef->textureoffset + curline->offset;
 		rw_centerangle = ANGLE_90 + viewangle - rw_normalangle;
 
@@ -2564,12 +2537,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
 
-		if (lightnum < 0)
-			walllights = scalelight[0];
-		else if (lightnum >= LIGHTLEVELS)
-			walllights = scalelight[LIGHTLEVELS - 1];
-		else
-			walllights = scalelight[lightnum];
+		walllights = R_GetWallLight(lightnum);
 	}
 
 	// if a floor / ceiling plane is on the wrong side
