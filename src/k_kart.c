@@ -3317,20 +3317,20 @@ static void K_StretchPlayerGravity(player_t *player)
 
 	if (!P_IsObjectOnGround(pmo))
 	{
-		fixed_t pzmom = abs(pmo->momz);
+		const fixed_t pzmom = abs(pmo->momz);
 		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
 
 		if (abs(pzmom/FRACUNIT) != 0)
 		{
-			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
+			if ((tempxscale - stretchDiv) > (tempxscale / 5))
 			{
 				pmo->spritexscale = (tempxscale - stretchDiv);
 				pmo->stretchslam = pzmom;
 			}
 			else
-				pmo->spritexscale = (tempxscale/5);
+				pmo->spritexscale = (tempxscale / 5);
 
-			pmo->spriteyscale = (tempyscale + ((stretchDiv*2)/3));
+			pmo->spriteyscale = (tempyscale + ((stretchDiv * 2) / 3));
 		}
 	}
 	else if (pmo->stretchslam > 0)
@@ -3344,7 +3344,7 @@ static void K_StretchPlayerGravity(player_t *player)
 
 		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3 ) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
 		pmo->stretchslam -= (4*FRACUNIT);
 	}
@@ -3368,7 +3368,7 @@ static void K_SaltySquish(player_t *player)
 	{
 		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, FRACUNIT*60); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
 		pmo->stretchslam -= (4*FRACUNIT);
 	}
