@@ -63,6 +63,7 @@ typedef struct skin_s
 	//
 
 	// Definable color translation table
+	UINT8 **translationtablecache;
 	UINT8 starttranscolor;
 	UINT8 prefcolor;
 	fixed_t highresscale; // scale of highres, default is 0.5
