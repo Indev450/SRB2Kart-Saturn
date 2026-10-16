@@ -492,12 +492,11 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			continue; // so we know how many skins couldn't be added
 		}
 
-		// TODO: get rid of all the other static arrays so we can have as many localskins as we want to!
-		if (local && numlocalskins >= MAXLOCALSKINS)
+		/* if (local && numlocalskins >= MAXLOCALSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add localskin, too many localskins are loaded (%d maximum)\n"), MAXLOCALSKINS);
 			continue; // so we know how many skins couldn't be added
-		}
+		} */
 
 		buf = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
 		size = W_LumpLengthPwad(wadnum, lump);
