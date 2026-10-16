@@ -1768,6 +1768,8 @@ static int lib_rSetPlayerSkin(lua_State *L)
 		INT32 i = luaL_checkinteger(L, 2);
 		if (i < 0 || i >= MAXSKINS)
 			return luaL_error(L, "skin number (argument #2) %d out of range (0 - %d)", i, MAXSKINS-1);
+		if (i >= numskins)
+			return 0;
 		SetPlayerSkinByNum(player-players, i);
 	}
 	else // skin name
