@@ -1755,25 +1755,56 @@ void K_RespawnChecker(player_t *player)
 				mobj_t *mo;
 				angle_t newangle;
 				fixed_t newx, newy, newz;
-
+#ifdef PHOBOS_BUILD
+				const fixed_t fscale = player->mo->scale;
+#else
+				static const fixed_t fscale = FRACUNIT; // does NOT use scale, since this effect doesn't scale properly
+#endif
 				newangle = FixedAngle(((360/8)*i)*FRACUNIT);
-				newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31<<FRACBITS); // does NOT use scale, since this effect doesn't scale properly
-				newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31<<FRACBITS);
+				newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31 * fscale);
+				newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31 * fscale);
 				if (player->mo->eflags & MFE_VERTICALFLIP)
 					newz = player->mo->z + player->mo->height;
 				else
 					newz = player->mo->z;
 
 				mo = P_SpawnMobj(newx, newy, newz, MT_DEZLASER);
-				if (mo)
+				if (!P_MobjWasRemovedCompat(mo))
 				{
 					if (player->mo->eflags & MFE_VERTICALFLIP)
 						mo->eflags |= MFE_VERTICALFLIP;
 					P_SetTarget(&mo->target, player->mo);
 					mo->angle = newangle+ANGLE_90;
-					mo->momz = (8<<FRACBITS) * P_MobjFlip(player->mo);
-					P_SetScale(mo, (mo->destscale = FRACUNIT));
+					mo->momz = (8 * fscale) * P_MobjFlip(player->mo);
+					P_SetScale(mo, (mo->destscale = fscale));
 				}
+#ifndef PHOBOS_BUILD
+				// vanilla compat really is annoying.......
+				// but this stuff is messed up on mobjscaled maps
+				// and we gotta respawn it locally to avoid desynchs...
+				if (mapobjectscale != FRACUNIT)
+				{
+					// hide the normal lazers!
+					mo->flags2 |= MF2_DONTDRAW;
+
+					newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31 * player->mo->scale);
+					newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31 * player->mo->scale);
+
+					// now spawn our local lazers
+					mo = P_SpawnMobj(newx, newy, newz, MT_DEZLASER);
+					if (!P_MobjWasRemovedCompat(mo))
+					{
+						if (player->mo->eflags & MFE_VERTICALFLIP)
+							mo->eflags |= MFE_VERTICALFLIP;
+						P_SetTarget(&mo->target, player->mo);
+						mo->angle = newangle+ANGLE_90;
+						mo->momz = (8 * player->mo->scale) * P_MobjFlip(player->mo);
+						P_SetScale(mo, (mo->destscale = player->mo->scale));
+
+						mo->islocal = true; // Keep this local!
+					}
+				}
+#endif
 			}
 		}
 	}
@@ -3151,10 +3182,8 @@ static void K_SpawnDriftSparks(player_t *player)
 
 	for (i = 0; i < 2; i++)
 	{
-		fixed_t driftExtraScale = 0;
-
-		angle_t thrustangle = (travelangle + ((i&1) ? -1 : 1)*ANGLE_135);
-		fixed_t smolscale = FixedMul(32*FRACUNIT, player->mo->scale);
+		const angle_t thrustangle = (travelangle + ((i&1) ? -1 : 1)*ANGLE_135);
+		const fixed_t smolscale = FixedMul(32*FRACUNIT, player->mo->scale);
 
 		newx = player->mo->x + P_ReturnThrustX(player->mo, thrustangle, smolscale);
 		newy = player->mo->y + P_ReturnThrustY(player->mo, thrustangle, smolscale);
@@ -3166,9 +3195,9 @@ static void K_SpawnDriftSparks(player_t *player)
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
 
 		// scale increase while driftspark level gained timer is running
-		driftExtraScale = FixedDiv(player->driftsparkGrowTimer, DRIFTSPARKGROWTICS);
+		const fixed_t driftExtraScale = FixedDiv(player->driftsparkGrowTimer, DRIFTSPARKGROWTICS);
 		spark->destscale = FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value));
-		P_SetScale(spark, spark->destscale); // why not use what we calculated above?
+		P_SetScale(spark, spark->destscale);
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
@@ -3263,7 +3292,7 @@ static void K_StretchPlayerGravity(player_t *player)
 	fixed_t tempxscale = pmo->realxscale;
 	fixed_t tempyscale = pmo->realyscale;
 
-	stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
+	stretchScaleFactor = FixedDiv(mapobjectscale*60, cv_gravstretch.value);
 	stretchScaleFactor = min(stretchScaleFactor, MAXSTRETCHDIV);
 
 	if (pmo->slamsoundtimer)
@@ -3271,26 +3300,26 @@ static void K_StretchPlayerGravity(player_t *player)
 
 	if (!P_IsObjectOnGround(pmo))
 	{
-		fixed_t pzmom = abs(pmo->momz);
+		const fixed_t pzmom = abs(pmo->momz);
 		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
 
-		if (abs(pzmom/FRACUNIT) != 0)
+		if (abs(pzmom/mapobjectscale) != 0)
 		{
-			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
+			if ((tempxscale - stretchDiv) > (tempxscale / 5))
 			{
 				pmo->spritexscale = (tempxscale - stretchDiv);
 				pmo->stretchslam = pzmom;
 			}
 			else
-				pmo->spritexscale = (tempxscale/5);
+				pmo->spritexscale = (tempxscale / 5);
 
-			pmo->spriteyscale = (tempyscale + ((stretchDiv*2)/3));
+			pmo->spriteyscale = (tempyscale + ((stretchDiv * 2) / 3));
 		}
 	}
 	else if (pmo->stretchslam > 0)
 	{
 		// Funni slam sound when landing
-		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*FRACUNIT))
+		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*mapobjectscale))
 		{
 			S_StartSound(pmo, sfx_s3k4c);
 			pmo->slamsoundtimer = TICRATE;
@@ -3298,9 +3327,9 @@ static void K_StretchPlayerGravity(player_t *player)
 
 		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3 ) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -3320,11 +3349,11 @@ static void K_SaltySquish(player_t *player)
 
 	if (pmo->stretchslam > 0)
 	{
-		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, FRACUNIT*60); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, mapobjectscale*60); // stretchScaleFactor = FixedDiv(mapobjectscale*60, FRACUNIT)
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -3393,7 +3422,7 @@ static void K_QuiteSaltyHop(player_t *player)
 			psalty->momz = 0;
 			// shlamma damma
 			if (cv_saltysquish.value)
-				pmo->stretchslam += 8*FRACUNIT;
+				pmo->stretchslam += 8*mapobjectscale;
 		}
 		else if (psalty->zoffset > 0)
 		{
@@ -3656,7 +3685,7 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 	dust = P_SpawnMobj(rand_x, rand_y, mo->z, MT_WIPEOUTTRAIL);
 
 	P_SetTarget(&dust->target, mo);
-	dust->angle = R_PointToAngle2(0,0,mo->momx,mo->momy);
+	dust->angle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
 	dust->destscale = mo->scale;
 	P_SetScale(dust, mo->scale);
 	K_FlipFromObject(dust, mo);
@@ -3682,6 +3711,11 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 void K_DriftDustHandling(mobj_t *spawner)
 {
 	angle_t anglediff;
+#ifdef PHOBOS_BUILD
+	const fixed_t fscale = spawner->scale;
+#else
+	static const fixed_t fscale = FRACUNIT; // should be spawner->scale but the below calls P_Random!
+#endif
 
 	if (leveltime % 2 != 0 || !P_IsObjectOnGround(spawner))
 		return;
@@ -3698,7 +3732,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 		{
 			angle_t playerangle = spawner->angle;
 
-			if (spawner->player->speed < 5<<FRACBITS)
+			if (spawner->player->speed < (5 * fscale))
 				return;
 
 			if (spawner->player->cmd.forwardmove < 0)
@@ -3709,7 +3743,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 	}
 	else
 	{
-		if (P_AproxDistance(spawner->momx, spawner->momy) < 5<<FRACBITS)
+		if (P_AproxDistance(spawner->momx, spawner->momy) < (5 * fscale))
 			return;
 
 		anglediff = abs((signed)(spawner->angle - R_PointToAngle2(0, 0, spawner->momx, spawner->momy)));
@@ -3722,13 +3756,29 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 	if (anglediff > ANG10*4) // Trying to turn further than 40 degrees
 	{
+		mobj_t *dust = NULL;
+
 		fixed_t spawnx = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		fixed_t spawny = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		INT32 speedrange = 2;
-		mobj_t *dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
-		dust->momx = FixedMul(spawner->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
-		dust->momy = FixedMul(spawner->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
-		dust->momz = P_MobjFlip(spawner) * (P_RandomRange(1, 4) * (spawner->scale));
+
+		dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
+
+		const INT32 momxrand = P_RandomRange(-speedrange, speedrange);
+		const INT32 momyrand = P_RandomRange(-speedrange, speedrange);
+		const INT32 momzrand = P_RandomRange(1, 4);
+
+		if (P_MobjWasRemovedCompat(dust))
+			return;
+
+#ifdef PHOBOS_BUILD
+		dust->momx = FixedMul(spawner->momx + (momxrand * spawner->scale), 3*FRACUNIT/4);
+		dust->momy = FixedMul(spawner->momy + (momyrand * spawner->scale), 3*FRACUNIT/4);
+#else
+		dust->momx = FixedMul(spawner->momx + (momxrand<<FRACBITS), 3*(spawner->scale)/4);
+		dust->momy = FixedMul(spawner->momy + (momyrand<<FRACBITS), 3*(spawner->scale)/4);
+#endif
+		dust->momz = P_MobjFlip(spawner) * (momzrand * (spawner->scale));
 		P_SetScale(dust, spawner->scale/2);
 		dust->destscale = spawner->scale * 3;
 		dust->scalespeed = spawner->scale/12;
@@ -3737,6 +3787,33 @@ void K_DriftDustHandling(mobj_t *spawner)
 			S_StartSound(spawner, sfx_screec);
 
 		K_MatchGenericExtraFlags(dust, spawner);
+
+#ifndef PHOBOS_BUILD
+		// vanilla compat really is annoying.......
+		// but this stuff is messed up on mobjscaled maps
+		// and we gotta respawn it locally to avoid desynchs...
+		if (mapobjectscale != FRACUNIT)
+		{
+			// hide the normal dust!
+			dust->flags2 |= MF2_DONTDRAW;
+
+			// now spawn our dust locally
+			dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
+
+			if (P_MobjWasRemovedCompat(dust))
+				return;
+
+			dust->momx = FixedMul(spawner->momx + (momxrand * spawner->scale), 3*FRACUNIT/4);
+			dust->momy = FixedMul(spawner->momy + (momyrand * spawner->scale), 3*FRACUNIT/4);
+			dust->momz = P_MobjFlip(spawner) * (momzrand * (spawner->scale));
+			P_SetScale(dust, spawner->scale/2);
+			dust->destscale = spawner->scale * 3;
+			dust->scalespeed = spawner->scale/12;
+			dust->islocal = true; // Keep this local!
+
+			K_MatchGenericExtraFlags(dust, spawner);
+		}
+#endif
 	}
 }
 

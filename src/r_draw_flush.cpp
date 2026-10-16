@@ -6,7 +6,7 @@
 // Copyright (C) 1996 by id Software, Inc.
 // Copyright (C) 1999 by Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 // Copyright (C) 1999-2000 by Jess Haas, Nicolas Kalkhof, Colin Phipps, Florian Schulze
-// Copyright (C) Copyright 2005, 2006 by Florian Schulze, Colin Phipps, Neil Stevens, Andrey Budko
+// Copyright (C) 2005, 2006 by Florian Schulze, Colin Phipps, Neil Stevens, Andrey Budko
 // Copyright (C) 2013 by James Haley, Stephen McGranahan, et al.
 //
 // This program is free software distributed under the
