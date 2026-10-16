@@ -6280,16 +6280,39 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		case MT_SMOLDERING:
 			if (leveltime % 2 == 0)
 			{
+				mobj_t *smoke;
 				fixed_t x = P_RandomRange(-35, 35)*mobj->scale;
 				fixed_t y = P_RandomRange(-35, 35)*mobj->scale;
 				fixed_t z = P_RandomRange(0, 70)*mobj->scale;
 
-				mobj_t *smoke = P_SpawnMobj(mobj->x + x, mobj->y + y, mobj->z + z, MT_SMOKE);
+				smoke = P_SpawnMobj(mobj->x + x, mobj->y + y, mobj->z + z, MT_SMOKE);
 				P_SetMobjState(smoke, S_OPAQUESMOKE1);
 				K_MatchGenericExtraFlags(smoke, mobj);
 				smoke->scale = mobj->scale * 2;
 				smoke->destscale = mobj->scale * 6;
-				smoke->momz = P_RandomRange(4, 9)*FRACUNIT*P_MobjFlip(smoke);
+				const INT32 momrand = P_RandomRange(4, 9);
+#ifdef PHOBOS_BUILD
+				smoke->momz = momrand*mobj->scale*P_MobjFlip(smoke);
+#else
+				smoke->momz = momrand*FRACUNIT*P_MobjFlip(smoke);
+
+				// vanilla compat really is annoying.......
+				// but this stuff is messed up on mobjscaled maps
+				// so we gotta respawn it locally to avoid desynchs...
+				if (mapobjectscale != FRACUNIT)
+				{
+					// hide the smoke!
+					smoke->flags2 |= MF2_DONTDRAW;
+
+					smoke = P_SpawnMobj(mobj->x + x, mobj->y + y, mobj->z + z, MT_SMOKE);
+					P_SetMobjState(smoke, S_OPAQUESMOKE1);
+					K_MatchGenericExtraFlags(smoke, mobj);
+					smoke->scale = mobj->scale * 2;
+					smoke->destscale = mobj->scale * 6;
+					smoke->momz = momrand*mobj->scale*P_MobjFlip(smoke);
+					smoke->islocal = true; // Keep this local!
+				}
+#endif
 			}
 			break;
 		case MT_BOOMPARTICLE:

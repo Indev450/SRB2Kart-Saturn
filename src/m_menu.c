@@ -9929,6 +9929,7 @@ static void M_DrawLocalSkinMenu(void)
 	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
 #undef charw
 
+	// FIXME: is skins[displayskin.localnum] even correct?
 	UINT8 *colormap = R_GetLocalTranslationColormap(&skins[displayskin.localnum], (displayskin.localskin ? &localskins[displayskin.localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, displayskin.localskin);
 
 	V_DrawMappedPatch(mx, my+50, 0, (patch_t *)W_CachePatchName(displayskin.facewant, PU_PATCH), colormap);
@@ -9946,7 +9947,7 @@ static void M_DrawLocalSkinMenu(void)
 	my += 120;
 
 #ifdef HWRENDER
-	md2_t *md2 = (displayskin.localskin ? &md2_localplayermodels[skintodisplay] : &md2_playermodels[skintodisplay]);
+	md2_t *md2 = (displayskin.localskin ? &md2_localplayermodels[displayskin.localnum] : &md2_playermodels[skintodisplay]);
 
 	// if we have 3d models enabled and a model exists
 	// try to show it instead of the sprite

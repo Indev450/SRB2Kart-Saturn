@@ -266,15 +266,6 @@ typedef enum {
 	PCF_THUNK     = 1<<5, // Ran the thinker this tic.
 } precipflag_t;
 
-typedef struct salty_s
-{
-	bool init;
-	bool ready;
-	bool tapping;
-	fixed_t zoffset;
-	fixed_t momz;
-	bool jump;
-} salty_t;
 
 // Map Object definition.
 typedef struct mobj_s
@@ -411,9 +402,6 @@ typedef struct mobj_s
 	boolean mirrored; // The object's rotations will be mirrored left to right, e.g., see frame AL from the right and AR from the left
 
 	tic_t slamsoundtimer; // Funni slam sound when landing
-
-	// saltyhop! hardcode edition
-	salty_t salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
 	boolean islocal; // BEWARE: islocal does not exist in vanilla, strictly to be used for locally loaded addons to not cause desynchs with the mobj linedef trigger check. DO NOT USE THIS IN ACTUAL ADDONS YOU INTEND TO USE ON YOUR SERVER

@@ -1109,6 +1109,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
 		return;
 
+	// do not send over locally spawned mobjs
+	if (mobj->islocal)
+		return;
+
 	if (mobj->spawnpoint && mobj->info->doomednum != -1)
 	{
 		// spawnpoint is not modified but we must save it since it is an identifier
@@ -1134,9 +1138,17 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0)
 #endif
 		diff |= MD_MOM;
+#ifdef PHOBOS_BUILD
+	if (mobj->radius != FixedMul(mapobjectscale, mobj->info->radius))
+#else
 	if (mobj->radius != mobj->info->radius)
+#endif
 		diff |= MD_RADIUS;
+#ifdef PHOBOS_BUILD
+	if (mobj->height != FixedMul(mapobjectscale, mobj->info->height))
+#else
 	if (mobj->height != mobj->info->height)
+#endif
 		diff |= MD_HEIGHT;
 	if (mobj->flags != mobj->info->flags)
 		diff |= MD_FLAGS;
@@ -1179,11 +1191,19 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff |= MD_MOVEFACTOR;
 	if (mobj->fuse)
 		diff |= MD_FUSE;
+#ifdef PHOBOS_BUILD
+	if (mobj->watertop != INT32_MAX)
+#else
 	if (mobj->watertop)
+#endif
 		diff |= MD_WATERTOP;
 	if (mobj->waterbottom)
 		diff |= MD_WATERBOTTOM;
+#ifdef PHOBOS_BUILD
+	if (mobj->scale != mapobjectscale)
+#else
 	if (mobj->scale != FRACUNIT)
+#endif
 		diff |= MD_SCALE;
 	if (mobj->destscale != mobj->scale)
 		diff |= MD_DSCALE;
@@ -2090,11 +2110,19 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff & MD_RADIUS)
 		mobj->radius = READFIXED(save->p);
 	else
+#ifdef PHOBOS_BUILD
+		mobj->radius = FixedMul(mobj->info->radius, mapobjectscale);
+#else
 		mobj->radius = mobj->info->radius;
+#endif
 	if (diff & MD_HEIGHT)
 		mobj->height = READFIXED(save->p);
 	else
+#ifdef PHOBOS_BUILD
+		mobj->height = FixedMul(mobj->info->height, mapobjectscale);
+#else
 		mobj->height = mobj->info->height;
+#endif
 	if (diff & MD_FLAGS)
 		mobj->flags = READUINT32(save->p);
 	else
@@ -2166,12 +2194,20 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->fuse = READINT32(save->p);
 	if (diff & MD_WATERTOP)
 		mobj->watertop = READFIXED(save->p);
+#ifdef PHOBOS_BUILD
+	else
+		mobj->watertop = INT32_MAX;
+#endif
 	if (diff & MD_WATERBOTTOM)
 		mobj->waterbottom = READFIXED(save->p);
 	if (diff & MD_SCALE)
 		mobj->scale = READFIXED(save->p);
 	else
+#ifdef PHOBOS_BUILD
+		mobj->scale = mapobjectscale;
+#else
 		mobj->scale = FRACUNIT;
+#endif
 	if (diff & MD_DSCALE)
 		mobj->destscale = READFIXED(save->p);
 	else

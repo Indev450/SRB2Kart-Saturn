@@ -71,35 +71,17 @@ consvar_t cv_stairjank = {"stairjank", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistor
 consvar_t cv_stairjanksfx = {"stairjanksfx", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
-static void saltyhop_onchange(void);
-consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t saltyheight_t[] = {{FRACUNIT/4, "MIN"}, {2*FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, saltyheight_t, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE, saltyheight_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyroll = {"hardcodehoproll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_squishdance = {"squishdance", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t squishdancespeed_cons_t[] = {{20, "MIN"}, {280, "MAX"}, {0, NULL}};
 consvar_t cv_squishdancespeed = {"squishdance_speed", "140", CV_SAVE, squishdancespeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static void saltyhop_onchange(void)
-{
-	// reset everything when toggling saltyhop
-	if (gamestate != GS_LEVEL)
-		return;
-
-	for (INT32 i = 0; i < MAXPLAYERS; i++)
-	{
-		player_t *player = &players[i];
-
-		if (!player || P_MobjWasRemoved(player->mo))
-			continue;
-
-		memset(&player->mo->salty, 0, sizeof(player->mo->salty));
-	}
-}
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -1827,25 +1809,56 @@ void K_RespawnChecker(player_t *player)
 				mobj_t *mo;
 				angle_t newangle;
 				fixed_t newx, newy, newz;
-
+#ifdef PHOBOS_BUILD
+				const fixed_t fscale = player->mo->scale;
+#else
+				static const fixed_t fscale = FRACUNIT; // does NOT use scale, since this effect doesn't scale properly
+#endif
 				newangle = FixedAngle(((360/8)*i)*FRACUNIT);
-				newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31<<FRACBITS); // does NOT use scale, since this effect doesn't scale properly
-				newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31<<FRACBITS);
+				newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31 * fscale);
+				newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31 * fscale);
 				if (player->mo->eflags & MFE_VERTICALFLIP)
 					newz = player->mo->z + player->mo->height;
 				else
 					newz = player->mo->z;
 
 				mo = P_SpawnMobj(newx, newy, newz, MT_DEZLASER);
-				if (mo)
+				if (!P_MobjWasRemovedCompat(mo))
 				{
 					if (player->mo->eflags & MFE_VERTICALFLIP)
 						mo->eflags |= MFE_VERTICALFLIP;
 					P_SetTarget(&mo->target, player->mo);
 					mo->angle = newangle+ANGLE_90;
-					mo->momz = (8<<FRACBITS) * P_MobjFlip(player->mo);
-					P_SetScale(mo, (mo->destscale = FRACUNIT));
+					mo->momz = (8 * fscale) * P_MobjFlip(player->mo);
+					P_SetScale(mo, (mo->destscale = fscale));
 				}
+#ifndef PHOBOS_BUILD
+				// vanilla compat really is annoying.......
+				// but this stuff is messed up on mobjscaled maps
+				// and we gotta respawn it locally to avoid desynchs...
+				if (mapobjectscale != FRACUNIT)
+				{
+					// hide the normal lazers!
+					mo->flags2 |= MF2_DONTDRAW;
+
+					newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31 * player->mo->scale);
+					newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31 * player->mo->scale);
+
+					// now spawn our local lazers
+					mo = P_SpawnMobj(newx, newy, newz, MT_DEZLASER);
+					if (!P_MobjWasRemovedCompat(mo))
+					{
+						if (player->mo->eflags & MFE_VERTICALFLIP)
+							mo->eflags |= MFE_VERTICALFLIP;
+						P_SetTarget(&mo->target, player->mo);
+						mo->angle = newangle+ANGLE_90;
+						mo->momz = (8 * player->mo->scale) * P_MobjFlip(player->mo);
+						P_SetScale(mo, (mo->destscale = player->mo->scale));
+
+						mo->islocal = true; // Keep this local!
+					}
+				}
+#endif
 			}
 		}
 	}
@@ -2194,7 +2207,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 		// Technically, all mobjs that think can cause desynchs if they are spawned conditionally, so best we can do
 		// is to hide them if you are in saltyhop jump
-		if (dust && player->mo->salty.jump)
+		if (dust && player->salty.jump)
 			dust->flags2 |= MF2_DONTDRAW;
 
 		if (leveltime % 6 == 0)
@@ -3223,10 +3236,8 @@ static void K_SpawnDriftSparks(player_t *player)
 
 	for (i = 0; i < 2; i++)
 	{
-		fixed_t driftExtraScale = 0;
-
-		angle_t thrustangle = (travelangle + ((i&1) ? -1 : 1)*ANGLE_135);
-		fixed_t smolscale = FixedMul(32*FRACUNIT, player->mo->scale);
+		const angle_t thrustangle = (travelangle + ((i&1) ? -1 : 1)*ANGLE_135);
+		const fixed_t smolscale = FixedMul(32*FRACUNIT, player->mo->scale);
 
 		newx = player->mo->x + P_ReturnThrustX(player->mo, thrustangle, smolscale);
 		newy = player->mo->y + P_ReturnThrustY(player->mo, thrustangle, smolscale);
@@ -3238,9 +3249,9 @@ static void K_SpawnDriftSparks(player_t *player)
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
 
 		// scale increase while driftspark level gained timer is running
-		driftExtraScale = FixedDiv(player->driftsparkGrowTimer, DRIFTSPARKGROWTICS);
+		const fixed_t driftExtraScale = FixedDiv(player->driftsparkGrowTimer, DRIFTSPARKGROWTICS);
 		spark->destscale = FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value));
-		P_SetScale(spark, spark->destscale); // why not use what we calculated above?
+		P_SetScale(spark, spark->destscale);
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
@@ -3335,7 +3346,7 @@ static void K_StretchPlayerGravity(player_t *player)
 	fixed_t tempxscale = pmo->realxscale;
 	fixed_t tempyscale = pmo->realyscale;
 
-	stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
+	stretchScaleFactor = FixedDiv(mapobjectscale*60, cv_gravstretch.value);
 	stretchScaleFactor = min(stretchScaleFactor, MAXSTRETCHDIV);
 
 	if (pmo->slamsoundtimer)
@@ -3343,26 +3354,26 @@ static void K_StretchPlayerGravity(player_t *player)
 
 	if (!P_IsObjectOnGround(pmo))
 	{
-		fixed_t pzmom = abs(pmo->momz);
+		const fixed_t pzmom = abs(pmo->momz);
 		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
 
-		if (abs(pzmom/FRACUNIT) != 0)
+		if (abs(pzmom/mapobjectscale) != 0)
 		{
-			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
+			if ((tempxscale - stretchDiv) > (tempxscale / 5))
 			{
 				pmo->spritexscale = (tempxscale - stretchDiv);
 				pmo->stretchslam = pzmom;
 			}
 			else
-				pmo->spritexscale = (tempxscale/5);
+				pmo->spritexscale = (tempxscale / 5);
 
-			pmo->spriteyscale = (tempyscale + ((stretchDiv*2)/3));
+			pmo->spriteyscale = (tempyscale + ((stretchDiv * 2) / 3));
 		}
 	}
 	else if (pmo->stretchslam > 0)
 	{
 		// Funni slam sound when landing
-		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*FRACUNIT))
+		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*mapobjectscale))
 		{
 			S_StartSound(pmo, sfx_s3k4c);
 			pmo->slamsoundtimer = TICRATE;
@@ -3370,9 +3381,9 @@ static void K_StretchPlayerGravity(player_t *player)
 
 		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3 ) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -3392,11 +3403,11 @@ static void K_SaltySquish(player_t *player)
 
 	if (pmo->stretchslam > 0)
 	{
-		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, FRACUNIT*60); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, mapobjectscale*60); // stretchScaleFactor = FixedDiv(mapobjectscale*60, FRACUNIT)
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -3404,88 +3415,92 @@ static void K_SaltySquish(player_t *player)
 
 static void K_QuiteSaltyHop(player_t *player)
 {
-	if (!cv_saltyhop.value)
-		return;
+	I_Assert(player != NULL);
+	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	// what the fuck is this haya
 	mobj_t *pmo = player->mo;
-	salty_t *psalt = &pmo->salty;
+	salty_t *psalty = &player->salty;
+
+	if (!cv_saltyhop.value)
+	{
+		// reset before we leave
+		psalty->jump = psalty->ready = psalty->tapping = false;
+		psalty->momz = psalty->zoffset = 0;
+		return;
+	}
+
 	const boolean onground = P_IsObjectOnGround(pmo);
 
 	// ready?
 	if (!player->kartstuff[k_jmp])
 	{
-		psalt->ready = true;
-		psalt->tapping = false;
+		psalty->ready = true;
+		psalty->tapping = false;
 	}
-	else if (psalt->ready)
+	else if (psalty->ready)
 	{
-		psalt->ready = false;
-		psalt->tapping = true;
+		psalty->ready = false;
+		psalty->tapping = true;
 	}
 	else
 	{
-		psalt->tapping = false;
+		psalty->tapping = false;
 	}
 
 	// GO!
-	if (!psalt->init)
-	{
-		psalt->jump = false;
-		psalt->zoffset = 0;
-		psalt->momz = 0;
-		psalt->init = true;
-	}
-	else if (psalt->jump)
+	if (psalty->jump)
 	{
 		if (pmo->eflags & MFE_JUSTHITFLOOR)
 		{
-			psalt->zoffset = 0;
+			psalty->zoffset = 0;
 		}
 		else if (onground)
 		{
-			psalt->zoffset += psalt->momz;
-			psalt->momz -= (FRACUNIT*3/2);
+			psalty->zoffset += psalty->momz;
+			psalty->momz -= (FRACUNIT*3/2);
 		}
 		else
 		{
-			psalt->zoffset *= (49/50)*FRACUNIT;
-			psalt->momz = 0;
+			//psalty->zoffset *= (49/50)*FRACUNIT; // this just rounds down to 0 lol
+			psalty->zoffset = 0;
+			psalty->momz = 0;
 		}
 
-		if (psalt->zoffset <= 0)
+		if (psalty->zoffset <= 0)
 		{
 			if (cv_saltyhopsfx.value && !(pmo->eflags & MFE_JUSTHITFLOOR) && onground)
 				S_StartSound(pmo, sfx_s268);
-			psalt->jump = false;
-			psalt->zoffset = 0;
-			psalt->momz = 0;
+			psalty->jump = false;
+			psalty->zoffset = 0;
+			psalty->momz = 0;
 			// shlamma damma
 			if (cv_saltysquish.value)
-				pmo->stretchslam += 8*FRACUNIT;
+				pmo->stretchslam += 8*mapobjectscale;
 		}
-		else if (cv_saltysquish.value && psalt->zoffset >= 0)
+		else if (psalty->zoffset > 0)
 		{
-			// goofy ahh hack
-			pmo->spriteyscale += (FRACUNIT/8);
-			pmo->spritexscale -= (FRACUNIT/8);
+			if (cv_saltysquish.value)
+			{
+				// goofy ahh hack
+				pmo->spriteyscale += (FRACUNIT/8);
+				pmo->spritexscale -= (FRACUNIT/8);
+			}
 		}
 
-		pmo->spriteyoffset += FixedMul(psalt->zoffset, cv_saltyheight.value);
+		pmo->spriteyoffset += FixedMul(psalty->zoffset, cv_saltyheight.value);
 
-		if (cv_saltyhopsfx.value)
-		{
-			if (S_SoundPlaying(pmo, sfx_screec))
-				S_StopSoundByID(pmo, sfx_screec);
-			if (S_SoundPlaying(pmo, sfx_drift))
-				S_StopSoundByID(pmo, sfx_drift);
-		}
+		// Stop any and all drift sounds when hopping.
+		if (S_SoundPlaying(pmo, sfx_screec))
+			S_StopSoundByID(pmo, sfx_screec);
+		if (S_SoundPlaying(pmo, sfx_drift))
+			S_StopSoundByID(pmo, sfx_drift);
 	}
-	else if (psalt->tapping && onground && !player->kartstuff[k_spinouttimer] && !player->kartstuff[k_squishedtimer])
+	else if (psalty->tapping && onground && !player->kartstuff[k_spinouttimer] && !player->kartstuff[k_squishedtimer])
 	{
-		psalt->jump = true;
-		psalt->zoffset = 0;
-		psalt->momz = 6*FRACUNIT;
+		psalty->jump = true;
+		psalty->zoffset = 0;
+		psalty->momz = 6*FRACUNIT;
 		if (cv_saltyhopsfx.value)
 			S_StartSound(pmo, sfx_s25a);
 	}
@@ -3512,7 +3527,7 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 		return false;
 
 	// seeing a character rotate mid-hop looks really janky
-	if (!cv_saltyroll.value && mobj->player && mobj->player->mo->salty.jump)
+	if (!cv_saltyroll.value && mobj->player && mobj->player->salty.jump)
 		return false;
 
 	return K_CheckSlopeRollDist(mobj);
@@ -3724,7 +3739,7 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 	dust = P_SpawnMobj(rand_x, rand_y, mo->z, MT_WIPEOUTTRAIL);
 
 	P_SetTarget(&dust->target, mo);
-	dust->angle = R_PointToAngle2(0,0,mo->momx,mo->momy);
+	dust->angle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
 	dust->destscale = mo->scale;
 	P_SetScale(dust, mo->scale);
 	K_FlipFromObject(dust, mo);
@@ -3750,6 +3765,11 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 void K_DriftDustHandling(mobj_t *spawner)
 {
 	angle_t anglediff;
+#ifdef PHOBOS_BUILD
+	const fixed_t fscale = spawner->scale;
+#else
+	static const fixed_t fscale = FRACUNIT; // should be spawner->scale but the below calls P_Random!
+#endif
 
 	if (leveltime % 2 != 0 || !P_IsObjectOnGround(spawner))
 		return;
@@ -3766,7 +3786,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 		{
 			angle_t playerangle = spawner->angle;
 
-			if (spawner->player->speed < 5<<FRACBITS)
+			if (spawner->player->speed < (5 * fscale))
 				return;
 
 			if (spawner->player->cmd.forwardmove < 0)
@@ -3777,7 +3797,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 	}
 	else
 	{
-		if (P_AproxDistance(spawner->momx, spawner->momy) < 5<<FRACBITS)
+		if (P_AproxDistance(spawner->momx, spawner->momy) < (5 * fscale))
 			return;
 
 		anglediff = abs((signed)(spawner->angle - R_PointToAngle2(0, 0, spawner->momx, spawner->momy)));
@@ -3790,13 +3810,29 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 	if (anglediff > ANG10*4) // Trying to turn further than 40 degrees
 	{
+		mobj_t *dust = NULL;
+
 		fixed_t spawnx = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		fixed_t spawny = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		INT32 speedrange = 2;
-		mobj_t *dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
-		dust->momx = FixedMul(spawner->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
-		dust->momy = FixedMul(spawner->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
-		dust->momz = P_MobjFlip(spawner) * (P_RandomRange(1, 4) * (spawner->scale));
+
+		dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
+
+		const INT32 momxrand = P_RandomRange(-speedrange, speedrange);
+		const INT32 momyrand = P_RandomRange(-speedrange, speedrange);
+		const INT32 momzrand = P_RandomRange(1, 4);
+
+		if (P_MobjWasRemovedCompat(dust))
+			return;
+
+#ifdef PHOBOS_BUILD
+		dust->momx = FixedMul(spawner->momx + (momxrand * spawner->scale), 3*FRACUNIT/4);
+		dust->momy = FixedMul(spawner->momy + (momyrand * spawner->scale), 3*FRACUNIT/4);
+#else
+		dust->momx = FixedMul(spawner->momx + (momxrand<<FRACBITS), 3*(spawner->scale)/4);
+		dust->momy = FixedMul(spawner->momy + (momyrand<<FRACBITS), 3*(spawner->scale)/4);
+#endif
+		dust->momz = P_MobjFlip(spawner) * (momzrand * (spawner->scale));
 		P_SetScale(dust, spawner->scale/2);
 		dust->destscale = spawner->scale * 3;
 		dust->scalespeed = spawner->scale/12;
@@ -3805,6 +3841,33 @@ void K_DriftDustHandling(mobj_t *spawner)
 			S_StartSound(spawner, sfx_screec);
 
 		K_MatchGenericExtraFlags(dust, spawner);
+
+#ifndef PHOBOS_BUILD
+		// vanilla compat really is annoying.......
+		// but this stuff is messed up on mobjscaled maps
+		// and we gotta respawn it locally to avoid desynchs...
+		if (mapobjectscale != FRACUNIT)
+		{
+			// hide the normal dust!
+			dust->flags2 |= MF2_DONTDRAW;
+
+			// now spawn our dust locally
+			dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
+
+			if (P_MobjWasRemovedCompat(dust))
+				return;
+
+			dust->momx = FixedMul(spawner->momx + (momxrand * spawner->scale), 3*FRACUNIT/4);
+			dust->momy = FixedMul(spawner->momy + (momyrand * spawner->scale), 3*FRACUNIT/4);
+			dust->momz = P_MobjFlip(spawner) * (momzrand * (spawner->scale));
+			P_SetScale(dust, spawner->scale/2);
+			dust->destscale = spawner->scale * 3;
+			dust->scalespeed = spawner->scale/12;
+			dust->islocal = true; // Keep this local!
+
+			K_MatchGenericExtraFlags(dust, spawner);
+		}
+#endif
 	}
 }
 
