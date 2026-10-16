@@ -129,8 +129,8 @@ static void R_ParseSpriteInfo(boolean spr2)
 	spritenum_t sprnum = NUMSPRITES;
 	//playersprite_t spr2num = NUMPLAYERSPRITES;
 	INT32 i;
-	INT32 skinnumbers[MAXSKINS]; // >variable 'skinnumbers' set but not used >compile error when commented out
 	INT32 foundskins = 0;
+	CLEANUP(pfree) INT32 *skinnumbers = (INT32 *)calloc(1, numallskins); // could realloc this for foundskins but this is simpler
 
 	// Sprite name
 	sprinfoToken = M_GetToken(NULL);
