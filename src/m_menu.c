@@ -7709,7 +7709,7 @@ static void M_DrawMPMainMenu(void)
 					break;
 			}
 
-			if (pskin >= MAXSKINS)
+			if (pskin >= numskins)
 				pskin = 0;
 
 			if (!trans && i > cv_splitplayers.value)
@@ -8509,12 +8509,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 	}
 
-	if (skintodisplay >= MAXSKINS)
+	if (skintodisplay >= numskins)
 		skintodisplay = 0;
 
 	skinnum = R_SkinAvailable(skins[skintodisplay]->name);
 
-	if (skinnum < 0 || skinnum >= MAXSKINS)
+	if (skinnum < 0 || skinnum >= numskins)
 		skinnum = 0;
 
 	sprdef = &skins[skinnum]->spritedef;

@@ -310,10 +310,12 @@ setcvar:
 void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 {
 	player_t *player = &players[playernum];
-	skin_t *skin = skins[skinnum];
+	skin_t *skin;
 
 	if (skinnum >= 0 && skinnum < numskins) // Make sure it exists!
 	{
+		skin = skins[skinnum];
+
 		player->skin = skinnum;
 
 		if (player->mo)

@@ -1311,6 +1311,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				&& gpatch->width == blendgpatch->width && gpatch->height == blendgpatch->height)
 			{
 				INT32 tcskinnum = TC_DEFAULT;
+
 				if ((spr->mobj->flags & MF_BOSS) && (spr->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
 				{
 					if (spr->mobj->type == MT_CYBRAKDEMON)
@@ -1333,7 +1334,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 							tcskinnum = (INT32)R_GetMobjSkinNum(spr->mobj);
 						}
 					}
-					else tcskinnum = TC_DEFAULT;
+					else
+						tcskinnum = TC_DEFAULT;
 				}
 
 				HWR_GetBlendedTexture(gpatch, blendgpatch, tcskinnum, spr->colormap, (skincolors_t)spr->mobj->color);
