@@ -487,6 +487,19 @@ static void md2_loadBlendTexture(md2_t *model)
 // Don't spam the console, or the OS with fopen requests!
 static boolean nomd2s = false;
 
+// initializes an md2 model
+static void HWR_InitModel(md2_t *md2)
+{
+	md2->scale = -1.0f;
+	md2->model = NULL;
+	md2->glpatch = NULL;
+	md2->skinnum = -1;
+	md2->notexturefile = false;
+	md2->noblendfile = false;
+	md2->notfound = true;
+	md2->error = false;
+}
+
 void HWR_InitMD2(void)
 {
 	size_t i;
@@ -500,39 +513,18 @@ void HWR_InitMD2(void)
 	for (s = 0; s < numskins; s++)
 	{
 		skin_t *skin = skins[s];
-		skin->playermodel.scale = -1.0f;
-		skin->playermodel.model = NULL;
-		skin->playermodel.glpatch = NULL;
-		skin->playermodel.skinnum = -1;
-		skin->playermodel.notexturefile = false;
-		skin->playermodel.noblendfile = false;
-		skin->playermodel.notfound = true;
-		skin->playermodel.error = false;
+		HWR_InitModel(&skin->playermodel);
 	}
 
 	for (s = 0; s < numlocalskins; s++)
 	{
 		skin_t *skin = localskins[s];
-		skin->playermodel.scale = -1.0f;
-		skin->playermodel.model = NULL;
-		skin->playermodel.glpatch = NULL;
-		skin->playermodel.skinnum = -1;
-		skin->playermodel.notexturefile = false;
-		skin->playermodel.noblendfile = false;
-		skin->playermodel.notfound = true;
-		skin->playermodel.error = false;
+		HWR_InitModel(&skin->playermodel);
 	}
 
 	for (i = 0; i < NUMSPRITES; i++)
 	{
-		md2_models[i].scale = -1.0f;
-		md2_models[i].model = NULL;
-		md2_models[i].glpatch = NULL;
-		md2_models[i].skinnum = -1;
-		md2_models[s].notexturefile = false;
-		md2_models[s].noblendfile = false;
-		md2_models[i].notfound = true;
-		md2_models[i].error = false;
+		HWR_InitModel(&md2_models[i]);
 	}
 
 	// read the mdls.dat file
@@ -594,6 +586,11 @@ void HWR_AddPlayerMD2(INT32 skinnum, boolean local) // For MD2's that were added
 	char name[20], filename[32];
 	float scale, offset;
 
+	skin_t *skin = R_GetSkinArray(local)[skinnum];
+
+	// ensure we ALWAYS initialize the model even if no mdls.dat was found!
+	HWR_InitModel(&skin->playermodel);
+
 	if (nomd2s)
 		return;
 
@@ -614,17 +611,6 @@ void HWR_AddPlayerMD2(INT32 skinnum, boolean local) // For MD2's that were added
 			return;
 		}
 	}
-
-	skin_t *skin = R_GetSkinArray(local)[skinnum];
-
-	skin->playermodel.scale = -1.0f;
-	skin->playermodel.model = NULL;
-	skin->playermodel.glpatch = NULL;
-	skin->playermodel.skinnum = -1;
-	skin->playermodel.notexturefile = false;
-	skin->playermodel.noblendfile = false;
-	skin->playermodel.notfound = true;
-	skin->playermodel.error = false;
 
 	// Check for any MD2s that match the names of player skins!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
