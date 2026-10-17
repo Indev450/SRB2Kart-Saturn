@@ -182,14 +182,19 @@ void COM_Lua_f(void)
 			len = (argc+1)*256;
 
 		buf = malloc(len);
+		if (buf == NULL)
+			I_Error("Failed to allocate buffer for COM_Lua_f");
+
 		p = buf;
 		WRITEUINT8(p, argc);
 		for (i = 0; i < argc; i++)
 			WRITESTRINGN(p, COM_Argv(i), 255);
-		if (flags & 2)
+
+		if (flags & COM_SPLITSCREEN)
 			SendNetXCmdForPlayer(1, XD_LUACMD, buf, p-buf);
 		else
 			SendNetXCmd(XD_LUACMD, buf, p-buf);
+
 		free(buf);
 		return;
 	}
