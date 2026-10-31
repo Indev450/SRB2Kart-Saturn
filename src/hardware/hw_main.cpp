@@ -3260,7 +3260,7 @@ static void HWR_Subsector(size_t num)
 					}
 					else
 					{
-						HWR_GetFlat(flatlump, R_NoEncore(gl_frontsector, !bottom));
+						HWR_GetFlat(flatlump, R_NoEncore(rover->master->frontsector, !bottom));
 						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
 
 						HWR_RenderPlane(sub, &extrasubsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flatlump,
