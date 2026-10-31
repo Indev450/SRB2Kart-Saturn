@@ -9187,6 +9187,12 @@ static boolean P_MobjPushableThink(mobj_t *mobj)
 
 static void P_FiringThink(mobj_t *mobj)
 {
+	if (!mobj->target)
+		return;
+
+	if (mobj->health <= 0)
+		return;
+
 	if (mobj->state->action == (actionf_p1)A_Boss1Laser)
 	{
 		var1 = mobj->state->var1;
@@ -9249,7 +9255,12 @@ void P_MobjThinker(mobj_t *mobj)
 	mobj->flags2 &= ~MF2_PUSHED;
 	mobj->eflags &= ~(MFE_SPRUNG|MFE_JUSTBOUNCEDWALL);
 
+#ifdef PHOBOS_BUILD
+	P_SetTarget(&tmfloorthing, NULL);
+	P_SetTarget(&tmhitthing, NULL);
+#else
 	tmfloorthing = tmhitthing = NULL;
+#endif
 
 	// do NOT trigger linedef executors for "local" mobjs
 	if (!mobj->islocal)
@@ -9265,7 +9276,12 @@ void P_MobjThinker(mobj_t *mobj)
 	}
 
 	if (mobj->scale != mobj->destscale)
+	{
 		P_MobjScaleThink(mobj); // Slowly scale up/down to reach your destscale.
+
+		if (P_MobjWasRemovedCompat(mobj))
+			return;
+	}
 
 	if (!mobj->player)
 	{
@@ -9311,6 +9327,21 @@ void P_MobjThinker(mobj_t *mobj)
 	{
 		if (!P_MobjDeadThink(mobj))
 			return;
+
+		// Fading tile
+		if (mobj->type >= MT_BOUNCEPICKUP && mobj->type <= MT_GRENADEPICKUP)
+		{
+			INT32 value = mobj->info->damage/10;
+			value = mobj->fuse/value;
+			value = 10-value;
+			value--;
+
+			if (value <= 0)
+				value = 1;
+
+			mobj->frame &= ~FF_TRANSMASK;
+			mobj->frame |= value << FF_TRANSSHIFT;
+		}
 	}
 	else
 	{
@@ -9321,7 +9352,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return;
 
-	if (mobj->flags2 & MF2_FIRING && mobj->target && mobj->health > 0)
+	if (mobj->flags2 & MF2_FIRING)
 		P_FiringThink(mobj);
 
 	if (mobj->flags & MF_AMBIENT)
@@ -9388,22 +9419,26 @@ void P_MobjThinker(mobj_t *mobj)
 		P_ButteredSlope(mobj);
 	}
 
-	if (mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health &&
-		P_CheckDeathPitCollide(mobj)) // extra pit check in case these didn't have momz
+	if (mobj->health)
 	{
-		P_KillMobj(mobj, NULL, NULL);
-		return;
-	}
-
-	// Crush enemies!
-	if (mobj->ceilingz - mobj->floorz < mobj->height)
-	{
-		if (((mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->flags & MF_SHOOTABLE) || mobj->type == MT_EGGSHIELD) &&
-			!(mobj->flags & MF_NOCLIPHEIGHT) &&
-			  mobj->health > 0)
+		// extra pit check in case these didn't have momz
+		if ((mobj->flags & (MF_ENEMY|MF_BOSS)) &&
+			P_CheckDeathPitCollide(mobj))
 		{
 			P_KillMobj(mobj, NULL, NULL);
 			return;
+		}
+
+		// Crush enemies!
+		if ((mobj->ceilingz - mobj->floorz) < mobj->height)
+		{
+			if ((((mobj->flags & (MF_ENEMY|MF_BOSS)) && (mobj->flags & MF_SHOOTABLE)) || mobj->type == MT_EGGSHIELD) &&
+				!(mobj->flags & MF_NOCLIPHEIGHT) &&
+				  mobj->health > 0)
+			{
+				P_KillMobj(mobj, NULL, NULL);
+				return;
+			}
 		}
 	}
 
@@ -9412,24 +9447,6 @@ void P_MobjThinker(mobj_t *mobj)
 
 	// Can end up here if a player dies.
 	P_CycleMobjState(mobj);
-
-	if (P_MobjWasRemoved(mobj))
-		return;
-
-	if ((mobj->health == 0) && // Fading tile
-		(mobj->type >= MT_BOUNCEPICKUP && mobj->type <= MT_GRENADEPICKUP))
-	{
-		INT32 value = mobj->info->damage/10;
-		value = mobj->fuse/value;
-		value = 10-value;
-		value--;
-
-		if (value <= 0)
-			value = 1;
-
-		mobj->frame &= ~FF_TRANSMASK;
-		mobj->frame |= value << FF_TRANSSHIFT;
-	}
 }
 
 // Quick, optimized function for the Rail Rings
@@ -9683,20 +9700,13 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	// All mobjs are created at 100% scale.
 	mobj->scale = FRACUNIT;
-	mobj->destscale = mobj->scale;
-	mobj->scalespeed = FRACUNIT/12;
-
-	if (mapobjectscale != FRACUNIT) //&& !(mobj->type == MT_BLACKEGGMAN)
-	{
-		mobj->destscale = mapobjectscale;
-		mobj->scalespeed = mapobjectscale/12;
-	}
+	mobj->destscale = mapobjectscale;
+	mobj->scalespeed = mapobjectscale/12;
 
 	// Sprite rendering
 	mobj->blendmode = AST_TRANSLUCENT;
-	mobj->realxscale = mobj->realyscale = mobj->scale;
-	mobj->spritexscale = mobj->realxscale;
-	mobj->spriteyscale = mobj->realyscale;
+	mobj->realxscale = mobj->realyscale =
+	mobj->spritexscale = mobj->spriteyscale = mobj->scale;
 
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
@@ -10138,20 +10148,13 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 
 	// All mobjs are created at 100% scale.
 	mobj->scale = FRACUNIT;
-	mobj->destscale = mobj->scale;
-	mobj->scalespeed = FRACUNIT/12;
-
-	if (mapobjectscale != FRACUNIT) //&& !(mobj->type == MT_BLACKEGGMAN)
-	{
-		mobj->destscale = mapobjectscale;
-		mobj->scalespeed = mapobjectscale/12;
-	}
+	mobj->destscale = mapobjectscale;
+	mobj->scalespeed = mapobjectscale/12;
 
 	// Sprite rendering
 	mobj->blendmode = AST_TRANSLUCENT;
-	mobj->realxscale = mobj->realyscale = mobj->scale;
-	mobj->spritexscale = mobj->realxscale;
-	mobj->spriteyscale = mobj->realyscale;
+	mobj->realxscale = mobj->realyscale =
+	mobj->spritexscale = mobj->spriteyscale = mobj->scale;
 
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
@@ -10251,7 +10254,9 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	P_CalculatePrecipFloor(mobj);
 
 	if (mobj->floorz != starting_floorz)
-		mobj->precipflags |= PCF_FOF;
+	{
+		; //mobj->precipflags |= PCF_FOF;
+	}
 	else
 	{
 		const INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
@@ -10385,7 +10390,13 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
+	{
+#ifdef PHOBOS_BUILD
+		P_SetTarget(&mobj->spawnpoint->mobj, NULL);
+#else
 		mobj->spawnpoint->mobj = NULL;
+#endif
+	}
 
 	R_RemoveMobjInterpolator(mobj);
 
@@ -10596,15 +10607,15 @@ void P_PrecipitationEffects(void)
 				P_SpawnLightningFlash(ss); // Spawn a quick flash thinker
 	}
 
+	if (sound_disabled)
+		return; // Sound off? D'aw, no fun.
+
 	const mobj_t *pmo = players[displayplayers[0]].mo;
 
 	// Local effects from here on out!
 	// If we're not in game fully yet, we don't worry about them.
 	if (!playeringame[displayplayers[0]] || !pmo)
 		return;
-
-	if (sound_disabled)
-		return; // Sound off? D'aw, no fun.
 
 	const boolean sounds_rain = ((cv_drawdist_precip.value != 0) && rainsfx && (!leveltime || leveltime % 80 == 1));
 
@@ -10853,7 +10864,9 @@ void P_SpawnPlayer(INT32 playernum)
 	mobj_t *mobj;
 
 	if (p->playerstate == PST_REBORN)
+	{
 		G_PlayerReborn(playernum);
+	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -10927,9 +10940,15 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
+
 	I_Assert(mobj != NULL);
+
+#ifdef PHOBOS_BUILD
+	mobj->player = p;
+	P_SetTarget(&p->mo, mobj);
+#else
 	(mobj->player = p)->mo = mobj;
-	//P_SetTarget(&p->mo, mobj);
+#endif
 
 	mobj->angle = mobj->old_angle = 0;
 
