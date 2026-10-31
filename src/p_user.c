@@ -91,7 +91,7 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 	mo->momx = FixedMul(move, FINECOSINE(angle));
 
 	if (!twodmo(mo))
-		mo->momy = FixedMul(move,FINESINE(angle));
+		mo->momy = FixedMul(move, FINESINE(angle));
 }
 
 void P_InstaThrustEvenIn2D(mobj_t *mo, angle_t angle, fixed_t move)

@@ -3335,8 +3335,8 @@ static void K_StretchPlayerGravity(player_t *player)
 
 	mobj_t *pmo = player->mo;
 
-	fixed_t tempxscale = pmo->realxscale;
-	fixed_t tempyscale = pmo->realyscale;
+	const fixed_t tempxscale = pmo->realxscale;
+	const fixed_t tempyscale = pmo->realyscale;
 
 	stretchScaleFactor = FixedDiv(mapobjectscale*60, cv_gravstretch.value);
 	stretchScaleFactor = min(stretchScaleFactor, MAXSTRETCHDIV);
@@ -3390,8 +3390,8 @@ static void K_SaltySquish(player_t *player)
 
 	mobj_t *pmo = player->mo;
 
-	fixed_t tempxscale = pmo->realxscale;
-	fixed_t tempyscale = pmo->realyscale;
+	const fixed_t tempxscale = pmo->realxscale;
+	const fixed_t tempyscale = pmo->realyscale;
 
 	if (pmo->stretchslam > 0)
 	{
