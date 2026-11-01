@@ -612,7 +612,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			fflatsize = 1024.0f;
 			flatflag = 1023;
 			break;
-		case 262144:// 512x512 lump
+		case 262144: // 512x512 lump
 			fflatsize = 512.0f;
 			flatflag = 511;
 			break;
@@ -737,7 +737,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
-	if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
+	if (gl_maphashorizonlines && subsector && !FOFsector && cv_glhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -758,7 +758,6 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			line_t* ld = line->linedef;
 
-			// this check sucks and is a hotspot lel
 			if (LIKELY(ld->special != HORIZONSPECIAL))
 				continue;
 
