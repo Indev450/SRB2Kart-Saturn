@@ -625,13 +625,9 @@ static void HWR_PrecacheLevelFlats(void)
 	// lookup for flats that may´ve been already loaded
 	flatcheck flatpresent;
 	size_t i;
-#if 0
-	size_t j;
-#endif
 	INT32 k;
 
-	// this kinda messes up encore remapping behavior at times
-	// so just disable it for now ig
+	// FIXME: this needs to account for FOFs to properly work
 #ifdef GLENCORE
 	if (encoremap)
 	{
@@ -650,6 +646,7 @@ static void HWR_PrecacheLevelFlats(void)
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
 		{
+			size_t j;
 			sector_t *sec = &sectors[i];
 
 			// gotta check sector floor and ceiling
@@ -738,7 +735,7 @@ static void HWR_PrecacheLevelTextures(void)
 	{
 		const line_t *line = &lines[i];
 #ifdef GLENCORE
-		const int noencoremap = ((encoremap && (line->flags & ML_TFERLINE)) ? 2 : 1);
+		const boolean noencoremap = (encoremap && (line->flags & ML_TFERLINE));
 #endif
 		// two sides
 		for (j = 0; j < 2; j++)
@@ -755,25 +752,27 @@ static void HWR_PrecacheLevelTextures(void)
 			{
 				const INT32 texnum = sidetex[f];
 
-				if (texnum < 0 || texnum >= (signed)gl_numtextures)
+				if (texnum < 0 || (unsigned)texnum >= gl_numtextures)
 					continue;
 
-				if (texturepresent[texnum])
-					continue;
+				if (!(texturepresent[texnum] & 1))
+				{
+					texturepresent[texnum] |= 1;
+					HWR_GetTexture(texnum, false);
+				}
 #ifdef GLENCORE
-				texturepresent[texnum] = 1|noencoremap;
-#else
-				texturepresent[texnum] = 1;
-#endif
-				HWR_GetTexture(texnum, false);
-#ifdef GLENCORE
-				if (noencoremap & 2)
+				if (noencoremap
+					&& !(texturepresent[texnum] & 2))
+				{
+					texturepresent[texnum] |= 2;
 					HWR_GetTexture(texnum, true);
+				}
 #endif
 			}
 		}
 	}
 
+	// check for animated textures
 	for (anim = anims; anim < lastanim; anim++)
 	{
 		if (!anim->istexture)
@@ -792,6 +791,7 @@ static void HWR_PrecacheLevelTextures(void)
 			{
 				HWR_GetTexture(animtexnum, false);
 			}
+
 #ifdef GLENCORE
 			if (texpresent & 2)
 			{
@@ -913,7 +913,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 	GLMapTexture_t *gltex;
 	GLMipmap_t *glMipmap;
 
-	if (tex < 0 || tex >= (signed)gl_numtextures)
+	if (tex < 0 || (unsigned)tex >= gl_numtextures)
 	{
 #ifdef PARANOIA
 		I_Error("HWR_GetTexture: Invalid texture ID %d", tex);
