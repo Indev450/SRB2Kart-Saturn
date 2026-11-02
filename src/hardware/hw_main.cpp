@@ -3459,8 +3459,12 @@ static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVert
 {
 	HWR_RotateSpritePolyToAim(spr, wallVerts, false, papersprite);
 
-	const float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
-	const float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
+	const float f_xdiff = (spr->x1 - gl_viewx);
+	const float f_ydiff = (spr->z1 - gl_viewy);
+	const float f_zdiff = (spr->gzt - gl_viewz);
+
+	const float sprdist = sqrtf((f_xdiff*f_xdiff) + (f_ydiff*f_ydiff) + (f_zdiff*f_zdiff));
+	const float distfact = ((2.0f * spr->dispoffset) + 20.0f) / sprdist;
 
 	for (size_t i = 0; i < 4; i++)
 	{
