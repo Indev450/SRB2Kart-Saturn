@@ -1962,13 +1962,19 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					if (!dest)
 						return;
 
+					const angle_t ang = (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle;
+					const boolean dontstopmove = (line->flags & ML_EFFECT4) == ML_EFFECT4;
+
 					if (bot)
-						P_Teleport(bot, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, (line->flags & ML_BLOCKMONSTERS) == 0, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(bot, dest->x, dest->y, dest->z, ang, (line->flags & ML_BLOCKMONSTERS) == 0, dontstopmove);
+
 					if (line->flags & ML_BLOCKMONSTERS)
-						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, false, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+					{
+						P_Teleport(mo, dest->x, dest->y, dest->z, ang, false, dontstopmove);
+					}
 					else
 					{
-						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, true, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(mo, dest->x, dest->y, dest->z, ang, true, dontstopmove);
 						// Play the 'bowrwoosh!' sound
 						S_StartSound(dest, sfx_mixup);
 					}
