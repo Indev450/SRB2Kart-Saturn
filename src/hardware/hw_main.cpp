@@ -2961,7 +2961,7 @@ static void HWR_Subsector(size_t num)
 					}
 					else
 					{
-						HWR_GetFlat(flatlump, R_NoEncore(rover->master->frontsector, !bottom));
+						HWR_GetFlat(flatlump, R_NoEncore(rover->master->frontsector, bottom));
 						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
 
 						HWR_RenderPlane(sub, &extrasubsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flatlump,
@@ -4286,7 +4286,10 @@ static void HWR_RenderDrawNodes(void)
 					gl_frontsector = NULL;
 
 					if (!(plane->blend & PF_NoTexture))
-						HWR_GetFlat(plane->lumpnum, R_NoEncore(plane->FOFSector, plane->isceiling));
+					{
+						const boolean ceiling = plane->FOFSector ? !plane->isceiling : plane->isceiling; // match software!
+						HWR_GetFlat(plane->lumpnum, R_NoEncore(plane->FOFSector, ceiling));
+					}
 
 					HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
 									plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
