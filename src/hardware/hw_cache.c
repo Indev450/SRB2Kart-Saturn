@@ -752,7 +752,7 @@ static void HWR_PrecacheLevelTextures(void)
 			{
 				const INT32 texnum = sidetex[f];
 
-				if (texnum < 0 || (unsigned)texnum >= gl_numtextures)
+				if (texnum <= 0 || (unsigned)texnum >= gl_numtextures)
 					continue;
 
 				if (!(texturepresent[texnum] & 1))
