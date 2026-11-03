@@ -96,7 +96,7 @@ static void HWR_FreePoly(poly_t *poly)
 // divfrac = how far along partline vector is crossing pt
 static boolean fracdivline(fdivline_t *partline, polyvertex_t *v1, polyvertex_t *v2)
 {
-	double frac1, frac2;
+	double frac;
 	double num; // numerator
 	double den; // denominator
 	double v1x, v1y, v1dx, v1dy; // polygon side vector, v1->v2
@@ -122,24 +122,23 @@ static boolean fracdivline(fdivline_t *partline, polyvertex_t *v1, polyvertex_t 
 	// first check the frac along the polygon segment,
 	// (do not accept hit with the extensions)
 	num = (v3x - v1x)*v3dy + (v1y - v3y)*v3dx;
-	frac1 = num / den;
+	frac = num / den;
 
 	// 0= cross at v1, 1.0= cross at v2
-	if (frac1 < 0.0 || frac1 > 1.0)  // double
+	if (frac < 0.0 || frac > 1.0)  // double
 		return false;  // not within the polygon side
 
 	// now get the frac along the BSP line
 	// which is useful to determine what is left, what is right
 	num = (v3x - v1x)*v1dy + (v1y - v3y)*v1dx;
-	frac2 = num / den;
 
-	partline->divfrac = frac2;  // how far along partline vector
+	partline->divfrac = num / den;  // how far along partline vector
 
 	// [WDJ] find the interception point along the segment.
 	// It should be slightly more accurate because it is always closer to the
 	// crossing point than arbitrary positions on the partition line.
-	partline->divpt.x = v1x + v1dx*frac1;
-	partline->divpt.y = v1y + v1dy*frac1;
+	partline->divpt.x = v1x + v1dx*frac;
+	partline->divpt.y = v1y + v1dy*frac;
 
 	return true;
 }
@@ -159,6 +158,71 @@ static boolean SameVertex(polyvertex_t *p1, polyvertex_t *p2)
 
 	// p1 and p2 are considered the same vertex
 	return true;
+}
+
+// Adapted from function in prboom.
+// Point is to rightside of divline when result > 0,
+// but result is multiplied by length of divline.
+// Returns near 0, when point is on, or nearly on, the divline.
+static inline double point_rightside(fdivline_t *dl, polyvertex_t *v4)
+{
+	// Cross product of dl and vector dl->(x,y) to v4,
+	// is > 0 when v4 is to right side of divline.
+	// Viewed along divline from vertex, looking towards positive dx,dy.
+	// If divline is rotated until dy>0 and dx = 0, then true when rotated
+	// vertex position is to the right of the divline (v4->x > dl->x).
+	return ((((double)(v4->x) - (double)(dl->x)) * (double)(dl->dy))
+		 - (((double)(v4->y) - (double)(dl->y)) * (double)(dl->dx)));
+}
+
+// [WDJ] The front and back MUST match the BSP determination, else it will assign
+// this poly to the wrong sector.
+// May have 1 point on the line, and other points might be very close to the line.
+// Can only trust a test of a point that is NOT on the line.
+// Using a tstdist = 0.5f worked, but it might break on very small poly.
+// Avactor.wad had polys with d = 9.09, 5552, 1.64, 1011, 14252, 0.0136, 0.00634, 14655, 3,
+// -0.3044, 7, 1.53, etc..,
+// and one poly with d = -0.023 with the rest of the points d > 0.
+// One 14 point poly with divline len=8, had to test 9 points to find d = 36.
+// Typical: divline len=70 d=6828, divline len=1.0 d=35, divline len=1.414 d=5.
+// The result of point_rightside is proportional to the length of divline.
+// The divline length can be from 1.414 to 14000.
+static void UnsplitPoly(fdivline_t *dlnp, poly_t *poly,
+						poly_t **frontpoly, poly_t **backpoly)
+{
+	int32_t i;
+	double d;
+	const double tstd = hypot((double)dlnp->dx, (double)dlnp->dy) / 2.0;
+	double sumd = 0; // accumulated left or rightness.
+
+	for (i = 0; i < poly->numpts; i++)
+	{
+		// Look for a point that is obviously to the left or right.
+		d = point_rightside(dlnp, &poly->pts[i]);  // d > 0 is right
+		sumd += d;
+
+		if (d > tstd)
+			goto poly_rightside;
+
+		if (d < -tstd)
+			goto poly_leftside;
+	}
+
+	// Did not find an obvious left or right point, then
+	if (sumd < 0)
+		goto poly_leftside;
+
+poly_rightside:
+	// poly is to rightside of divline.
+	*frontpoly = poly;
+	*backpoly = NULL;
+	return;
+
+poly_leftside:
+	// poly is to leftside of divline.
+	*frontpoly = NULL;
+	*backpoly = poly;
+	return;
 }
 
 // split a _CONVEX_ polygon in two convex polygons
@@ -263,10 +327,7 @@ static void SplitPoly (fdivline_t *dlnp,        // splitting parametric line
 		// linedefs where each side point the same sector, that is:
 		// the deep water effect with the original Doom
 
-		//TODO: make sure front poly is to front of partition line?
-
-		*frontpoly = poly;
-		*backpoly  = NULL;
+		UnsplitPoly(dlnp, poly, frontpoly, backpoly);
 		return;
 	}
 
@@ -274,16 +335,14 @@ static void SplitPoly (fdivline_t *dlnp,        // splitting parametric line
 	if (pe < 0)
 	{
 		//I_Error("SplitPoly: only one point for split line (%d %d)", ps, pe);
-		*frontpoly = poly;
-		*backpoly  = NULL;
+		UnsplitPoly(dlnp, poly, frontpoly, backpoly);
 		return;
 	}
 
 	if (pe <= ps)
 	{
 		//I_Error("SplitPoly: invalid splitting line (%d %d)", ps, pe);
-		*frontpoly = poly;
-		*backpoly  = NULL;
+		UnsplitPoly(dlnp, poly, frontpoly, backpoly);
 		return;
 	}
 
@@ -388,6 +447,10 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly)
 	vertex_t *v1, *v2;
 	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
 
+	// empty poly? just save us some time then
+	if (poly->numpts <= 0)
+		return frontpoly;
+
 	// for each seg of the subsector
 	for (; segcount--; lseg++)
 	{
@@ -489,6 +552,23 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly)
 			// need 2 points
 			if (pe >= 0)
 			{
+				// Cuts that miss the polygon.
+				if (ps_frac < 0.0 && cutseg.divfrac < 0.0)
+					continue;
+
+				if (ps_frac > 1.0 && cutseg.divfrac > 1.0)
+					continue;
+#define FRAC_EP 0.01f
+				// Reject cuts that could make the polygon non-convex.
+
+				// Cannot make normal cut, ps_frac end is loose.
+				if ((ps_frac < (0.0 - FRAC_EP)) || (ps_frac > (1.0f + FRAC_EP)))
+					continue;
+
+				// Cannot make normal cut, cutseg.divfrac end is loose.
+				if ((cutseg.divfrac < (0.0 - FRAC_EP)) || (cutseg.divfrac > (1.0f + FRAC_EP)))
+					continue;
+#undef FRAC_EP
 				// generate FRONT poly
 				frontpoly = HWR_AllocPoly(poly_num_pts);
 
@@ -680,7 +760,11 @@ static void WalkBSPNode(INT32 bspnum, poly_t *poly, UINT16 *leafnode, fixed_t *b
 		memcpy(bbox, bsp->bbox[0], 4*sizeof (fixed_t));
 	}
 	else
-		I_Error("WalkBSPNode: no front poly?");
+	{
+		// [WDJ] Having no front poly is as likely as no back poly, since
+		// logic in Split Poly was changed to check poly direction.
+		// I_Error("HWR_WalkBSPNode: no front poly, bspnum= %d\n", bspnum);
+	}
 
 	// Recursively divide back space.
 	if (backpoly)
