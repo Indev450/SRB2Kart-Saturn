@@ -447,6 +447,10 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly)
 	vertex_t *v1, *v2;
 	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
 
+	// empty poly? just save us some time then
+	if (poly->numpts <= 0)
+		return frontpoly;
+
 	// for each seg of the subsector
 	for (; segcount--; lseg++)
 	{
