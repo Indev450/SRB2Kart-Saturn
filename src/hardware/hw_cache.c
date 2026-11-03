@@ -614,16 +614,8 @@ void HWR_FreeMapTextures(void)
 	gl_numtextures = 0;
 }
 
-#define NAME    flatcheck
-#define KEY_TY  UINT32
-#define HASH_FN vt_hash_integer
-#define CMPR_FN vt_cmpr_integer
-#include "../verstable.h"
-
 static void HWR_PrecacheLevelFlats(void)
 {
-	// lookup for flats that may´ve been already loaded
-	flatcheck flatpresent;
 	size_t i;
 	INT32 k;
 
@@ -634,9 +626,6 @@ static void HWR_PrecacheLevelFlats(void)
 		return;
 	}
 #endif
-
-	flatcheck_init(&flatpresent);
-	flatcheck_reserve(&flatpresent, numlevelflats);
 
 	// special case for encore
 #if 0
@@ -689,11 +678,7 @@ static void HWR_PrecacheLevelFlats(void)
 		{
 			const levelflat_t *levelflat = &levelflats[i];
 
-			if (flatcheck_is_end(flatcheck_get(&flatpresent, levelflat->lumpnum)))
-			{
-				HWR_GetFlat(levelflat->lumpnum, false);
-				flatcheck_insert(&flatpresent, levelflat->lumpnum);
-			}
+			HWR_GetFlat(levelflat->lumpnum, false);
 
 			if (levelflat->speed) // is it an animated flat ?
 			{
@@ -701,17 +686,11 @@ static void HWR_PrecacheLevelFlats(void)
 				for (k = 0; k < levelflat->numpics; k++)
 				{
 					lumpnum_t lump = levelflat->baselumpnum + k;
-					if (flatcheck_is_end(flatcheck_get(&flatpresent, lump)))
-					{
-						HWR_GetFlat(lump, false);
-						flatcheck_insert(&flatpresent, lump);
-					}
+					HWR_GetFlat(lump, false);
 				}
 			}
 		}
 	}
-
-	flatcheck_cleanup(&flatpresent);
 }
 
 static void HWR_PrecacheLevelTextures(void)
