@@ -3983,6 +3983,10 @@ menudemo_t *demolist = NULL; // Replays that that have been checked to match wit
 menudemo_t *demolist_all = NULL; // All replays
 size_t demolist_all_size = 0;
 boolean replaynamesloaded = false;
+// Whenever we start a replay load thread, we increment this number and then thread will remember current value,
+// and by the end it will compare it with current value, and if it is equal it means thread can store data it has loaded.
+// If it's not equal, that means we started more than one thread (left and re-entered menu for example)
+size_t replaythreadnum = 0;
 
 #ifdef HAVE_THREADS
 I_Mutex replayquerymutex;
@@ -4012,12 +4016,14 @@ static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
 
 static void ReplayNamesLoadThread(void* userdata)
 {
+	(void)userdata;
+
 	Lock_search_state();
 
 	size_t demolist_all_size_local = demolist_all_size;
 	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*demolist_all_size_local);
 	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*demolist_all_size_local);
-	char *replaydirpath = (char*)userdata;
+	size_t localreplaythreadnum = replaythreadnum;
 
 	Unlock_search_state();
 
@@ -4037,7 +4043,7 @@ static void ReplayNamesLoadThread(void* userdata)
 
 	Lock_search_state();
 
-	if (fastcmp(menupath, replaydirpath) && demolist_all)
+	if (replaythreadnum == localreplaythreadnum && demolist_all)
 	{
 		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*demolist_all_size);
 		replaynamesloaded = true;
@@ -4046,25 +4052,23 @@ static void ReplayNamesLoadThread(void* userdata)
 	Unlock_search_state();
 
 	// Was allocated before thread start, we need to free it
-	free(replaydirpath);
 	free(demolist_all_local);
 }
 
 static void LoadReplayNames(void)
 {
-	char *replaydirpath = strdup(menupath);
-
 	Lock_search_state();
+	replaythreadnum++;
 	replaynamesloaded = false;
 	Unlock_search_state();
 
 #ifdef HAVE_THREADS
-	if (!I_SpawnThread("replay-names-load", ReplayNamesLoadThread, replaydirpath))
+	if (!I_SpawnThread("replay-names-load", ReplayNamesLoadThread, NULL))
 	{
-		free(replaydirpath);
+		;
 	}
 #else
-	ReplayNamesLoadThread(replaydirpath);
+	ReplayNamesLoadThread(NULL);
 #endif
 }
 
@@ -4103,7 +4107,11 @@ static void M_HutCheckReplays(size_t maxnum)
 		// Mark as done
 		replayqueryfound = replayquerycheck = sizedirmenu;
 
+		Lock_search_state();
+
 		memcpy(demolist, demolist_all, sizeof(menudemo_t) * sizedirmenu);
+
+		Unlock_search_state();
 
 		return;
 	}
@@ -4253,13 +4261,15 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 	char tmp[MAXREPLAYQUERY+1];
 	memcpy(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1);
 
-	Lock_search_state();
+	// Honestly not sure if locks for replaynamesloaded are necessary...
+	// Thread sanitizer does report race condition whenever replaynamesloaded is accessed without lock
+	// but really it is only ever set to false in main thread and only set to true in replay load thread,
+	// and both are done via locks. If replaynamesloaded is true, it is never gonna suddenly switch from true to false
+	// while we're in main thread, and if it would switch from false to true it is not really a big deal, we will just skip
+	// 1 frame where replay names were loaded
+
 	if (!replaynamesloaded)
-	{
-		Unlock_search_state();
 		return false;
-	}
-	Unlock_search_state();
 
 	if (M_TextInputHandle(&replayqueryinput, choice))
 	{
