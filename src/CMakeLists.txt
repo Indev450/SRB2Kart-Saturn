@@ -247,6 +247,8 @@ set(SRB2_CONFIG_ASAN OFF CACHE BOOL
 	"Compile with AddressSanitizer (libasan).")
 set(SRB2_CONFIG_UBSAN OFF CACHE BOOL
 	"Compile with UndefinedBehaviorSanitizer (libubsan).")
+set(SRB2_CONFIG_TSAN OFF CACHE BOOL
+	"Compile with ThreadSanitizer (libtsan).")
 
 set(SRB2_CONFIG_MUMBLE ON CACHE BOOL
 	"Enable Mumble support")
