@@ -14,8 +14,7 @@
 #include <string.h>
 
 #ifdef HAVE_THREADS
-#include <threads.h>
-#define local_for_thread thread_local
+#define local_for_thread _Thread_local
 #else
 #define local_for_thread
 #endif
