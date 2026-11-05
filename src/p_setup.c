@@ -2097,6 +2097,13 @@ static void P_LoadMapBSP(const virtres_t* virt)
 	virtlump_t* virtsegs     = vres_Find(virt, "SEGS");
 	virtlump_t* virtnodes    = vres_Find(virt, "NODES");
 
+	if (!virtssectors)
+		I_Error("SSECTORS lump not found");
+	if (!virtsegs)
+		I_Error("SEGS lump not found");
+	if (!virtnodes)
+		I_Error("NODES lump not found");
+
 	numsubsectors = virtssectors->size / sizeof(mapsubsector_t);
 	numnodes      = virtnodes->size    / sizeof(mapnode_t);
 	numsegs       = virtsegs->size     / sizeof(mapseg_t);
