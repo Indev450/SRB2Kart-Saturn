@@ -233,18 +233,23 @@ if(${SDL2_FOUND})
 		-DHAVE_THREADS
 	)
 
-	if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
+	if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE AND NOT SRB2_CONFIG_ASAN AND NOT SRB2_CONFIG_UBSAN AND NOT SRB2_CONFIG_TSAN)
 		set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 	endif()
 
 	if(SRB2_CONFIG_ASAN)
-		target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
+		target_compile_options(SRB2SDL2 PRIVATE -O1 -fsanitize=address -fno-omit-frame-pointer -fno-common)
 		target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
 	endif()
 
 	if(SRB2_CONFIG_UBSAN)
-		target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+		target_compile_options(SRB2SDL2 PRIVATE -O1 -fsanitize=undefined -fno-omit-frame-pointer)
 		target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+	endif()
+
+	if(SRB2_CONFIG_TSAN)
+		target_compile_options(SRB2SDL2 PRIVATE -O1 -fsanitize=thread -fno-omit-frame-pointer)
+		target_link_options(SRB2SDL2 PRIVATE -fsanitize=thread)
 	endif()
 
 	if(NOT SRB2_CONFIG_MUMBLE)
