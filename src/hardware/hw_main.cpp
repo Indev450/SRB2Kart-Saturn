@@ -610,7 +610,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			fflatsize = 1024.0f;
 			flatflag = 1023;
 			break;
-		case 262144:// 512x512 lump
+		case 262144: // 512x512 lump
 			fflatsize = 512.0f;
 			flatflag = 511;
 			break;
@@ -721,7 +721,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
-	if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
+	if (gl_maphashorizonlines && subsector && !FOFsector && cv_glhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -742,7 +742,6 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			line_t* ld = line->linedef;
 
-			// this check sucks and is a hotspot lel
 			if (LIKELY(ld->special != HORIZONSPECIAL))
 				continue;
 
@@ -1240,46 +1239,44 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
-	if (LIKELY(!gl_curline->polyseg))
-	{
-		// check if linedef alpha is within range
-		const boolean linealpha = (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT);
+	// check if linedef alpha is within range
+	const boolean linealpha = (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT);
 
-		// set alpha for transparent walls
-		switch (gl_linedef->special)
-		{
-			// Translucent linedef types
-			case 102:
-			case 121 ... 125:
-			case 141 ... 145:
-			case 174:
-			case 175:
-			case 192:
-			case 195:
-			case 221:
-			case 253:
-			case 256:
-				if (gl_linedef->blendmode && linealpha)
+	// set alpha for transparent walls
+	switch (gl_linedef->special)
+	{
+		// Translucent linedef types
+		case 102:
+		case 121 ... 125:
+		case 141 ... 145:
+		case 174:
+		case 175:
+		case 192:
+		case 195:
+		case 221:
+		case 253:
+		case 256:
+			if (gl_linedef->blendmode && linealpha)
+				blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+			else
+				blendmode = PF_Translucent;
+			break;
+		default:
+			if (gl_linedef->blendmode)
+			{
+				if (linealpha)
 					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
 				else
-					blendmode = PF_Translucent;
-				break;
-			default:
-				if (gl_linedef->blendmode)
-				{
-					if (linealpha)
-						blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-					else
-						blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
-				}
-				else if (linealpha)
-					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-				else
-					blendmode = PF_Masked;
-				break;
-		}
+					blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
+			}
+			else if (linealpha)
+				blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+			else
+				blendmode = PF_Masked;
+			break;
 	}
-	else if (gl_curline->polyseg->translucency > 0)
+
+	if (gl_curline->polyseg && gl_curline->polyseg->translucency > 0)
 	{
 		// Polyobject translucency is shared between all of its lines
 		if (gl_curline->polyseg->translucency >= NUMTRANSMAPS) // wall not drawn
@@ -1386,7 +1383,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	// two sided line
 	if (gl_backsector)
 	{
-		INT32 gl_toptexture = 0, gl_bottomtexture = 0;
+		const INT32 gl_toptexture = R_GetTextureNum(gl_sidedef->toptexture);
+		const INT32 gl_bottomtexture = R_GetTextureNum(gl_sidedef->bottomtexture);
 
 		fixed_t texturevpeg;
 
@@ -1397,7 +1395,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		if (!gl_curline->polyseg) // Don't do it for polyobjects
 		{
 			// Sky Ceilings
-			wallVerts[3].y = wallVerts[2].y = FLOATMAX;
+			wallVerts[2].y = wallVerts[3].y = FLOATMAX; // draw to top of map space
 
 			auto draw_sky_walls = []
 			(int vert1, int vert2, fixed_t world, fixed_t worldslope, auto& wwallVerts, auto& sSurf) FUNCINLINE
@@ -1406,6 +1404,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				wwallVerts[vert2].y = FixedToFloat(worldslope);
 				HWR_DrawSkyWall(wwallVerts, &sSurf);
 			};
+
+			// worldtop = front ceiling
+			// worldhigh = back ceiling
 
 			if (gl_frontsector->ceilingpic == skyflatnum)
 			{
@@ -1425,6 +1426,17 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					worldtop = worldhigh;
 					worldtopslope = worldhighslope;
 				}
+				else if (!gl_toptexture &&
+						 (worldhigh <= worldtop && worldhighslope <= worldtopslope) && // Assuming ESLOPE is always on with my changes
+						 (worldhigh != worldtop || worldhighslope != worldtopslope))
+				{
+					// Only the frontsector is sky.
+					// If there's no upper texture, extend the sky wall
+					// down to the lower of the two ceilings.
+					fixed_t top = std::min(worldtop, worldhigh);
+					fixed_t topslope = std::min(worldtopslope, worldhighslope);
+					draw_sky_walls(0, 1, top, topslope, wallVerts, Surf);
+				}
 				else
 				{
 					// Only the frontsector is sky, just draw a skywall from the front ceiling
@@ -1437,8 +1449,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				draw_sky_walls(0, 1, worldtop, worldtopslope, wallVerts, Surf);
 			}
 
+			// worldbottom = front floor
+			// worldlow = back floor
+
 			// Sky Floors
-			wallVerts[0].y = wallVerts[1].y = FLOATMIN;
+			wallVerts[0].y = wallVerts[1].y = FLOATMIN; // draw to bottom of map space
 
 			if (gl_frontsector->floorpic == skyflatnum)
 			{
@@ -1450,7 +1465,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					if ((worldlow >= worldbottom && worldlowslope >= worldbottomslope)
 					&& (worldlow != worldbottom || worldlowslope != worldbottomslope)
 					// Removing the second line above will render more rarely visible skywalls. Example: Cave garden ceiling in Dark race
-					&& !(gl_sidedef->bottomtexture))
+					&& !(gl_bottomtexture))
 					{
 						draw_sky_walls(3, 2, worldlow, worldlowslope, wallVerts, Surf);
 					}
@@ -1461,14 +1476,24 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					draw_sky_walls(3, 2, worldbottom, worldbottomslope, wallVerts, Surf);
 				}
 			}
-			else if ((gl_backsector->floorpic == skyflatnum) && !(gl_sidedef->bottomtexture))
+			else if ((gl_backsector->floorpic == skyflatnum) && !(gl_bottomtexture))
 			{
 				// Only the backsector has sky, just draw a skywall from the back floor if there's no bottomtexture
 				draw_sky_walls(3, 2, worldlow, worldlowslope, wallVerts, Surf);
 			}
+			else if (gl_frontsector->ceilingpic == skyflatnum &&
+					 gl_backsector->ceilingpic == skyflatnum &&
+					 (worldlow >= worldbottom && worldlowslope >= worldbottomslope)
+					 && (worldlow != worldbottom || worldlowslope != worldbottomslope)
+					 // Removing the second line above will render more rarely visible skywalls. Example: Cave garden ceiling in Dark race
+					 && !(gl_bottomtexture))
+			{
+				// Both ceilings are sky, but neither floor is sky.
+				// If there's a lower wall gap without a bottom texture,
+				// draw a skywall from the backsector's higher floor.
+				draw_sky_walls(3, 2, worldlow, worldlowslope, wallVerts, Surf);
+			}
 		}
-
-		gl_toptexture = R_GetTextureNum(gl_sidedef->toptexture);
 
 		// check TOP TEXTURE
 		if (gl_toptexture && (worldhighslope < worldtopslope || worldhigh < worldtop))
@@ -1532,8 +1557,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
-
-		gl_bottomtexture = R_GetTextureNum(gl_sidedef->bottomtexture);
 
 		// check BOTTOM TEXTURE
 		if (gl_bottomtexture && (worldlowslope > worldbottomslope || worldlow > worldbottom))
@@ -2962,7 +2985,7 @@ static void HWR_Subsector(size_t num)
 					}
 					else
 					{
-						HWR_GetFlat(flatlump, R_NoEncore(gl_frontsector, !bottom));
+						HWR_GetFlat(flatlump, R_NoEncore(rover->master->frontsector, bottom));
 						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
 
 						HWR_RenderPlane(sub, &extrasubsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flatlump,
@@ -3460,8 +3483,12 @@ static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVert
 {
 	HWR_RotateSpritePolyToAim(spr, wallVerts, false, papersprite);
 
-	const float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
-	const float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
+	const float f_xdiff = (spr->x1 - gl_viewx);
+	const float f_ydiff = (spr->z1 - gl_viewy);
+	const float f_zdiff = (spr->gzt - gl_viewz);
+
+	const float sprdist = sqrtf((f_xdiff*f_xdiff) + (f_ydiff*f_ydiff) + (f_zdiff*f_zdiff));
+	const float distfact = ((2.0f * spr->dispoffset) + 20.0f) / sprdist;
 
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -4287,7 +4314,10 @@ static void HWR_RenderDrawNodes(void)
 					gl_frontsector = NULL;
 
 					if (!(plane->blend & PF_NoTexture))
-						HWR_GetFlat(plane->lumpnum, R_NoEncore(plane->FOFSector, plane->isceiling));
+					{
+						const boolean ceiling = plane->FOFSector ? !plane->isceiling : plane->isceiling; // match software!
+						HWR_GetFlat(plane->lumpnum, R_NoEncore(plane->FOFSector, ceiling));
+					}
 
 					HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
 									plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);

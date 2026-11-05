@@ -75,6 +75,7 @@
 # PROFILEMODE=1 - Enable performance profiling (gprof).
 # USEASAN=1 - Enable building with Address Sanitizer.
 # USEUBSAN=1 - Enable building with Undefined Behavior Sanitizer.
+# USETSAN=1 - Enable building with Thread Sanitizer.
 # NOLIBBACKTRACE=1 - Disable using Libbacktrace for crashlog traces.
 #
 # General flags for building:
@@ -261,23 +262,35 @@ debug_opts=-D_DEBUG
 else # build a normal optimized version
 debug_opts=-DNDEBUG
 opts+=-O3
-ifndef NOLTO
-# compile with LTO
-opts+=-flto=auto
-libs+=-flto=auto
-endif
 endif
 
 ifdef USEASAN
 # compile with asan
 opts+=-O1 -fsanitize=address -fno-omit-frame-pointer -fno-common
 libs+=-fsanitize=address
+NOLTO=1
 endif
 
 ifdef USEUBSAN
 # compile with ubsan
 opts+=-O1 -fsanitize=undefined -fno-omit-frame-pointer
 libs+=-fsanitize=undefined
+NOLTO=1
+endif
+
+ifdef USETSAN
+# compile with tsan
+opts+=-O1 -fsanitize=thread -fno-omit-frame-pointer
+libs+=-fsanitize=thread
+NOLTO=1
+endif
+
+ifndef DEBUGMODE
+ifndef NOLTO
+# compile with LTO
+opts+=-flto=auto
+libs+=-flto=auto
+endif
 endif
 
 ifdef USEJEMALLOC
