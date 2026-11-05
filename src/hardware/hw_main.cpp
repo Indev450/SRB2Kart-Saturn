@@ -1413,46 +1413,44 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
-	if (LIKELY(!gl_curline->polyseg))
-	{
-		// check if linedef alpha is within range
-		const boolean linealpha = (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT);
+	// check if linedef alpha is within range
+	const boolean linealpha = (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT);
 
-		// set alpha for transparent walls
-		switch (gl_linedef->special)
-		{
-			// Translucent linedef types
-			case 102:
-			case 121 ... 125:
-			case 141 ... 145:
-			case 174:
-			case 175:
-			case 192:
-			case 195:
-			case 221:
-			case 253:
-			case 256:
-				if (gl_linedef->blendmode && linealpha)
+	// set alpha for transparent walls
+	switch (gl_linedef->special)
+	{
+		// Translucent linedef types
+		case 102:
+		case 121 ... 125:
+		case 141 ... 145:
+		case 174:
+		case 175:
+		case 192:
+		case 195:
+		case 221:
+		case 253:
+		case 256:
+			if (gl_linedef->blendmode && linealpha)
+				blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+			else
+				blendmode = PF_Translucent;
+			break;
+		default:
+			if (gl_linedef->blendmode)
+			{
+				if (linealpha)
 					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
 				else
-					blendmode = PF_Translucent;
-				break;
-			default:
-				if (gl_linedef->blendmode)
-				{
-					if (linealpha)
-						blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-					else
-						blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
-				}
-				else if (linealpha)
-					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-				else
-					blendmode = PF_Masked;
-				break;
-		}
+					blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
+			}
+			else if (linealpha)
+				blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+			else
+				blendmode = PF_Masked;
+			break;
 	}
-	else if (gl_curline->polyseg->translucency > 0)
+
+	if (gl_curline->polyseg && gl_curline->polyseg->translucency > 0)
 	{
 		// Polyobject translucency is shared between all of its lines
 		if (gl_curline->polyseg->translucency >= NUMTRANSMAPS) // wall not drawn
