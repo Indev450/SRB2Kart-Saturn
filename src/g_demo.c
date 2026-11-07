@@ -2474,7 +2474,7 @@ skipfilenametime:
 	if (!datetime)
 		return NULL;
 
-	if (strftime(datetime, sizeof(datetime), dateformat, &tm_buf) == 0)
+	if (strftime(datetime, sizeof(pdemo->date), dateformat, &tm_buf) == 0)
 	{
 		free(datetime);
 		return NULL;
