@@ -123,9 +123,7 @@ static void Impl_SetVsync(void);
 static INT32 desktopwidth = 0, desktopheight = 0;
 
 static void I_CheckDesktopRes(void);
-#ifdef USE_FBO_OGL
-static void I_ResetFBOSurface(void);
-#endif
+
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -171,8 +169,6 @@ static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
 boolean downsample = false;
-float InvSupersampleFactorX = 0.0;
-float InvSupersampleFactorY = 0.0;
 #endif
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
@@ -1286,6 +1282,11 @@ void RefreshOGLSDLSurface(void)
 		OglSdlSurface(vid.width, vid.height);
 }
 
+static void I_ResetFBOSurface(void)
+{
+	RefreshOGLSDLSurface();
+}
+
 void I_DownSample(void)
 {
 	boolean needrefresh = false;
@@ -1319,13 +1320,6 @@ void I_DownSample(void)
 		I_ResetFBOSurface();
 		needrefresh = false;
 	}
-}
-
-static void I_ResetFBOSurface(void)
-{
-	InvSupersampleFactorX = (float)(desktopwidth) / vid.width;
-	InvSupersampleFactorY = (float)(desktopheight) / vid.height;
-	RefreshOGLSDLSurface();
 }
 #endif
 

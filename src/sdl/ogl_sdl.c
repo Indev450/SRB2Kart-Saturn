@@ -206,11 +206,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		GL_Framebuffer_Enable();
 	else
 		GL_Framebuffer_Disable();
-
-	if (UseScreenFBO() && HWR_UseShader())
-	{
-		HWR_CompileShaders();
-	}
 #endif
 
 	if (!first_init)
@@ -233,7 +228,6 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 #ifdef USE_FBO_OGL
 	const boolean usefbo = UseScreenFBO();
-	boolean fboshader = (usefbo && !WipeInAction && HWR_UseShader());
 #endif
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
@@ -246,21 +240,11 @@ void OglSdlFinishUpdate(SDL_Window *window)
 	}
 #endif
 
-#ifdef USE_FBO_OGL
-	if (HWR_ShouldUsePaletteRendering() || fboshader)
-#else
 	if (HWR_ShouldUsePaletteRendering())
-#endif
 	{
 		// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution
 		// so i combined the palette postprocess with this crap
-#ifdef USE_FBO_OGL
-		if (fboshader) // this looks awful with wipes
-			GL_SetShader(HWR_GetShaderFromTarget(SHADER_DOWNSAMPLE));
-		else
-#endif
-			GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS)); // Final postprocess step of palette rendering, after everything else has been drawn.
-
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS)); // Final postprocess step of palette rendering, after everything else has been drawn.
 		GL_EnableShader();
 		HWR_DrawScreenFinalTexture(sdlw, sdlh);
 		GL_UnSetShader();

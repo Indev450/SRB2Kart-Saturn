@@ -56,9 +56,6 @@ static struct {
 	// UI colormap fade shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
 
-	// downsampling
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_DOWNSAMPLE_FRAGMENT_SHADER},
-
 	{NULL, NULL},
 };
 
@@ -450,7 +447,6 @@ customshaderxlat_t shaderxlat[] =
 	{"Sky", SHADER_SKY},
 	{"PalettePostprocess", SHADER_PALETTE_POSTPROCESS},
 	{"UIColormapFade", SHADER_UI_COLORMAP_FADE},
-	{"Downsampling", SHADER_DOWNSAMPLE},
 	{NULL, 0},
 };
 

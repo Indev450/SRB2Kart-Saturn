@@ -71,34 +71,6 @@
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
 	"}\0"
 
-#define GLSL_DOWNSAMPLE_FRAGMENT_SHADER \
-	"#version 130\n" \
-	"uniform sampler2D tex;\n" \
-	"uniform vec2 inv_supersamplefactor;\n" \
-	"#ifdef SRB2_PALETTE_RENDERING\n" \
-	"uniform sampler3D palette_lookup_tex;\n" \
-	"uniform sampler1D palette_tex;\n" \
-	"#endif\n" \
-	"void main(void) {\n" \
-		"vec2 uv = gl_TexCoord[0].st;\n" \
-		"vec2 texel_size = 1.0 / textureSize(tex, 0);\n" \
-		"float blur = min(inv_supersamplefactor.x, inv_supersamplefactor.y) * 0.005;\n" \
-		"vec2 offset = texel_size * blur;\n" \
-		"vec4 color1 = texture2D(tex, uv + vec2(offset.x, offset.y));\n" \
-		"vec4 color2 = texture2D(tex, uv + vec2(-offset.x, offset.y));\n" \
-		"vec4 color3 = texture2D(tex, uv + vec2(offset.x, -offset.y));\n" \
-		"vec4 color4 = texture2D(tex, uv + vec2(-offset.x, -offset.y));\n" \
-		"vec4 blurred_color = (color1 + color2 + color3 + color4) * 0.25;\n" \
-		"#ifdef SRB2_PALETTE_RENDERING\n" \
-		"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((blurred_color.rgb * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
-		"float palette_coord = (tex_pal_idx + 0.5) / 256.0;\n" \
-		"vec4 final_color = texture1D(palette_tex, palette_coord);\n" \
-		"#else\n" \
-		"vec4 final_color = blurred_color;\n" \
-		"#endif\n" \
-		"gl_FragColor = final_color;\n" \
-	"}\0"
-
 //
 // Software fragment shader
 //
@@ -220,26 +192,6 @@
 		"gl_FragColor = final_color;\n" \
 	"}\n" \
 	"#endif\0"
-
-#define GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL \
-	"uniform sampler2D tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"uniform vec4 tint_color;\n" \
-	"uniform vec4 fade_color;\n" \
-	"uniform float lighting;\n" \
-	"uniform float fade_start;\n" \
-	"uniform float fade_end;\n" \
-	GLSL_DOOM_COLORMAP \
-	GLSL_DOOM_LIGHT_EQUATION \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"vec4 base_color = texel * poly_color;\n" \
-		"vec4 final_color = base_color;\n" \
-		GLSL_SOFTWARE_TINT_EQUATION \
-		GLSL_SOFTWARE_FADE_EQUATION \
-		"final_color.a = texel.a * poly_color.a;\n" \
-		"gl_FragColor = final_color;\n" \
-	"}\n" \
 
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \

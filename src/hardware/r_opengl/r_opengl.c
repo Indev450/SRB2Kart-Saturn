@@ -740,9 +740,6 @@ typedef enum
 
 	gluniform_scr_resolution,
 
-	// supersampling crap
-	gluniform_inv_supersamplefactor,
-
 	gluniform_max,
 } gluniform_t;
 
@@ -2271,11 +2268,6 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 
 		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
 
-#ifdef USE_FBO_OGL
-		// supersampling crap
-		UNIFORM_2(shader->uniforms[gluniform_inv_supersamplefactor], InvSupersampleFactorX, InvSupersampleFactorY, pglUniform2f);
-#endif
-
 		#undef UNIFORM_1
 		#undef UNIFORM_2
 		#undef UNIFORM_3
@@ -2405,9 +2397,6 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	shader->uniforms[gluniform_scr_resolution]        = GETUNI("scr_resolution");
 
-	// supersampling crap
-	shader->uniforms[gluniform_inv_supersamplefactor] = GETUNI("inv_supersamplefactor");
-
 	// misc.
 	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
 
@@ -2433,10 +2422,6 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	UNIFORM_1(shader->uniforms[gluniform_scene_tex], 4, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_scene_depth_tex], 5, pglUniform1i);
-#ifdef USE_FBO_OGL
-	// supersampling crap
-	UNIFORM_2(shader->uniforms[gluniform_inv_supersamplefactor], InvSupersampleFactorX, InvSupersampleFactorY, pglUniform2f);
-#endif
 
 	// restore gl shader state
 	pglUseProgram(gl_shaderstate.program);
