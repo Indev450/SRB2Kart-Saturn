@@ -3821,6 +3821,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 void GL_MakeScreenTexture(int tex)
 {
 	boolean firstTime;
+	static GLint lastfiltermode[NUMSCREENTEXTURES] = {-1, -1, -1, -1, -1};
 
 	if (!gl_enable_screen_textures)
 		return;
@@ -3833,16 +3834,29 @@ void GL_MakeScreenTexture(int tex)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
+	// if were downsampling, choose to do that with linear filter instead of nearest neighbor
+	// otherwise well get ugly mixels
+	GLint filtermode = I_IsDownsampling() ? GL_LINEAR : GL_NEAREST;
+
+	// avoid redundant calls to this, prob doesent really matter tbh
+	if (filtermode != lastfiltermode[tex] || firstTime)
+	{
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filtermode);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filtermode);
+
+		lastfiltermode[tex] = filtermode;
+	}
+
 	if (firstTime)
 	{
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
 		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, screen_texsizew, screen_texsizeh, 0);
 	}
 	else
+	{
 		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_texsizew, screen_texsizeh);
+	}
 
 	tex_downloaded = screenTextures[tex];
 }
