@@ -197,10 +197,6 @@ static INT32 custom_height = 0;
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
-#ifdef USE_FBO_OGL
-boolean downsample = false;
-#endif
-
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 {
 	if (code >= SDL_SCANCODE_A && code <= SDL_SCANCODE_Z)
@@ -522,7 +518,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	{
 		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
-		I_DownSample();
+			I_CheckDownSampleState(false);
 #endif
 		windowmoved = SDL_FALSE;
 	}
@@ -1263,8 +1259,9 @@ static void I_CheckDesktopRes(void)
 	int currentDisplayIndex = -1;
 	SDL_DisplayMode curmode;
 
-	desktopwidth = 0;
-	desktopheight = 0;
+	// just fallback to game res ig?
+	desktopwidth = vid.width;
+	desktopheight = vid.height;
 
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 
@@ -1274,7 +1271,7 @@ static void I_CheckDesktopRes(void)
 		return;
 	}
 
-	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) < 0)
 	{
 		return;
 	}
@@ -1290,46 +1287,33 @@ boolean I_CheckNativeRes(void)
 }
 
 #ifdef USE_FBO_OGL
+static boolean vid_downsampling = false;
 
-void RefreshOGLSDLSurface(void)
+boolean I_IsDownsampling(void)
 {
-	if (rendermode == render_opengl)
-		OglSdlSurface(vid.width, vid.height);
+	return vid_downsampling;
 }
 
-void I_DownSample(void)
+void I_CheckDownSampleState(boolean forcerefresh)
 {
-	boolean needrefresh = false;
-
-	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
+	// no fbo support so we dont care
+	if (!supportFBO)
 	{
-		downsample = false;
+		vid_downsampling = false;
 		return;
 	}
 
-	if (I_CheckNativeRes() && (downsample == true))
+	// no sense to do this crap if we cant benefit from it
+	const boolean newdownsamplestate = cv_glframebuffer.value && (cv_glscreentextures.value == 2) && I_CheckAboveDesktopRes(vid.width, vid.height);
+
+	// state changed or fbo was toggled
+	if (vid_downsampling != newdownsamplestate || forcerefresh)
 	{
-		downsample = false;
-		RefreshOGLSDLSurface();
-		return;
+		//printf("downsample changed from %d to %d\n", vid_downsampling, curdownsamplestate);
+		OglSdlSurface(vid.width, vid.height);
 	}
 
-	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
-	{
-		downsample = true;
-		needrefresh = true;
-	}
-	else if (downsample == true)
-	{
-		downsample = false;
-		needrefresh = true;
-	}
-
-	if (needrefresh)
-	{
-		RefreshOGLSDLSurface();
-		needrefresh = false;
-	}
+	vid_downsampling = newdownsamplestate;
 }
 #endif
 
@@ -1359,10 +1343,11 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 			}
 
 			// Reposition window only in windowed mode
+			const int windowpos = SDL_GetWindowDisplayIndex(window);
 			SDL_SetWindowSize(window, width, height);
 			SDL_SetWindowPosition(window,
-				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window)),
-				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window))
+				SDL_WINDOWPOS_CENTERED_DISPLAY(windowpos),
+				SDL_WINDOWPOS_CENTERED_DISPLAY(windowpos)
 			);
 		}
 	}
@@ -1384,7 +1369,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 	{
 		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
-		I_DownSample();
+		I_CheckDownSampleState(false);
 #endif
 		OglSdlSurface(vid.width, vid.height);
 	}

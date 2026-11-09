@@ -3266,7 +3266,7 @@ static void GL_FBO_DeleteAttachments(void)
 
 static void GL_FBO_Generate(void)
 {
-	if (supportFBO == FBO_NONE || framebufferobject.init || !UseScreenFBO())
+	if (supportFBO == FBO_NONE || framebufferobject.init)
 		return;
 
 	// Generate the framebuffer
@@ -3348,13 +3348,13 @@ void GL_FBO_BindMainFrameBuffer(void)
 
 void GL_FBO_Enable(void)
 {
-	if (supportFBO == FBO_NONE || !UseScreenFBO())
+	if (supportFBO == FBO_NONE)
 		return;
 
 	GL_FBO_Generate();
 
 	// failed
-	if (supportFBO == FBO_NONE || !framebufferobject.init)
+	if (!framebufferobject.init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
