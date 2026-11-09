@@ -128,10 +128,9 @@ boolean I_CheckNativeRes(void);
 void I_SetBorderlessWindow(void);
 
 #ifdef USE_FBO_OGL
-void RefreshOGLSDLSurface(void);
-void I_DownSample(void);
+void I_CheckDownSampleState(boolean forcerefresh);
+boolean I_IsDownsampling(void);
 boolean UseScreenFBO(void);
-extern boolean downsample;
 #endif
 
 // So we can call this from i_video event loop

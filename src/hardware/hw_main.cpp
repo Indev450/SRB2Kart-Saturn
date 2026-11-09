@@ -257,6 +257,7 @@ static void CV_screentextures_OnChange(void)
 #endif
 		intermissionbginit = false;
 	}
+
 	GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 	M_UpdateOGLMenu();
 }
@@ -265,12 +266,11 @@ static void CV_screentextures_OnChange(void)
 static void CV_glframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if ((cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2)
-	|| (!supportFBO && cv_glframebuffer.value != 0)) // screen FBO needs screen textures
-		CV_SetValue(&cv_glframebuffer, 0);
+	// screen FBO needs screen textures currently
+	if (cv_glframebuffer.value != 0 && ((cv_glscreentextures.value != 2) || !supportFBO))
+		CV_StealthSetValue(&cv_glframebuffer, 0); // dont recursively call this lul
 
-	I_DownSample();
-	RefreshOGLSDLSurface();
+	I_CheckDownSampleState(true);
 	M_UpdateOGLMenu();
 	intermissionbginit = false;
 }

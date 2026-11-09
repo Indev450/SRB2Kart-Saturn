@@ -65,7 +65,7 @@ PFNglGetString pglGetString;
 #ifdef USE_FBO_OGL
 boolean UseScreenFBO(void)
 {
-	return (supportFBO && cv_glframebuffer.value && downsample);
+	return (supportFBO && cv_glframebuffer.value && I_IsDownsampling() && (cv_glscreentextures.value == 2));
 }
 #endif
 
@@ -240,8 +240,6 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 	if (HWR_ShouldUsePaletteRendering())
 	{
-		// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution
-		// so i combined the palette postprocess with this crap
 		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS)); // Final postprocess step of palette rendering, after everything else has been drawn.
 		GL_EnableShader();
 		HWR_DrawScreenFinalTexture(sdlw, sdlh);
