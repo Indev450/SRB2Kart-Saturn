@@ -97,11 +97,9 @@ static char vidModeName[33][32]; // allow 33 different modes
 rendermode_t rendermode = render_none;
 
 #ifdef HWRENDER
-unsigned msaa = 0;
-
 // Eee probably the way i organize it isn't best ><
 // Just don't know where do i put declaration and "implementation"
-boolean a2c = false;
+unsigned msaa = 0;
 #endif
 
 static void KeyboardLayout_OnChange(void)
@@ -1810,7 +1808,6 @@ void I_StartupGraphics(void)
 		rendermode = render_opengl;
 
 	msaa = 0; boolean msaa_set = false;
-	a2c = false; boolean a2c_set = false;
 
 	// MSAA antialiasing
 	if (M_CheckParm("-msaa") && M_IsNextParm())
@@ -1820,16 +1817,6 @@ void I_StartupGraphics(void)
 		{
 			msaa_set = true;
 		}
-	}
-
-	if (M_CheckParm("-a2c"))
-	{
-		a2c = true;
-		a2c_set = true;
-	}
-	else if (M_CheckParm("-noa2c"))
-	{
-		a2c_set = true;
 	}
 
     {
@@ -1879,15 +1866,6 @@ void I_StartupGraphics(void)
 						}
 					}
 				}
-
-				if (!a2c_set)
-				{
-					if (fasticmp(word, "a2c"))
-					{
-						a2c = true;
-						CONS_Printf("Using a2c because it was specified to be used earlier\n");
-					}
-				}
 			}
 
 			fclose(file);
@@ -1922,9 +1900,6 @@ void I_StartupGraphics(void)
 
 #ifdef HWRENDER
 			fprintf(file, "msaa %u\n", msaa);
-
-			if (a2c)
-				fputs("a2c\n", file);
 #endif
 			fclose(file);
 		}
