@@ -136,8 +136,7 @@ enum
 {
 	FBO_NONE,
 	FBO_ARB,
-	FBO_EXT,
-	FBO_EXT_STENCIL // supports stencil attachment
+	FBO_EXT
 };
 
 typedef struct
@@ -161,7 +160,7 @@ GL_DEPTH24_STENCIL8 GL_DEPTH_COMPONENT_EXT
 GL_DEPTH_STENCIL_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
 #endif
 
-static void GL_Framebuffer_DeleteAttachments(void);
+static void GL_FBO_DeleteAttachments(void);
 #endif
 
 // needed for glportals
@@ -781,28 +780,22 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 #ifdef USE_FBO_OGL
 static int GLFramebuffer_CheckExt(void)
 {
-	// in opengl 3.0 and up fbos are standart and always supported
-	if (majorGL >= 3)
-		return FBO_ARB;
-
-	// gl versions from 2.1 may still support framebuffer objects
-
-	// maybe, just maybe, we support the standart extensions
+	// check for the standard arb extensions
+	// these should be there from version 3.0 onwards
 	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) &&
 		GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) &&
 		GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
+	{
 		return FBO_ARB;
+	}
 
-	// nope, try the older 2.1 extensions
+	// gl versions from 2.1 and older may still support framebuffer objects
+	// depending on vendor and driver support
 	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions) &&
 		GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions) &&
-		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
+		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions)) // we use the stencil buffer for stuff like portals, so its better to make stencil extension a requirement
 	{
-		// perhaps we may even support a stencil attachment
-		if (GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions))
-			return FBO_EXT_STENCIL;
-
-		// no stencil support, sad
 		return FBO_EXT;
 	}
 
@@ -920,36 +913,41 @@ void SetupGLFunc4(void)
 
 			GL_DBG_Printf("\nFBO: ARB extensions found\n");
 		}
-		else if (fbocheck == FBO_EXT || fbocheck == FBO_EXT_STENCIL) // uh oh only support for EXT prefix fbos...
+		else if (fbocheck == FBO_EXT) // uh oh only support old fbo extensions...
 		{
-			GetGLfunc(glGenFramebuffersEXT);
-			GetGLfunc(glBindFramebufferEXT);
-			GetGLfunc(glDeleteFramebuffersEXT);
-			GetGLfunc(glFramebufferTexture2DEXT);
-			GetGLfunc(glCheckFramebufferStatusEXT);
-			GetGLfunc(glGenRenderbuffersEXT);
-			GetGLfunc(glBindRenderbufferEXT);
-			GetGLfunc(glDeleteRenderbuffersEXT);
-			GetGLfunc(glRenderbufferStorageEXT);
-			GetGLfunc(glFramebufferRenderbufferEXT);
-
 			// remapping galore huehue
 			// do this so we dont have to dupe half our code
+			GetGLfunc(glGenFramebuffersEXT);
 			pglGenFramebuffers = pglGenFramebuffersEXT;
+
+			GetGLfunc(glBindFramebufferEXT);
 			pglBindFramebuffer = pglBindFramebufferEXT;
+
+			GetGLfunc(glDeleteFramebuffersEXT);
 			pglDeleteFramebuffers  = pglDeleteFramebuffersEXT;
+
+			GetGLfunc(glFramebufferTexture2DEXT);
 			pglFramebufferTexture2D = pglFramebufferTexture2DEXT;
+
+			GetGLfunc(glCheckFramebufferStatusEXT);
 			pglCheckFramebufferStatus = pglCheckFramebufferStatusEXT;
+
+			GetGLfunc(glGenRenderbuffersEXT);
 			pglGenRenderbuffers = pglGenRenderbuffersEXT;
+
+			GetGLfunc(glBindRenderbufferEXT);
 			pglBindRenderbuffer = pglBindRenderbufferEXT;
+
+			GetGLfunc(glDeleteRenderbuffersEXT);
 			pglDeleteRenderbuffers = pglDeleteRenderbuffersEXT;
+
+			GetGLfunc(glRenderbufferStorageEXT);
 			pglRenderbufferStorage = pglRenderbufferStorageEXT;
+
+			GetGLfunc(glFramebufferRenderbufferEXT);
 			pglFramebufferRenderbuffer = pglFramebufferRenderbufferEXT;
 
-			if (fbocheck == FBO_EXT)
-				GL_DBG_Printf("\nFBO: EXT extensions found, no stencil\n");
-			else if (fbocheck == FBO_EXT_STENCIL)
-				GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
+			GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
 		}
 
 		supportFBO = fbocheck;
@@ -1163,7 +1161,7 @@ void GL_SetModelView(GLint w, GLint h)
 		GL_FlushScreenTextures();
 
 #ifdef USE_FBO_OGL
-		GL_Framebuffer_DeleteAttachments();
+		GL_FBO_DeleteAttachments();
 #endif
 	}
 
@@ -3287,7 +3285,7 @@ void GL_SetTransform(FTransform *stransform)
 }
 
 #ifdef USE_FBO_OGL
-static void GL_Framebuffer_DeleteAttachments(void)
+static void GL_FBO_DeleteAttachments(void)
 {
 	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
@@ -3307,7 +3305,7 @@ static void GL_Framebuffer_DeleteAttachments(void)
 	framebufferobject.init = false;
 }
 
-static void GL_Framebuffer_Generate(void)
+static void GL_FBO_Generate(void)
 {
 	if (supportFBO == FBO_NONE || framebufferobject.init || !UseScreenFBO())
 		return;
@@ -3324,7 +3322,7 @@ static void GL_Framebuffer_Generate(void)
 	{
 		pglGenTextures(1, &framebufferobject.tex);
 		pglBindTexture(GL_TEXTURE_2D, framebufferobject.tex);
-		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screen_width, screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, screen_width, screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
@@ -3347,18 +3345,13 @@ static void GL_Framebuffer_Generate(void)
 			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8, screen_width, screen_height);
 			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
 		}
-		else if (supportFBO == FBO_EXT || supportFBO == FBO_EXT_STENCIL)
+		else if (supportFBO == FBO_EXT)
 		{
-			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, (supportFBO == FBO_EXT_STENCIL) ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT, screen_width, screen_height);
-
-			// attach a renderbuffer to depth attachment point
+			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, GL_DEPTH_STENCIL_EXT, screen_width, screen_height);
+			// attach the renderbuffer to depth attachment point
 			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-
-			if (supportFBO == FBO_EXT_STENCIL)
-			{
-				// attach a renderbuffer to stencil attachment point
-				pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-			}
+			// attach the renderbuffer to stencil attachment point
+			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
 		}
 
 		// Clear the renderbuffer
@@ -3370,7 +3363,7 @@ static void GL_Framebuffer_Generate(void)
 	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		//pglGetError(); TODO:implement this or smth
-		GL_MSG_Error("GL_Framebuffer_Generate: Failed to create Framebuffer Object");
+		GL_MSG_Error("GL_FBO_Generate: Failed to create Framebuffer Object");
 
 		// if this fails, dont retry it a gazillion times
 		// this wouldnt recover
@@ -3385,7 +3378,7 @@ static void GL_Framebuffer_Generate(void)
 	framebufferobject.init = true;
 }
 
-void GL_Framebuffer_Unbind(void)
+void GL_FBO_BindMainFrameBuffer(void)
 {
 	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
@@ -3394,12 +3387,12 @@ void GL_Framebuffer_Unbind(void)
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 }
 
-void GL_Framebuffer_Enable(void)
+void GL_FBO_Enable(void)
 {
 	if (supportFBO == FBO_NONE || !UseScreenFBO())
 		return;
 
-	GL_Framebuffer_Generate();
+	GL_FBO_Generate();
 
 	// failed
 	if (supportFBO == FBO_NONE || !framebufferobject.init)
@@ -3409,7 +3402,7 @@ void GL_Framebuffer_Enable(void)
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
 }
 
-void GL_Framebuffer_Disable(void)
+void GL_FBO_Disable(void)
 {
 	if (supportFBO == FBO_NONE || !framebufferobject.init)
 		return;
@@ -3422,7 +3415,7 @@ void GL_Framebuffer_Disable(void)
 		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
 	framebufferobject.fboobj = 0;
 
-	GL_Framebuffer_DeleteAttachments();
+	GL_FBO_DeleteAttachments();
 }
 #endif
 
