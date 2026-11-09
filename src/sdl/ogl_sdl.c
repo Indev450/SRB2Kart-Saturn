@@ -203,9 +203,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
-		GL_Framebuffer_Enable();
+		GL_FBO_Enable();
 	else
-		GL_Framebuffer_Disable();
+		GL_FBO_Disable();
 #endif
 
 	if (!first_init)
@@ -235,9 +235,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
-	{
-		GL_Framebuffer_Unbind();
-	}
+		GL_FBO_BindMainFrameBuffer();
 #endif
 
 	if (HWR_ShouldUsePaletteRendering())
@@ -255,9 +253,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
-	{
-		GL_Framebuffer_Enable();
-	}
+		GL_FBO_Enable();
 #endif
 
 	SDL_GL_SwapWindow(window);
@@ -268,7 +264,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 	//			effects that want to take the old screen can do so after this
 	// well we dont need it on native res it seems
 #ifdef USE_FBO_OGL
-	if ((!I_CheckNativeRes() && !usefbo) || WipeInAction)
+	if (!usefbo && (!I_CheckNativeRes() || WipeInAction))
 #else
 	if (!I_CheckNativeRes() || WipeInAction)
 #endif
