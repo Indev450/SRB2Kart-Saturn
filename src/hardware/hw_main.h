@@ -43,7 +43,6 @@ void HWR_Startup(void);
 void HWR_Shutdown(void);
 
 extern unsigned msaa;
-extern boolean a2c;
 
 extern FTransform atransform;
 extern float gl_viewsin, gl_viewcos;
