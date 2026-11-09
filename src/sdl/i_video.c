@@ -1890,7 +1890,7 @@ void I_StartupGraphics(void)
 						}
 						else
 						{
-							CONS_Printf("Using last know MSAA value: %u\n", msaa);
+							CONS_Printf("Using last known MSAA value: %u\n", msaa);
 						}
 					}
 				}
