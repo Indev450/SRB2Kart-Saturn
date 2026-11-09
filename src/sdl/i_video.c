@@ -1284,6 +1284,11 @@ boolean I_CheckNativeRes(void)
 	return (vid.width == desktopwidth && vid.height == desktopheight);
 }
 
+static boolean I_CheckAboveDesktopRes(INT32 width, INT32 height)
+{
+	return (width > desktopwidth || height > desktopheight);
+}
+
 #ifdef USE_FBO_OGL
 static boolean vid_downsampling = false;
 
