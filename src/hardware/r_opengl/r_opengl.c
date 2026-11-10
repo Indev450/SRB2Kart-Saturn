@@ -141,26 +141,56 @@ enum
 
 typedef struct
 {
-	GLuint fboobj; // actual Framebuffer Object
-	GLuint rboobj; // Renderbuffer Object
-	GLuint tex;    // Framebuffer texture
+	GLuint fboobj;           // normal single sample fbo
+	GLuint rboobj;           // normal single sample rbo for depth and stencil stuff
+	GLuint tex;              // fbo texture for color
+	GLuint msaa_fboobj;      // msaa fbo
+	GLuint msaa_rboobj;      // msaa rbo for color this time
+	GLuint msaa_depthrboobj; // msaa rbo for depth and stencil stuff
 	boolean init;
+	boolean msaa;            // true if the msaa fbo is the render target ugh
+	boolean bound;           // true if the fbo is currently bound as the framebuffer
 } fboobj_t;
 
+// this is a little messy but less messy than having two of those tbh
 static fboobj_t framebufferobject = {};
 
 int supportFBO = FBO_NONE;
 
 // older gl versions might not have these, so prevent compile errors
-// this should still give a simple depth only rbo
+#ifndef GL_DEPTH_COMPONENT
+#define GL_DEPTH_COMPONENT 0x1902
+#endif
+#ifndef GL_DEPTH_ATTACHMENT_EXT
+#define GL_DEPTH_ATTACHMENT_EXT 0x8D00
+#endif
 #ifndef GL_DEPTH24_STENCIL8
-GL_DEPTH24_STENCIL8 GL_DEPTH_COMPONENT_EXT
+#define GL_DEPTH24_STENCIL8 0x88F0
 #endif
 #ifndef GL_DEPTH_STENCIL_ATTACHMENT
-GL_DEPTH_STENCIL_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
+#define GL_DEPTH_STENCIL_ATTACHMENT 0x821A
+#endif
+#ifndef GL_COLOR_ATTACHMENT0_EXT
+#define GL_COLOR_ATTACHMENT0_EXT 0x8CE0
+#endif
+#ifndef GL_READ_FRAMEBUFFER_EXT
+#define GL_READ_FRAMEBUFFER_EXT 0x8CA8
+#endif
+#ifndef GL_DRAW_FRAMEBUFFER_EXT
+#define GL_DRAW_FRAMEBUFFER_EXT 0x8CA9
+#endif
+#ifndef GL_FRAMEBUFFER_EXT
+#define GL_FRAMEBUFFER_EXT 0x8D40
+#endif
+#ifndef GL_RENDERBUFFER_EXT
+#define GL_RENDERBUFFER_EXT 0x8D41
+#endif
+#ifndef GL_FRAMEBUFFER_COMPLETE_EXT
+#define GL_FRAMEBUFFER_COMPLETE_EXT 0x8CD5
 #endif
 
 static void GL_FBO_DeleteAttachments(void);
+static void GL_FBO_Resolve(GLbitfield mask);
 #endif
 
 // needed for glportals
@@ -487,6 +517,10 @@ typedef void (APIENTRY * PFNglRenderbufferStorage) (GLenum target, GLenum intern
 static PFNglRenderbufferStorage pglRenderbufferStorage;
 typedef void (APIENTRY * PFNglFramebufferRenderbuffer) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
 static PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
+typedef void (APIENTRY * PFNglRenderbufferStorageMultisample) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
+static PFNglRenderbufferStorageMultisample pglRenderbufferStorageMultisample;
+typedef void (APIENTRY * PFNglBlitFramebuffer) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+static PFNglBlitFramebuffer pglBlitFramebuffer;
 
 /* 2.1 extension functions for framebuffers and renderbuffers */
 typedef void (APIENTRY * PFNglGenFramebuffersEXT) (GLsizei n, GLuint *ids);
@@ -911,6 +945,17 @@ void SetupGLFunc4(void)
 			GetGLfunc(glRenderbufferStorage);
 			GetGLfunc(glFramebufferRenderbuffer);
 
+			// multisample support, this should be in core per gl 3.0 and newer
+			pglRenderbufferStorageMultisample = GetGLFunc("glRenderbufferStorageMultisample");
+			pglBlitFramebuffer = GetGLFunc("glBlitFramebuffer");
+
+			if (!pglRenderbufferStorageMultisample || !pglBlitFramebuffer)
+			{
+				pglRenderbufferStorageMultisample = NULL;
+				pglBlitFramebuffer = NULL;
+				GL_DBG_Printf("\nFBO: No multisample support\n");
+			}
+
 			GL_DBG_Printf("\nFBO: ARB extensions found\n");
 		}
 		else if (fbocheck == FBO_EXT) // uh oh only support old fbo extensions...
@@ -946,6 +991,21 @@ void SetupGLFunc4(void)
 
 			GetGLfunc(glFramebufferRenderbufferEXT);
 			pglFramebufferRenderbuffer = pglFramebufferRenderbufferEXT;
+
+			// multisample support needs the EXT multisample and blit extensions
+			if (GL_isExtAvailable("GL_EXT_framebuffer_multisample", gl_extensions) &&
+				GL_isExtAvailable("GL_EXT_framebuffer_blit", gl_extensions))
+			{
+				pglRenderbufferStorageMultisample = GetGLFunc("glRenderbufferStorageMultisampleEXT");
+				pglBlitFramebuffer = GetGLFunc("glBlitFramebufferEXT");
+			}
+
+			if (!pglRenderbufferStorageMultisample || !pglBlitFramebuffer)
+			{
+				pglRenderbufferStorageMultisample = NULL;
+				pglBlitFramebuffer = NULL;
+				GL_DBG_Printf("\nFBO: No multisample support\n");
+			}
 
 			GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
 		}
@@ -1467,6 +1527,15 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 	const INT32 stride = (screen_width/scale)*3;
 	INT32 scanlines = screen_height;
 	GLubyte * restrict image;
+#ifdef USE_FBO_OGL
+	const boolean msaa_fbo = (framebufferobject.bound && framebufferobject.msaa);
+#endif
+
+#ifdef USE_FBO_OGL
+	// cant read from the msaa fbo, so gotta blit it first into either the single sample fbo or the screen framebuffer....
+	if (msaa_fbo)
+		GL_FBO_Resolve(GL_COLOR_BUFFER_BIT);
+#endif
 
 	// at the time this function is called, generic2 can be found drawn on the framebuffer
 	// if some other screen texture is needed, draw it to the framebuffer
@@ -1508,9 +1577,16 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 			memcpy(dest + i, image + i*scale, 3);
 		dest += stride;
 	}
+	// this probably could be done with fbos, might mess around with that some time :3
 
 	// ...yet still, restrict doesn't make the inner loop any faster
 	free(image - ((screen_height % scale) * screen_width*3));
+
+#ifdef USE_FBO_OGL
+	// this´ll reenable the msaa fbo....
+	if (msaa_fbo)
+		GL_FBO_Enable();
+#endif
 }
 
 // -----------------+
@@ -3283,7 +3359,7 @@ void GL_SetTransform(FTransform *stransform)
 #ifdef USE_FBO_OGL
 static void GL_FBO_DeleteAttachments(void)
 {
-	if (supportFBO == FBO_NONE || !framebufferobject.init)
+	if (supportFBO == FBO_NONE)
 		return;
 
 	// Unbind the framebuffer
@@ -3296,13 +3372,44 @@ static void GL_FBO_DeleteAttachments(void)
 	if (framebufferobject.rboobj)
 		pglDeleteRenderbuffers(1, &framebufferobject.rboobj);
 
+	if (framebufferobject.msaa_rboobj)
+		pglDeleteRenderbuffers(1, &framebufferobject.msaa_rboobj);
+
+	if (framebufferobject.msaa_depthrboobj)
+		pglDeleteRenderbuffers(1, &framebufferobject.msaa_depthrboobj);
+
 	framebufferobject.tex = 0;
 	framebufferobject.rboobj = 0;
+	framebufferobject.msaa_rboobj = 0;
+	framebufferobject.msaa_depthrboobj = 0;
 	framebufferobject.init = false;
+	framebufferobject.bound = false;
+}
+
+// blit the msaa fbo into the normal single sample fbo
+// so we can use it to copy from and stuff
+static void GL_FBO_Resolve(GLbitfield mask)
+{
+	if (supportFBO == FBO_NONE || !framebufferobject.init || !framebufferobject.msaa)
+		return;
+
+	if (!pglBlitFramebuffer)
+		return;
+
+	pglBindFramebuffer(GL_READ_FRAMEBUFFER_EXT, framebufferobject.msaa_fboobj);
+	pglBindFramebuffer(GL_DRAW_FRAMEBUFFER_EXT, framebufferobject.fboobj);
+
+	pglBlitFramebuffer(0, 0, screen_width, screen_height,
+						0, 0, screen_width, screen_height,
+						mask, GL_NEAREST);
+
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
 }
 
 static void GL_FBO_Generate(void)
 {
+	GLint msaasamples;
+
 	if (supportFBO == FBO_NONE || framebufferobject.init)
 		return;
 
@@ -3362,10 +3469,74 @@ static void GL_FBO_Generate(void)
 		GL_MSG_Error("GL_FBO_Generate: Failed to create Framebuffer Object");
 
 		// if this fails, dont retry it a gazillion times
-		// this wouldnt recover
+		// this probably wouldnt recover and we dont want any more black screens...
 		supportFBO = FBO_NONE;
 		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 		return;
+	}
+
+	// Try to set up a multisampled render target for MSAA
+	framebufferobject.msaa = false;
+	msaasamples = (GLint)msaa;
+
+	// maybe should just make more "supportFBO" cases or smth but :chaosleep:
+	if (msaasamples > 1 && pglRenderbufferStorageMultisample && pglBlitFramebuffer)
+	{
+		if (!framebufferobject.msaa_fboobj)
+			pglGenFramebuffers(1, &framebufferobject.msaa_fboobj);
+
+		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.msaa_fboobj);
+
+		// Generate the multisampled color renderbuffer
+		if (!framebufferobject.msaa_rboobj)
+		{
+			pglGenRenderbuffers(1, &framebufferobject.msaa_rboobj);
+			pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.msaa_rboobj);
+			pglRenderbufferStorageMultisample(GL_RENDERBUFFER_EXT, msaasamples, GL_RGBA8, screen_width, screen_height);
+			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, framebufferobject.msaa_rboobj);
+		}
+
+		// Generate the multisampled depth/stencil renderbuffer
+		if (!framebufferobject.msaa_depthrboobj)
+		{
+			pglGenRenderbuffers(1, &framebufferobject.msaa_depthrboobj);
+			pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.msaa_depthrboobj);
+
+			if (supportFBO == FBO_ARB)
+			{
+				pglRenderbufferStorageMultisample(GL_RENDERBUFFER_EXT, msaasamples, GL_DEPTH24_STENCIL8, screen_width, screen_height);
+				pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, framebufferobject.msaa_depthrboobj);
+			}
+			else if (supportFBO == FBO_EXT)
+			{
+				pglRenderbufferStorageMultisample(GL_RENDERBUFFER_EXT, msaasamples, GL_DEPTH_STENCIL_EXT, screen_width, screen_height);
+				// attach a renderbuffer to depth attachment point
+				pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.msaa_depthrboobj);
+				// attach a renderbuffer to stencil attachment point
+				pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.msaa_depthrboobj);
+			}
+		}
+
+		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+
+		if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) == GL_FRAMEBUFFER_COMPLETE_EXT)
+		{
+			framebufferobject.msaa = true;
+			GL_ClearBuffer(true, true, true, NULL);
+			GL_DBG_Printf("\nGL_FBO_Generate: Multisampled framebuffer created with %d samples\n", msaasamples);
+		}
+		else
+		{
+			GL_MSG_Warning("GL_FBO_Generate: Failed to create multisampled Framebuffer Object, falling back to no MSAA");
+
+			if (framebufferobject.msaa_rboobj)
+				pglDeleteRenderbuffers(1, &framebufferobject.msaa_rboobj);
+			if (framebufferobject.msaa_depthrboobj)
+				pglDeleteRenderbuffers(1, &framebufferobject.msaa_depthrboobj);
+
+			framebufferobject.msaa_rboobj = 0;
+			framebufferobject.msaa_depthrboobj = 0;
+		}
 	}
 
 	// Unbind the framebuffer
@@ -3376,11 +3547,13 @@ static void GL_FBO_Generate(void)
 
 void GL_FBO_BindMainFrameBuffer(void)
 {
-	if (supportFBO == FBO_NONE || !framebufferobject.init)
+	if (supportFBO == FBO_NONE)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+
+	framebufferobject.bound = false;
 }
 
 void GL_FBO_Enable(void)
@@ -3394,13 +3567,23 @@ void GL_FBO_Enable(void)
 	if (!framebufferobject.init)
 		return;
 
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
-	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+	if (framebufferobject.msaa)
+	{
+		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.msaa_fboobj);
+		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.msaa_rboobj);
+	}
+	else
+	{
+		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
+		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+	}
+
+	framebufferobject.bound = true;
 }
 
 void GL_FBO_Disable(void)
 {
-	if (supportFBO == FBO_NONE || !framebufferobject.init)
+	if (supportFBO == FBO_NONE)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3411,7 +3594,14 @@ void GL_FBO_Disable(void)
 		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
 	framebufferobject.fboobj = 0;
 
+	if (framebufferobject.msaa_fboobj)
+		pglDeleteFramebuffers(1, &framebufferobject.msaa_fboobj);
+	framebufferobject.msaa_fboobj = 0;
+
 	GL_FBO_DeleteAttachments();
+
+	framebufferobject.msaa = false;
+	framebufferobject.bound = false;
 }
 #endif
 
@@ -3419,6 +3609,13 @@ void GL_FBO_Disable(void)
 // just copies the whole framebuffer as a texture
 void GL_CopyMainFramebufferTexture(void)
 {
+#ifdef USE_FBO_OGL
+	const boolean msaa_fbo = (framebufferobject.bound && framebufferobject.msaa);
+
+	if (msaa_fbo)
+		GL_FBO_Resolve(GL_COLOR_BUFFER_BIT);
+#endif
+
 	if (!sceneTextures[SCENE_TEX])
 	{
 		pglGenTextures(1, &sceneTextures[SCENE_TEX]);
@@ -3440,10 +3637,22 @@ void GL_CopyMainFramebufferTexture(void)
 	tex_downloaded = sceneTextures[SCENE_TEX];
 
 	pglBindTexture(GL_TEXTURE_2D, 0);
+
+#ifdef USE_FBO_OGL
+	if (msaa_fbo)
+		GL_FBO_Enable();
+#endif
 }
 
 void GL_CopyMainFramebufferDepth(void)
 {
+#ifdef USE_FBO_OGL
+	const boolean msaa_fbo = (framebufferobject.bound && framebufferobject.msaa);
+
+	if (msaa_fbo)
+		GL_FBO_Resolve(GL_DEPTH_BUFFER_BIT);
+#endif
+
 	if (!sceneTextures[SCENE_DEPTHTEX])
 	{
 		pglGenTextures(1, &sceneTextures[SCENE_DEPTHTEX]);
@@ -3464,6 +3673,11 @@ void GL_CopyMainFramebufferDepth(void)
 	pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_width, screen_height);
 
 	pglBindTexture(GL_TEXTURE_2D, 0);
+
+#ifdef USE_FBO_OGL
+	if (msaa_fbo)
+		GL_FBO_Enable();
+#endif
 }
 
 static const float defaultscreenVerts[12] =
@@ -3818,9 +4032,18 @@ void GL_MakeScreenTexture(int tex)
 {
 	boolean firstTime;
 	static GLint lastfiltermode[NUMSCREENTEXTURES] = {-1, -1, -1, -1, -1};
+#ifdef USE_FBO_OGL
+	const boolean msaa_fbo = (framebufferobject.bound && framebufferobject.msaa);
+#endif
 
 	if (!gl_enable_screen_textures)
 		return;
+
+#ifdef USE_FBO_OGL
+	// multisampled framebuffers cannot be copied from directly
+	if (msaa_fbo)
+		GL_FBO_Resolve(GL_COLOR_BUFFER_BIT);
+#endif
 
 	firstTime = (screenTextures[tex] == 0);
 
@@ -3855,6 +4078,11 @@ void GL_MakeScreenTexture(int tex)
 	}
 
 	tex_downloaded = screenTextures[tex];
+
+#ifdef USE_FBO_OGL
+	if (msaa_fbo)
+		GL_FBO_Enable();
+#endif
 }
 
 void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height)

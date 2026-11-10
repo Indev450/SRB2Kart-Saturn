@@ -240,7 +240,8 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 	if (HWR_ShouldUsePaletteRendering())
 	{
-		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS)); // Final postprocess step of palette rendering, after everything else has been drawn.
+		// Final postprocess step of palette rendering, after everything else has been drawn.
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
 		GL_EnableShader();
 		HWR_DrawScreenFinalTexture(sdlw, sdlh);
 		GL_UnSetShader();
