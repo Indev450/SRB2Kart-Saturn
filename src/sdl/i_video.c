@@ -1292,11 +1292,11 @@ void I_CheckDownSampleState(boolean forcerefresh)
 	// state changed or fbo was toggled
 	if (vid_downsampling != newdownsamplestate || forcerefresh)
 	{
-		//printf("downsample changed from %d to %d\n", vid_downsampling, curdownsamplestate);
+		//printf("downsample changed from %d to %d\n", vid_downsampling, newdownsamplestate);
+		// needs to be reset before refreshing the gl surface!
+		vid_downsampling = newdownsamplestate;
 		OglSdlSurface(vid.width, vid.height);
 	}
-
-	vid_downsampling = newdownsamplestate;
 }
 #endif
 
