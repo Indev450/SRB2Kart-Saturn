@@ -513,6 +513,9 @@ typedef struct subsector_s
 	void *splats; // floorsplat_t list
 #endif
 	size_t validcount;
+#ifdef HWRENDER
+	boolean hashorizon; // not really needed for software, this stuff works differently there
+#endif
 } subsector_t;
 
 // Sector list node showing all sectors an object appears in.
