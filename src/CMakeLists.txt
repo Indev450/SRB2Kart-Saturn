@@ -293,7 +293,6 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_script.c
 		lua_skinlib.c
 		lua_thinkerlib.c
-		lua_udatalib.c
 		lua_glib.c
 	)
 	set(SRB2_LUA_HEADERS
@@ -303,7 +302,6 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_profile.h
 		lua_libs.h
 		lua_script.h
-		lua_udatalib.h
 		lua_glib.h
 	)
 
