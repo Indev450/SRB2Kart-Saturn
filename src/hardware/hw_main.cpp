@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "../d_main.h"
 #include "../doomstat.h"
 #include "../doomdef.h"
 
@@ -206,7 +207,8 @@ static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 b
 consvar_t cv_glscreentextures = {"gr_screentextures", "All", CV_CALL|CV_SAVE, glscreentextures_cons_t, CV_screentextures_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 #ifdef USE_FBO_OGL
-consvar_t cv_glframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_glframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t glframebuffer_cons_t[] = {{0, "Off"}, {1, "Downsample"}, {2, "Always"}, {0, NULL}};
+consvar_t cv_glframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL, glframebuffer_cons_t, CV_glframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 consvar_t cv_glmdls = {"gr_mdls", "Off", CV_SAVE|CV_CALL, CV_OnOff, M_UpdateOGLMenu, 0, NULL, NULL, 0, 0, NULL};
@@ -269,8 +271,8 @@ static void CV_glframebuffer_OnChange(void)
 	// screen FBO needs screen textures currently
 	if (cv_glframebuffer.value != 0 && ((cv_glscreentextures.value != 2) || !supportFBO))
 		CV_StealthSetValue(&cv_glframebuffer, 0); // dont recursively call this lul
-
-	I_CheckDownSampleState(true);
+	if (loaded_config) // dont do this crap on startup, this is handled elsewhere
+		I_CheckDownSampleState(true);
 	M_UpdateOGLMenu();
 	intermissionbginit = false;
 }
