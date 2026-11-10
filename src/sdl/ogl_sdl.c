@@ -65,7 +65,7 @@ PFNglGetString pglGetString;
 #ifdef USE_FBO_OGL
 boolean UseScreenFBO(void)
 {
-	return (supportFBO && cv_glframebuffer.value && I_IsDownsampling() && (cv_glscreentextures.value == 2));
+	return (supportFBO && cv_glframebuffer.value && (cv_glscreentextures.value == 2) && (cv_glframebuffer.value == 2 || I_IsDownsampling()));
 }
 #endif
 
