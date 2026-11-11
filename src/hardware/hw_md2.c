@@ -1233,7 +1233,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				sprinfo = &spriteinfo[spr->mobj->sprite];
 			}
 		}
-		else if (spr->mobj->skin)
+		else
 		{
 			md2 = &md2_models[spr->mobj->sprite];
 			sprinfo = &spriteinfo[spr->mobj->sprite];
