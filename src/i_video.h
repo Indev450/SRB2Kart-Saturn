@@ -118,10 +118,7 @@ void I_UpdateNoVsync(void);
 */
 void I_ReadScreen(UINT8 * restrict scr, INT32 scale);
 
-
 UINT32 I_GetRefreshRate(void);
-
-boolean I_CheckNativeRes(void);
 
 void I_SetBorderlessWindow(void);
 
