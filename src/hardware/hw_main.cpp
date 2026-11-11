@@ -739,7 +739,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
-	if (gl_maphashorizonlines && subsector && subsector->hashorizon && cv_glhorizonlines.value)
+	if (subsector && subsector->hashorizon && cv_glhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -850,7 +850,7 @@ static void HWR_RenderFOFHorizonPlane(subsector_t *subsector, extrasubsector_t *
 
 	poly_t *planepoly = xsub->planepoly;
 
-	if (!gl_maphashorizonlines || !cv_glhorizonlines.value)
+	if (!cv_glhorizonlines.value)
 		return;
 
 	if (!subsector || !subsector->hashorizon)
@@ -6350,37 +6350,9 @@ void HWR_RenderPlayerView(void)
 	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 }
 
-// go through subsectors and check if they contain atleast one horizonline
-// this is purely for performance reasons
-static void HWR_CheckHorizonSubsectors(void)
-{
-	size_t i;
-	INT32 j;
-
-	// not sure if we really need this anymore now
-	if (!gl_maphashorizonlines)
-		return;
-
-	for (i = 0; i < numsubsectors; ++i)
-	{
-		subsector_t *sub = &subsectors[i];
-		const seg_t *seg = &segs[sub->firstline];
-
-		for (j = 0; j < sub->numlines; ++j, ++seg)
-		{
-			if (!seg->polyseg && seg->linedef && seg->linedef->special == HORIZONSPECIAL)
-			{
-				sub->hashorizon = true;
-				break;
-			}
-		}
-	}
-}
-
 void HWR_LoadLevel(void)
 {
 	HWR_CreatePlanePolygons((INT32)numnodes - 1);
-	HWR_CheckHorizonSubsectors();
 
 	// Build the sky dome
 	HWR_ClearSkyDome();

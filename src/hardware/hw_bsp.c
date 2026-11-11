@@ -54,10 +54,6 @@ typedef struct {
 // if no portals are found, the portal scanning phase can be skipped while rendering, saving a bit of time.
 boolean gl_maphasportals = false;
 
-// Determine on mapload if current map has any Horizonlines present
-// avoids doing a bunch of work during rendering
-boolean gl_maphashorizonlines = false;
-
 // ==========================================================================
 //                                    FLOOR & CEILING CONVEX POLYS GENERATION
 // ==========================================================================
@@ -405,7 +401,7 @@ static void SplitPoly (fdivline_t *dlnp,        // splitting parametric line
 }
 
 // checks if any line is a portal or horizonline, for optimization
-static inline void CheckForPortalsAndHorizonLines(boolean firstside, const line_t *line)
+static inline void CheckForPortalsAndHorizonLines(boolean firstside, const line_t *line, subsector_t *sub)
 {
 	// portal check
 	if (!gl_maphasportals && firstside && line->special == PORTALSPECIAL)
@@ -421,8 +417,8 @@ static inline void CheckForPortalsAndHorizonLines(boolean firstside, const line_
 	}
 
 	// horizonline check
-	if (!gl_maphashorizonlines && line->special == HORIZONSPECIAL)
-		gl_maphashorizonlines = true;
+	if (line->special == HORIZONSPECIAL)
+		sub->hashorizon = true;
 }
 
 // Use each seg of the poly as a partition line, keep only the
@@ -435,7 +431,7 @@ static inline void CheckForPortalsAndHorizonLines(boolean firstside, const line_
 //  segcount : number of seg in the array
 // Return frontpoly, which may be new or ptr to poly.
 // Called from: HWR_SubsecPoly
-static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly)
+static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly, subsector_t *sub)
 {
 	INT32 i, j;
 	poly_t* frontpoly = poly;  // default, return same poly
@@ -447,10 +443,6 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly)
 	vertex_t *v1, *v2;
 	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
 
-	// empty poly? just save us some time then
-	if (poly->numpts <= 0)
-		return frontpoly;
-
 	// for each seg of the subsector
 	for (; segcount--; lseg++)
 	{
@@ -460,7 +452,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 segcount, poly_t *poly)
 		if (!line)
 			continue;
 
-		CheckForPortalsAndHorizonLines(lseg->side == 0, line);
+		CheckForPortalsAndHorizonLines(lseg->side == 0, line, sub);
 
 		if (line->sidenum[1] != NO_INDEX)
 		{
@@ -623,7 +615,7 @@ static inline void HWR_SubsecPoly(INT32 ssindex, poly_t *poly)
 
 	if (poly)
 	{
-		poly = CutOutSubsecPoly(lseg, segcount, poly);
+		poly = CutOutSubsecPoly(lseg, segcount, poly, sub);
 #ifdef DEBUG_HWBSP
 		totalsubsecpolys++;
 #endif
@@ -752,7 +744,7 @@ static void WalkBSPNode(INT32 bspnum, poly_t *poly, UINT16 *leafnode, fixed_t *b
 #endif
 
 	// Recursively divide front space.
-	if (LIKELY(frontpoly))
+	if (frontpoly)
 	{
 		WalkBSPNode(bsp->children[0], frontpoly, &bsp->children[0],bsp->bbox[0]);
 
@@ -879,7 +871,9 @@ static boolean PointInSeg(polyvertex_t *va, polyvertex_t *v1, polyvertex_t *v2)
 #endif
 }
 
+#ifdef DEBUG_HWBSP
 static INT32 numsplitpoly;
+#endif
 
 static void SearchSegInBSP(INT32 bspnum, polyvertex_t *p, poly_t *poly)
 {
@@ -918,8 +912,9 @@ static void SearchSegInBSP(INT32 bspnum, polyvertex_t *p, poly_t *poly)
 
 					for (n = k+1; n < newpoly->numpts; n++)
 						newpoly->pts[n] = q->pts[n-1];
-
+#ifdef DEBUG_HWBSP
 					numsplitpoly++;
+#endif
 					extrasubsectors[bspnum].planepoly = newpoly;
 					HWR_FreePoly(q);
 					return;
@@ -965,7 +960,9 @@ static void SolveTProblem(void)
 	I_FinishUpdate(); // page flip or blit buffer
 #endif
 
+#ifdef DEBUG_HWBSP
 	numsplitpoly = 0;
+#endif
 
 	for (ssnum = 0; ssnum < num_extra_subsector; ssnum++)
 	{
@@ -1002,8 +999,8 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	I_FinishUpdate(); // page flip or blit buffer
 #endif
 
-	// reset the portal and horizonline flag
-	gl_maphasportals = gl_maphashorizonlines = false;
+	// reset the portal flag
+	gl_maphasportals = false;
 
 	// find min/max boundaries of map
 #ifdef DEBUG_HWBSP
