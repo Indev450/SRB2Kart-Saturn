@@ -225,7 +225,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 void OglSdlFinishUpdate(SDL_Window *window)
 {
 	int sdlw, sdlh;
-
 #ifdef USE_FBO_OGL
 	const boolean usefbo = UseScreenFBO();
 #endif
@@ -262,11 +261,10 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
-	// well we dont need it on native res it seems
 #ifdef USE_FBO_OGL
-	if (!usefbo && (!I_CheckNativeRes() || WipeInAction))
+	if (!usefbo && (realwidth != sdlw || realheight != sdlh)) // not needed if fbo is in use
 #else
-	if (!I_CheckNativeRes() || WipeInAction)
+	if (realwidth != sdlw || realheight != sdlh) // this is not needed if the render size matches window size
 #endif
 		HWR_DrawScreenFinalTexture(realwidth, realheight);
 }

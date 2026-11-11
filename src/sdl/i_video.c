@@ -118,10 +118,6 @@ consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE|CV_CALL, 
 
 static void Impl_SetVsync(void);
 
-static INT32 desktopwidth = 0, desktopheight = 0;
-
-static void I_CheckDesktopRes(void);
-
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -484,18 +480,12 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
-		I_CheckDesktopRes();
-
 		// if we say moved our game window to a different screen
 		// refetch our resolutions
 		I_FillScreenResolutionsList(false);
-#ifdef HWRENDER
 #ifdef USE_FBO_OGL
 		if (rendermode == render_opengl)
-		{
 			I_CheckDownSampleState(false);
-		}
-#endif
 #endif
 		windowmoved = SDL_FALSE;
 	}
@@ -1203,9 +1193,7 @@ static void VID_Command_ModeList_f(void)
 	// List windowed modes
 	INT32 i = 0;
 
-	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n"
-	"Under opengl, fullscreen only supports native desktop resolution.\n"
-	"Under software, the mode is stretched up to desktop resolution.\n");
+	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n");
 
 	for (i = 0; i < vid_nummodes; i++)
 	{
@@ -1231,44 +1219,6 @@ static void VID_Command_Mode_f (void)
 		setmodeneeded = modenum+1; // request vid mode change
 }
 
-// Get the desktop resolution from the current display the gamewindow resides on
-static void I_CheckDesktopRes(void)
-{
-	int currentDisplayIndex = -1;
-	SDL_DisplayMode curmode;
-
-	// just fallback to game res ig?
-	desktopwidth = vid.width;
-	desktopheight = vid.height;
-
-	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
-	// No valid index
-	if (currentDisplayIndex < 0)
-	{
-		return;
-	}
-
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) < 0)
-	{
-		return;
-	}
-
-	desktopwidth = curmode.w;
-	desktopheight = curmode.h;
-}
-
-// Check if the game resolution matches the desktop resolution
-boolean I_CheckNativeRes(void)
-{
-	return (vid.width == desktopwidth && vid.height == desktopheight);
-}
-
-boolean I_CheckAboveDesktopRes(INT32 width, INT32 height)
-{
-	return (width > desktopwidth || height > desktopheight);
-}
-
 #ifdef USE_FBO_OGL
 static boolean vid_downsampling = false;
 
@@ -1287,7 +1237,15 @@ void I_CheckDownSampleState(boolean forcerefresh)
 	}
 
 	// no sense to do this crap if we cant benefit from it
-	const boolean newdownsamplestate = cv_glframebuffer.value && (cv_glscreentextures.value == 2) && I_CheckAboveDesktopRes(vid.width, vid.height);
+	boolean newdownsamplestate = false;
+
+	if (cv_glframebuffer.value && (cv_glscreentextures.value == 2))
+	{
+		int sdlw, sdlh;
+		SDL_GetWindowSize(window, &sdlw, &sdlh);
+		if (vid.width > sdlw || vid.height > sdlh)
+			newdownsamplestate = true;
+	}
 
 	// state changed or fbo was toggled
 	if (vid_downsampling != newdownsamplestate || forcerefresh)
@@ -1326,8 +1284,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 			}
 
 			// Reposition window only in windowed mode
-			const int windowpos = SDL_GetWindowDisplayIndex(window);
 			SDL_SetWindowSize(window, width, height);
+			const int windowpos = SDL_GetWindowDisplayIndex(window);
 			SDL_SetWindowPosition(window,
 				SDL_WINDOWPOS_CENTERED_DISPLAY(windowpos),
 				SDL_WINDOWPOS_CENTERED_DISPLAY(windowpos)
@@ -1350,7 +1308,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
 		I_CheckDownSampleState(false);
 #endif
@@ -1565,6 +1522,13 @@ static int IsCustomResolutionInList(int list_size)
 	return 0;
 }
 
+static INT32 desktopwidth = 0, desktopheight = 0;
+
+boolean I_CheckAboveDesktopRes(INT32 width, INT32 height)
+{
+	return (width > desktopwidth || height > desktopheight);
+}
+
 //
 // I_FillScreenResolutionsList
 // Get all the supported screen resolutions
@@ -1579,19 +1543,26 @@ static void I_FillScreenResolutionsList(boolean force)
 	int count = 0;
 	char custom_resolution[10];
 
+	// just fallback to game res ig?
+	desktopwidth = vid.width;
+	desktopheight = vid.height;
+
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 
 	// No valid index
 	if (currentDisplayIndex < 0)
-	{
 		return;
+
+	// this is only to mark certain resolutions in red
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &mode) >= 0)
+	{
+		desktopwidth = mode.w;
+		desktopheight = mode.h;
 	}
 
 	// didnt change screen, no need to redo the list
 	if (!force && currentDisplayIndex == oldDisplayIndex)
-	{
 		return;
-	}
 
 	oldDisplayIndex = currentDisplayIndex;
 
@@ -1734,7 +1705,7 @@ void VID_PrepareModeList(void)
 static UINT32 refresh_rate;
 static UINT32 VID_GetRefreshRate(void)
 {
-	int index = SDL_GetWindowDisplayIndex(window);
+	int index;
 	SDL_DisplayMode m;
 
 	if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
@@ -1742,6 +1713,8 @@ static UINT32 VID_GetRefreshRate(void)
 		// Video not init yet.
 		return 0;
 	}
+
+	index = SDL_GetWindowDisplayIndex(window);
 
 	if (SDL_GetDesktopDisplayMode(index, &m) != 0)
 	{

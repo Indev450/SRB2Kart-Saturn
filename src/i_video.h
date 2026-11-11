@@ -123,7 +123,6 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale);
 UINT32 I_GetRefreshRate(void);
 
 boolean I_CheckAboveDesktopRes(INT32 width, INT32 height);
-boolean I_CheckNativeRes(void);
 
 void I_SetBorderlessWindow(void);
 
