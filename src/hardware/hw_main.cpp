@@ -1156,91 +1156,9 @@ static void HWR_RenderRefractionPlane(subsector_t *subsector, extrasubsector_t *
 	GL_DrawWaterPolygon(planeVerts, nrPlaneVerts);
 
 	//FIXME: horizonlines with fofs dont work in gl for some reason!
+	// they now do, but getting this to work with horizonlines would be godawful and slow
+	// i should finally get around and rewrite the water shader so we dont need this at all
 	(void)subsector;
-	/*if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
-	{
-		// Horizon lines
-		FOutVector horizonpts[6];
-		float dist, vx, vy;
-		float x1, y1, xd, yd;
-		UINT8 numplanes, j;
-		vertex_t v; // For determining the closest distance from the line to the camera, to split render planes for minimum distortion;
-
-		static constexpr float renderdist    = 27000.0f; // How far out to properly render the plane
-		static constexpr float farrenderdist = 32768.0f; // From here, raise plane to horizon level to fill in the line with some texture distortion
-
-		const seg_t *line = &segs[subsector->firstline];
-
-		for (i = 0; i < subsector->numlines; i++, line++)
-		{
-			if (line->polyseg)
-				continue;
-
-			line_t* ld = line->linedef;
-
-			// this check sucks and is a hotspot lel
-			if (LIKELY(ld->special != HORIZONSPECIAL))
-				continue;
-
-			if (R_PointOnSegSide(viewx, viewy, line) != 0)
-				continue;
-
-			P_ClosestPointOnLine(viewx, viewy, ld, &v);
-			dist = FixedToFloat(R_PointToDist(v.x, v.y));
-
-			x1 = (line->fv1.x);
-			y1 = (line->fv1.y);
-
-			xd = (line->fv2.x) - x1;
-			yd = (line->fv2.y) - y1;
-
-			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
-			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
-
-			if (dist > 100.0f)
-				numplanes = 100;
-			else
-				numplanes = (UINT8)dist + 1;
-
-			for (j = 0; j < numplanes; j++)
-			{
-				// Left side
-				vx = x1 + xd * j / numplanes;
-				vy = y1 + yd * j / numplanes;
-				SETUP3DVERT((&horizonpts[1]), vx, vy);
-
-				dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
-				vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
-				vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
-				SETUP3DVERT((&horizonpts[0]), vx, vy);
-
-				// Right side
-				vx = x1 + xd * (j+1) / numplanes;
-				vy = y1 + yd * (j+1) / numplanes;
-				SETUP3DVERT((&horizonpts[2]), vx, vy);
-
-				dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
-				vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
-				vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
-				SETUP3DVERT((&horizonpts[3]), vx, vy);
-
-				// Horizon fills
-				vx = (horizonpts[0].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
-				vy = (horizonpts[0].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
-				SETUP3DVERT((&horizonpts[5]), vx, vy);
-				horizonpts[5].y = gl_viewz;
-
-				vx = (horizonpts[3].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
-				vy = (horizonpts[3].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
-				SETUP3DVERT((&horizonpts[4]), vx, vy);
-				horizonpts[4].y = gl_viewz;
-
-				// Draw
-				GL_DrawWaterPolygon(&Surf, horizonpts, 6, PF_NoTexture|PF_Ripple);
-			}
-		}
-	}
-	*/
 #undef SETUP3DVERT
 }
 
