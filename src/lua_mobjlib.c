@@ -344,19 +344,16 @@ static int mobj_get(lua_State *L)
 		lua_pushangle(L, mo->slopepitch);
 		break;
 	case mobj_rollsum:
-	{
-		angle_t pitchnroll = P_MobjPitchAndRoll(mo);
-
-		angle_t rollsum = mo->rollangle + pitchnroll;
-
-		if (mo->player)
 		{
-			rollsum += R_PlayerSliptideAngle(mo->player);
+			angle_t pitchnroll = P_MobjPitchAndRoll(mo);
+			angle_t rollsum = mo->rollangle + pitchnroll;
+			if (mo->player)
+			{
+				rollsum += R_PlayerSliptideAngle(mo->player);
+			}
+			lua_pushangle(L, rollsum);
 		}
-
-		lua_pushangle(L, rollsum);
 		break;
-	}
 	case mobj_spritexscale:
 		lua_pushfixed(L, mo->spritexscale);
 		break;
@@ -431,30 +428,24 @@ static int mobj_set(lua_State *L)
 	case mobj_y:
 		return NOSETPOS;
 	case mobj_z:
-	{
-		// z doesn't cross sector bounds so it's okay.
-		mobj_t *ptmthing = tmthing;
-		mo->z = luaL_checkfixed(L, 3);
-		P_CheckPosition(mo, mo->x, mo->y);
-		mo->floorz = tmfloorz;
-		mo->ceilingz = tmceilingz;
-		P_SetTarget(&tmthing, ptmthing);
+		{
+			// z doesn't cross sector bounds so it's okay.
+			mobj_t *ptmthing = tmthing;
+			mo->z = luaL_checkfixed(L, 3);
+			P_CheckPosition(mo, mo->x, mo->y);
+			mo->floorz = tmfloorz;
+			mo->ceilingz = tmceilingz;
+			P_SetTarget(&tmthing, ptmthing);
+		}
 		break;
-	}
 	case mobj_snext:
 		return NOSETPOS;
 	case mobj_sprev:
 		return UNIMPLEMENTED;
 	case mobj_angle:
 		mo->angle = luaL_checkangle(L, 3);
-		if (mo->player == &players[consoleplayer])
-			localangle[0] = mo->angle;
-		else if (mo->player == &players[displayplayers[1]])
-			localangle[1] = mo->angle;
-		else if (mo->player == &players[displayplayers[2]])
-			localangle[2] = mo->angle;
-		else if (mo->player == &players[displayplayers[3]])
-			localangle[3] = mo->angle;
+		if (mo->player)
+			P_ForceLocalAngle(mo->player, mo->angle);
 		break;
 	case mobj_sprite:
 		mo->sprite = luaL_checkinteger(L, 3);
@@ -474,29 +465,29 @@ static int mobj_set(lua_State *L)
 	case mobj_ceilingz:
 		return NOSETPOS;
 	case mobj_radius:
-	{
-		mobj_t *ptmthing = tmthing;
-		mo->radius = luaL_checkfixed(L, 3);
-		if (mo->radius < 0)
-			mo->radius = 0;
-		P_CheckPosition(mo, mo->x, mo->y);
-		mo->floorz = tmfloorz;
-		mo->ceilingz = tmceilingz;
-		P_SetTarget(&tmthing, ptmthing);
+		{
+			mobj_t *ptmthing = tmthing;
+			mo->radius = luaL_checkfixed(L, 3);
+			if (mo->radius < 0)
+				mo->radius = 0;
+			P_CheckPosition(mo, mo->x, mo->y);
+			mo->floorz = tmfloorz;
+			mo->ceilingz = tmceilingz;
+			P_SetTarget(&tmthing, ptmthing);
+		}
 		break;
-	}
 	case mobj_height:
-	{
-		mobj_t *ptmthing = tmthing;
-		mo->height = luaL_checkfixed(L, 3);
-		if (mo->height < 0)
-			mo->height = 0;
-		P_CheckPosition(mo, mo->x, mo->y);
-		mo->floorz = tmfloorz;
-		mo->ceilingz = tmceilingz;
-		P_SetTarget(&tmthing, ptmthing);
+		{
+			mobj_t *ptmthing = tmthing;
+			mo->height = luaL_checkfixed(L, 3);
+			if (mo->height < 0)
+				mo->height = 0;
+			P_CheckPosition(mo, mo->x, mo->y);
+			mo->floorz = tmfloorz;
+			mo->ceilingz = tmceilingz;
+			P_SetTarget(&tmthing, ptmthing);
+		}
 		break;
-	}
 	case mobj_momx:
 		mo->momx = luaL_checkfixed(L, 3);
 		break;
@@ -520,25 +511,25 @@ static int mobj_set(lua_State *L)
 			P_SetMobjState(mo, luaL_checkinteger(L, 3));
 		break;
 	case mobj_flags: // special handling for MF_NOBLOCKMAP and MF_NOSECTOR
-	{
-		UINT32 flags = luaL_checkinteger(L, 3);
-		if ((flags & (MF_NOBLOCKMAP|MF_NOSECTOR)) != (mo->flags & (MF_NOBLOCKMAP|MF_NOSECTOR)))
 		{
-			P_UnsetThingPosition(mo);
-			mo->flags = flags;
-			if (flags & MF_NOSECTOR && sector_list)
+			UINT32 flags = luaL_checkinteger(L, 3);
+			if ((flags & (MF_NOBLOCKMAP|MF_NOSECTOR)) != (mo->flags & (MF_NOBLOCKMAP|MF_NOSECTOR)))
 			{
-				P_DelSeclist(sector_list);
-				sector_list = NULL;
+				P_UnsetThingPosition(mo);
+				mo->flags = flags;
+				if (flags & MF_NOSECTOR && sector_list)
+				{
+					P_DelSeclist(sector_list);
+					sector_list = NULL;
+				}
+				mo->snext = NULL, mo->sprev = NULL;
+				mo->bnext = NULL, mo->bprev = NULL;
+				P_SetThingPosition(mo);
 			}
-			mo->snext = NULL, mo->sprev = NULL;
-			mo->bnext = NULL, mo->bprev = NULL;
-			P_SetThingPosition(mo);
+			else
+				mo->flags = flags;
 		}
-		else
-			mo->flags = flags;
 		break;
-	}
 	case mobj_flags2:
 		mo->flags2 = (UINT32)luaL_checkinteger(L, 3);
 		break;
@@ -546,27 +537,29 @@ static int mobj_set(lua_State *L)
 		mo->eflags = (UINT32)luaL_checkinteger(L, 3);
 		break;
 	case mobj_skin: // set skin by name
-	{
-		INT32 i;
-		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
-		strlcpy(skin, luaL_checkstring(L, 3), sizeof skin);
-		strlwr(skin); // all skin names are lowercase
-		for (i = 0; i < numskins; i++)
-			if (fastcmp(skins[i].name, skin))
+		{
+			INT32 i;
+			char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
+			strlcpy(skin, luaL_checkstring(L, 3), sizeof skin);
+			strlwr(skin); // all skin names are lowercase
+			for (i = 0; i < numskins; i++)
 			{
-				mo->skin = &skins[i];
-				return 0;
+				if (fastcmp(skins[i].name, skin))
+				{
+					mo->skin = &skins[i];
+					return 0;
+				}
 			}
-		return luaL_error(L, "mobj.skin '%s' not found!", skin);
-	}
+			return luaL_error(L, "mobj.skin '%s' not found!", skin);
+		}
 	case mobj_color:
-	{
-		UINT8 newcolor = (UINT8)luaL_checkinteger(L,3);
-		if (newcolor >= MAXTRANSLATIONS)
-			return luaL_error(L, "mobj.color %d out of range (0 - %d).", newcolor, MAXTRANSLATIONS-1);
-		mo->color = newcolor;
+		{
+			UINT8 newcolor = (UINT8)luaL_checkinteger(L,3);
+			if (newcolor >= MAXTRANSLATIONS)
+				return luaL_error(L, "mobj.color %d out of range (0 - %d).", newcolor, MAXTRANSLATIONS-1);
+			mo->color = newcolor;
+		}
 		break;
-	}
 	case mobj_bnext:
 		return NOSETPOS;
 	case mobj_bprev:
@@ -590,15 +583,15 @@ static int mobj_set(lua_State *L)
 		}
 		break;
 	case mobj_type: // yeah sure, we'll let you change the mobj's type.
-	{
-		mobjtype_t newtype = luaL_checkinteger(L, 3);
-		if (newtype >= NUMMOBJTYPES)
-			return luaL_error(L, "mobj.type %d out of range (0 - %d).", newtype, NUMMOBJTYPES-1);
-		mo->type = newtype;
-		mo->info = &mobjinfo[newtype];
-		P_SetScale(mo, mo->scale);
+		{
+			mobjtype_t newtype = luaL_checkinteger(L, 3);
+			if (newtype >= NUMMOBJTYPES)
+				return luaL_error(L, "mobj.type %d out of range (0 - %d).", newtype, NUMMOBJTYPES-1);
+			mo->type = newtype;
+			mo->info = &mobjinfo[newtype];
+			P_SetScale(mo, mo->scale);
+		}
 		break;
-	}
 	case mobj_info:
 		return NOSET;
 	case mobj_health:
@@ -666,23 +659,23 @@ static int mobj_set(lua_State *L)
 	case mobj_mobjnum:
 		return UNIMPLEMENTED;
 	case mobj_scale:
-	{
-		fixed_t scale = luaL_checkfixed(L, 3);
-		if (scale < FRACUNIT/100)
-			scale = FRACUNIT/100;
-		mo->destscale = scale;
-		P_SetScale(mo, scale);
-		mo->old_scale = scale;
+		{
+			fixed_t scale = luaL_checkfixed(L, 3);
+			if (scale < FRACUNIT/100)
+				scale = FRACUNIT/100;
+			mo->destscale = scale;
+			P_SetScale(mo, scale);
+			mo->old_scale = scale;
+		}
 		break;
-	}
 	case mobj_destscale:
-	{
-		fixed_t scale = luaL_checkfixed(L, 3);
-		if (scale < FRACUNIT/100)
-			scale = FRACUNIT/100;
-		mo->destscale = scale;
+		{
+			fixed_t scale = luaL_checkfixed(L, 3);
+			if (scale < FRACUNIT/100)
+				scale = FRACUNIT/100;
+			mo->destscale = scale;
+		}
 		break;
-	}
 	case mobj_scalespeed:
 		mo->scalespeed = luaL_checkfixed(L, 3);
 		break;
@@ -747,58 +740,58 @@ static int mobj_set(lua_State *L)
 		mo->lightlevel = (INT16)luaL_checkinteger(L, 3);
 		break;
 	case mobj_localskin:
-	{
-		if (mo->player)
 		{
-			SetLocalPlayerSkin(mo->player - players, luaL_optstring(L, 3, "none"), NULL);
-		}
-		else
-		{
-			INT32 i;
-			char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
-			strlcpy(skin, luaL_optstring(L, 3, "none"), sizeof skin);
-			strlwr(skin); // all skin names are lowercase
-
-			if (!fasticmp(skin, "none"))
+			if (mo->player)
 			{
-				// Try localskins
-				for (i = 0; i < numlocalskins; i++)
-				{
-					if (fasticmp(localskins[i].name, skin))
-					{
-						mo->localskin = &localskins[i];
-						mo->skinlocal = true;
-						return 0;
-					}
-				}
-
-				// Try other skins
-				for (i = 0; i < numskins; i++)
-				{
-					if (fasticmp(skins[i].name, skin))
-					{
-						mo->localskin = &skins[i];
-						mo->skinlocal = false;
-						return 0;
-					}
-				}
+				SetLocalPlayerSkin(mo->player - players, luaL_optstring(L, 3, "none"), NULL);
 			}
 			else
 			{
-				mo->localskin = NULL;
-				mo->skinlocal = false;
+				INT32 i;
+				char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
+				strlcpy(skin, luaL_optstring(L, 3, "none"), sizeof skin);
+				strlwr(skin); // all skin names are lowercase
+
+				if (!fasticmp(skin, "none"))
+				{
+					// Try localskins
+					for (i = 0; i < numlocalskins; i++)
+					{
+						if (fasticmp(localskins[i].name, skin))
+						{
+							mo->localskin = &localskins[i];
+							mo->skinlocal = true;
+							return 0;
+						}
+					}
+
+					// Try other skins
+					for (i = 0; i < numskins; i++)
+					{
+						if (fasticmp(skins[i].name, skin))
+						{
+							mo->localskin = &skins[i];
+							mo->skinlocal = false;
+							return 0;
+						}
+					}
+				}
+				else
+				{
+					mo->localskin = NULL;
+					mo->skinlocal = false;
+				}
 			}
 		}
 		break;
-	}
 	case mobj_blendmode:
-	{
-		INT32 blendmode = (INT32)luaL_checkinteger(L, 3);
-		if (blendmode < 0 || blendmode > AST_OVERLAY)
-			return luaL_error(L, "mobj.blendmode %d out of range (0 - %d).", blendmode, AST_OVERLAY);
-		mo->blendmode = blendmode;
+		{
+			INT32 blendmode = (INT32)luaL_checkinteger(L, 3);
+			if (blendmode < 0 || blendmode > AST_OVERLAY)
+				return luaL_error(L, "mobj.blendmode %d out of range (0 - %d).", blendmode, AST_OVERLAY);
+			mo->blendmode = blendmode;
+		}
 		break;
-	}
 	case mobj_mirrored:
 		mo->mirrored = luaL_checkboolean(L, 3);
 		break;
@@ -950,13 +943,13 @@ static int mapthing_set(lua_State *L)
 			mt->z = (INT16)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_extrainfo:
-		{
-			INT32 extrainfo = luaL_checkinteger(L, 3);
-			if (extrainfo & ~15)
-				return luaL_error(L, "mapthing_t extrainfo set %d out of range (%d - %d)", extrainfo, 0, 15);
-			mt->extrainfo = (UINT8)extrainfo;
+			{
+				INT32 extrainfo = luaL_checkinteger(L, 3);
+				if (extrainfo & ~15)
+					return luaL_error(L, "mapthing_t extrainfo set %d out of range (%d - %d)", extrainfo, 0, 15);
+				mt->extrainfo = (UINT8)extrainfo;
+			}
 			break;
-		}
 		case mapthing_mobj:
 			mt->mobj = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
 			break;
