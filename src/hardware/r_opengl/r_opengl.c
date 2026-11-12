@@ -765,6 +765,10 @@ typedef enum
 	gluniform_scr_dup,
 	gluniform_scr_tex_size,
 
+	// vhs
+	gluniform_vhs_rewind,
+	gluniform_vhs_time,
+
 	gluniform_max,
 } gluniform_t;
 
@@ -796,6 +800,9 @@ static float shader_light_y = 0.0f;
 static float shader_light_z = 0.0f;
 static INT32 shader_light_contrast = 0;
 static INT32 shader_light_backlight = 0;
+
+static float shader_vhs_rewind = 1.0f;
+static float shader_vhs_time = 0.0f;
 
 // Lactozilla: Shader functions
 static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i);
@@ -2338,6 +2345,9 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 		// grrrrr stupid 2.0 support.. used similar to yfix, xfix
 		UNIFORM_2(shader->uniforms[gluniform_scr_tex_size], (GLfloat)screen_texsizew, (GLfloat)screen_texsizeh, pglUniform2f);
 
+		UNIFORM_1(shader->uniforms[gluniform_vhs_rewind], shader_vhs_rewind, pglUniform1f);
+		UNIFORM_1(shader->uniforms[gluniform_vhs_time], shader_vhs_time, pglUniform1f);
+
 		#undef UNIFORM_1
 		#undef UNIFORM_2
 		#undef UNIFORM_3
@@ -2473,6 +2483,10 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	// postprocessor stuff (water/heat effect)
 	shader->uniforms[gluniform_scr_dup]               = GETUNI("scr_dup");
 	shader->uniforms[gluniform_scr_tex_size]          = GETUNI("scr_tex_size");
+
+	// vhs stuff
+	shader->uniforms[gluniform_vhs_rewind]            = GETUNI("vhs_rewind");
+	shader->uniforms[gluniform_vhs_time]              = GETUNI("vhs_time");
 
 #undef GETUNI
 
@@ -3852,120 +3866,184 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 	tex_downloaded = screenTextures[wipeEnd];
 }
 
-void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize, boolean rewind)
 {
 	float xfix, yfix;
 	float fix[8];
-	float i;
 
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	GLubyte color[4] = {255, 255, 255, 255};
-
-	float screenVerts[12] =
-	{
-		-1.0f, -1.0f, 1.0f,
-		-1.0f,  1.0f, 1.0f,
-		 1.0f,  1.0f, 1.0f,
-		 1.0f, -1.0f, 1.0f
-	};
-
 	const GLfloat scrwf = (float)screen_width;
-	const GLfloat scrwh = (float)screen_height;
+	const GLfloat scrhf = (float)screen_height;
 
 	xfix = 1/((float)screen_texsizew/scrwf);
-	yfix = 1/((float)screen_texsizeh/scrwh);
+	yfix = 1/((float)screen_texsizeh/scrhf);
 
-	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
-
-	// Slight fuzziness
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
-
-	uint32_t r = rand();
-
-	const float ystep = 2.f/scrwh * (float)vid.udup/4.f;
-
-	for (i = 0; i < 1; i += ystep)
+	// uses shaders to replicate the effect
+	// thanks RR for their heat effect being basically the vhs bars, made this lots easier lul
+	if (HWR_UseShader())
 	{
-		// avoid calling rand thousands of times
-		r ^= r >> 13;
-		r ^= r >> 11;
-		r ^= r << 21;
+		// leveltime pauses with the game so we need to keep our own ticker here
+		static tic_t lleveltime = 0;
+		if (renderisnewtic) lleveltime++;
+		shader_vhs_time = (((float)(lleveltime-1)) + FIXED_TO_FLOAT(R_GetTimeFrac(RTF_CAMERA))) / TICRATE; // RTF_CAMERA interpolates during pause gladly...
 
-		fix[2] = (float)(r & 127) / -22000.f * xfix;
-		fix[0] = fix[2];
-		fix[6] = fix[0] + xfix;
-		fix[4] = fix[2] + xfix;
-		fix[1] = fix[7] = i*yfix;
-		fix[3] = fix[5] = (i+0.015f)*yfix;
+		// easier to account for within the shader
+		shader_vhs_rewind = rewind ? 1.0f : 0.0f;
 
-		screenVerts[1] = screenVerts[10] = 2*i - 1.0f;
-		screenVerts[4] = screenVerts[7] = screenVerts[1] + 0.03f;
+		fix[0] = fix[1] =
+		fix[2] = fix[7] = 0.0f;
 
+		fix[3] = fix[5] = yfix;
+		fix[4] = fix[6] = xfix;
+
+		GL_SetBlend(PF_NoDepthTest);
+
+		// Slight fuzziness
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+		pglActiveTexture(GL_TEXTURE0);
+		pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+		tex_downloaded = screenTextures[HWD_SCREENTEXTURE_VHS];
+
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_VHS_FUZZ));
+		GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
+		pglColor4ubv(white);
+
+		pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+		pglVertexPointer(3, GL_FLOAT, 0, defaultscreenVerts);
+		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+		GL_UnSetShader();
+
+		// Upward and Downward bars
+		// theyre combined since the original shader also did this
+		// also saves us another screen copy + draw anyways
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+		pglActiveTexture(GL_TEXTURE0);
+		pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+		tex_downloaded = screenTextures[HWD_SCREENTEXTURE_VHS];
+
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_VHS_BAR));
+		GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
+		pglColor4ubv(white);
+
+		pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+		pglVertexPointer(3, GL_FLOAT, 0, defaultscreenVerts);
+		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+		GL_UnSetShader();
+
+	}
+	else // fallback fixed function version, this is quite slow
+	{
+		float i;
+
+		GLubyte color[4] = {255, 255, 255, 255};
+
+		float screenVerts[12] =
+		{
+			-1.0f, -1.0f, 1.0f,
+			-1.0f,  1.0f, 1.0f,
+			1.0f,  1.0f, 1.0f,
+			1.0f, -1.0f, 1.0f
+		};
+
+		xfix = 1/((float)screen_texsizew/scrwf);
+		yfix = 1/((float)screen_texsizeh/scrhf);
+
+		GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+
+		// Slight fuzziness
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+		pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+
+		uint32_t r = rand();
+
+		const float ystep = 2.f/scrhf * (float)vid.udup/4.f;
+
+		for (i = 0; i < 1; i += ystep)
+		{
+			// avoid calling rand thousands of times
+			r ^= r >> 13;
+			r ^= r >> 11;
+			r ^= r << 21;
+
+			fix[2] = (float)(r & 127) / -22000.f * xfix;
+			fix[0] = fix[2];
+			fix[6] = fix[0] + xfix;
+			fix[4] = fix[2] + xfix;
+			fix[1] = fix[7] = i*yfix;
+			fix[3] = fix[5] = (i+0.015f)*yfix;
+
+			screenVerts[1] = screenVerts[10] = 2*i - 1.0f;
+			screenVerts[4] = screenVerts[7] = screenVerts[1] + 0.03f;
+
+			pglColor4ubv(color);
+
+			pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+			pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+			pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+		}
+
+		// Upward bar
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+		pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+
+		color[0] = color[1] = color[2] = 190;
+		color[3] = 250;
 		pglColor4ubv(color);
+
+		fix[0] = 0.0f;
+		fix[6] = xfix;
+		fix[2] = (float)updistort / scrwf * xfix;
+		fix[4] = fix[2] + fix[6];
+
+		screenVerts[1] = screenVerts[10] = 2.0f*upbary/scrhf - 1.0f;
+		screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/scrhf;
+
+		fix[1] = fix[7] = (float)upbary/scrhf * yfix;
+		fix[3] = fix[5] = fix[1] + (float)barsize/2/scrhf * yfix;
+
+		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+		pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+		fix[1] = fix[7] += (fix[3] - fix[7])*2;
+		screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
+		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+		pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+		// Downward bar
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+		pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+
+		fix[0] = 0.0f;
+		fix[6] = xfix;
+		fix[2] = (float)downdistort / scrwf * -xfix;
+		fix[4] = fix[2] + fix[6];
+
+		screenVerts[1] = screenVerts[10] = 2.0f*downbary/scrhf - 1.0f;
+		screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/scrhf;
+
+		fix[1] = fix[7] = (float)downbary/scrhf * yfix;
+		fix[3] = fix[5] = fix[1] + (float)barsize/2/scrhf * yfix;
+
+		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+		pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+		fix[1] = fix[7] += (fix[3] - fix[7])*2;
+		screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
 
 		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 		pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	}
-
-	// Upward bar
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
-
-	color[0] = color[1] = color[2] = 190;
-	color[3] = 250;
-	pglColor4ubv(color);
-
-	fix[0] = 0.0f;
-	fix[6] = xfix;
-	fix[2] = (float)updistort / scrwf * xfix;
-	fix[4] = fix[2] + fix[6];
-
-	screenVerts[1] = screenVerts[10] = 2.0f*upbary/scrwh - 1.0f;
-	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/scrwh;
-
-	fix[1] = fix[7] = (float)upbary/scrwh * yfix;
-	fix[3] = fix[5] = fix[1] + (float)barsize/2/scrwh * yfix;
-
-	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
-	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-	fix[1] = fix[7] += (fix[3] - fix[7])*2;
-	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
-
-	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
-	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-	// Downward bar
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
-
-	fix[0] = 0.0f;
-	fix[6] = xfix;
-	fix[2] = (float)downdistort / scrwf * -xfix;
-	fix[4] = fix[2] + fix[6];
-
-	screenVerts[1] = screenVerts[10] = 2.0f*downbary/scrwh - 1.0f;
-	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/scrwh;
-
-	fix[1] = fix[7] = (float)downbary/scrwh * yfix;
-	fix[3] = fix[5] = fix[1] + (float)barsize/2/scrwh * yfix;
-
-	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
-	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-	fix[1] = fix[7] += (fix[3] - fix[7])*2;
-	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
-
-	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
-	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
 // Create a texture from the screen.

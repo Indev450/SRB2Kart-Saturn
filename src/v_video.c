@@ -1882,7 +1882,7 @@ void V_DrawVhsEffect(boolean rewind)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		HWR_RenderVhsEffect(uby, dby, updistort, downdistort, barsize);
+		HWR_RenderVhsEffect(uby, dby, updistort, downdistort, barsize, rewind);
 		return;
 	}
 #endif
@@ -3619,7 +3619,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 
 			for (y = yoffset; y < yoffset+viewheight; y++)
 			{
-				sine = (FINESINE(disStart)*5)>>FRACBITS;
+				sine = (FINESINE(disStart) * 5) >> FRACBITS;
 				newpix = abs(sine);
 
 				if (sine < 0)
@@ -3659,8 +3659,8 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 					tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
 				}*/
 
-				disStart += 22;//the offset into the displacement map, increment each game loop
-				disStart &= FINEMASK; //clip it to FINEMASK
+				disStart += 22; // the offset into the displacement map, increment each game loop
+				disStart &= FINEMASK; // clip it to FINEMASK
 			}
 
 			UINT8 *tmp = tmpscr;
