@@ -570,13 +570,13 @@ static void P_LoadSegs(UINT8 *data)
 
 			if (seg->sidedef == &sides[seg->linedef->sidenum[0]])
 			{
-				seg->v1 = lines[ms->linedef].v1;
-				seg->v2 = lines[ms->linedef].v2;
+				seg->v1 = lines[rawlinedef].v1;
+				seg->v2 = lines[rawlinedef].v2;
 			}
 			else
 			{
-				seg->v1 = lines[ms->linedef].v2;
-				seg->v2 = lines[ms->linedef].v1;
+				seg->v1 = lines[rawlinedef].v2;
+				seg->v2 = lines[rawlinedef].v1;
 			}
 		}
 		else
@@ -584,7 +584,6 @@ static void P_LoadSegs(UINT8 *data)
 			seg->v1 = &vertexes[v1];
 			seg->v2 = &vertexes[v2];
 		}
-
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
 		{
@@ -597,7 +596,6 @@ static void P_LoadSegs(UINT8 *data)
 			//seg->fv2.z = FixedToFloat(seg->v2->z);
 		}
 #endif
-
 		seg->length = P_SegLength(seg);
 
 		P_UpdateSegLightOffset(seg);
@@ -2095,6 +2093,13 @@ static void P_LoadMapBSP(const virtres_t* virt)
 	virtlump_t* virtssectors = vres_Find(virt, "SSECTORS");
 	virtlump_t* virtsegs     = vres_Find(virt, "SEGS");
 	virtlump_t* virtnodes    = vres_Find(virt, "NODES");
+
+	if (!virtssectors)
+		I_Error("SSECTORS lump not found");
+	if (!virtsegs)
+		I_Error("SEGS lump not found");
+	if (!virtnodes)
+		I_Error("NODES lump not found");
 
 	numsubsectors = virtssectors->size / sizeof(mapsubsector_t);
 	numnodes      = virtnodes->size    / sizeof(mapnode_t);

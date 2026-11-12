@@ -65,7 +65,7 @@ PFNglGetString pglGetString;
 #ifdef USE_FBO_OGL
 boolean UseScreenFBO(void)
 {
-	return (supportFBO && cv_glframebuffer.value && downsample);
+	return (supportFBO && cv_glframebuffer.value && (cv_glscreentextures.value == 2) && (cv_glframebuffer.value == 2 || I_IsDownsampling()));
 }
 #endif
 
@@ -203,9 +203,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
-		GL_Framebuffer_Enable();
+		GL_FBO_Enable();
 	else
-		GL_Framebuffer_Disable();
+		GL_FBO_Disable();
 #endif
 
 	if (!first_init)
@@ -225,7 +225,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 void OglSdlFinishUpdate(SDL_Window *window)
 {
 	int sdlw, sdlh;
-
 #ifdef USE_FBO_OGL
 	const boolean usefbo = UseScreenFBO();
 #endif
@@ -235,9 +234,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
-	{
-		GL_Framebuffer_Unbind();
-	}
+		GL_FBO_BindMainFrameBuffer();
 #endif
 
 	if (HWR_ShouldUsePaletteRendering())
@@ -255,9 +252,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
-	{
-		GL_Framebuffer_Enable();
-	}
+		GL_FBO_Enable();
 #endif
 
 	SDL_GL_SwapWindow(window);
@@ -266,11 +261,10 @@ void OglSdlFinishUpdate(SDL_Window *window)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
-	// well we dont need it on native res it seems
 #ifdef USE_FBO_OGL
-	if ((!I_CheckNativeRes() && !usefbo) || WipeInAction)
+	if (!usefbo && (realwidth != sdlw || realheight != sdlh)) // not needed if fbo is in use
 #else
-	if (!I_CheckNativeRes() || WipeInAction)
+	if (realwidth != sdlw || realheight != sdlh) // this is not needed if the render size matches window size
 #endif
 		HWR_DrawScreenFinalTexture(realwidth, realheight);
 }

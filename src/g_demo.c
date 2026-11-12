@@ -63,7 +63,6 @@
 
 // for replay dates
 #include <time.h>
-#include <locale.h>
 
 // menu demo things
 UINT32 demoDelayTime = 15*TICRATE;
@@ -2387,7 +2386,9 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 #if defined (_WIN32)
 // return the file creation time
 // useful for demos that were renamed
-static long G_GetCreationTime(char *filepath)
+// windows only, as file creation times are
+// very unreliable (or non existant depending on fs) on linux
+static time_t G_GetCreationTime(char *filepath)
 {
 	struct stat fileinfo;
 
@@ -2398,35 +2399,24 @@ static long G_GetCreationTime(char *filepath)
 }
 #endif
 
-static char *G_GetDemoDate(menudemo_t *pdemo)
+static char *G_GetDemoDate(menudemo_t *pdemo, const char *dateformat)
 {
 	char *endPos = NULL;
-	static char datetime[11];
+	char *datetime;
 	time_t file_time = 0;
-	const char *format = NULL;
-	struct tm *tm_buf = NULL;
+	struct tm tm_buf;
 	CLEANUP(pfree) char *filename = NULL;
 
 	// get le filepath
 	filename = strdup(pdemo->filepath);
 
 	if (!filename)
-	{
-#if defined (_WIN32)
-		// if we cant get a filename try just getting the file creation time
-		file_time = G_GetCreationTime(pdemo->filepath);
-		goto skipfilenametime;
-#else
 		return NULL;
-#endif
-	}
 
 	// get the actual filename Zzz...
 	nameonly(filename);
 
-	// the first 10 characters of a replay name usually is a unix timestamp
-
-	// not long enough to contain a valid timestamp
+	// the first 10 characters of a replay name is a unix timestamp
 	if (strlen(filename) < 10)
 	{
 #if defined (_WIN32)
@@ -2458,66 +2448,48 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 #endif
 	}
 
-#if defined (_WIN32)
-skipfilenametime:
-#endif
-
 	// then throw it into localtime to get an actual human readable format lmao
-	tm_buf = localtime(&file_time);
-
-	// cant believe we ended up in 1970
-	if (tm_buf == NULL || tm_buf->tm_year <= 110)
+#if defined(_WIN32)
+skipfilenametime:
+	if ((localtime_s(&tm_buf, &file_time) != 0) ||
+		(tm_buf.tm_year <= 110)) // cant believe we ended up in 1970
 	{
-#if defined (_WIN32)
 		// uh ohh, we got an invalid time
 		// try one more time getting the creation time
 		file_time = G_GetCreationTime(pdemo->filepath);
-		tm_buf = localtime(&file_time);
 
-		if (tm_buf == NULL || tm_buf->tm_year <= 110)
+		if ((localtime_s(&tm_buf, &file_time) != 0) ||
+			(tm_buf.tm_year <= 110))
 			return NULL;
-
-		goto gotcreationtime;
+	}
 #else
+	if ((localtime_r(&file_time, &tm_buf) == NULL) ||
+		(tm_buf.tm_year <= 110)) // cant believe we ended up in 1970
 		return NULL;
 #endif
-	}
 
-#if defined (_WIN32)
-gotcreationtime:
-#endif
+	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
 
-	// US ppl are special (:
-	if (cv_demodateformat.value == 2)
-		format = "%m.%d.%Y";
-	else if (cv_demodateformat.value == 1)
-		format = "%d.%m.%Y";
-	else
+	// no mallocma balls... :c
+	if (!datetime)
+		return NULL;
+
+	if (strftime(datetime, sizeof(pdemo->date), dateformat, &tm_buf) == 0)
 	{
-		const char *locale = setlocale(LC_TIME, NULL);
-
-		if (locale == NULL)
-			format = "%d.%m.%Y"; // fallback to non US format
-		else if (strstr(locale, "en_US"))
-			format = "%m.%d.%Y";
-		else
-			format = "%d.%m.%Y";
-	}
-
-	if (strftime(datetime, sizeof(datetime), format, tm_buf) == 0)
-	{
+		free(datetime);
 		return NULL;
 	}
 
 	return datetime;
 }
 
-void G_LoadDemoTitle(menudemo_t *pdemo)
+void G_LoadDemoTitle(menudemo_t *pdemo, const char *dateformat)
 {
 	UINT8 infobuffer[96], *info_p;
 	UINT16 pdemoversion;
-	char *demodate = NULL;
 	size_t count;
+
+	memset(pdemo->date, 0, sizeof(pdemo->date));
 
 	FILE *handle = fopen(pdemo->filepath, "rb");
 
@@ -2546,8 +2518,6 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 
 	pdemoversion = READUINT16(info_p);
 
-	memset(pdemo->date, 0, sizeof(pdemo->date));
-
 	switch (pdemoversion)
 	{
 		case DEMOVERSION: // latest always supported
@@ -2555,13 +2525,12 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 			memcpy(pdemo->title, info_p, 64);
 
 			// demo date
-			demodate = G_GetDemoDate(pdemo);
-
+			char *demodate = G_GetDemoDate(pdemo, dateformat);
 			if (demodate)
 			{
 				strlcpy(pdemo->date, demodate, sizeof(pdemo->date));
+				free(demodate);
 			}
-
 			break;
 #ifdef DEMO_COMPAT_100
 		case 0x0001:

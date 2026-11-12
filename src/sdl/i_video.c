@@ -97,11 +97,9 @@ static char vidModeName[33][32]; // allow 33 different modes
 rendermode_t rendermode = render_none;
 
 #ifdef HWRENDER
-unsigned msaa = 0;
-
 // Eee probably the way i organize it isn't best ><
 // Just don't know where do i put declaration and "implementation"
-boolean a2c = false;
+unsigned msaa = 0;
 #endif
 
 static void KeyboardLayout_OnChange(void)
@@ -114,10 +112,6 @@ static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Nati
 consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE|CV_CALL, keyboardlayout_cons_t, KeyboardLayout_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void Impl_SetVsync(void);
-
-static INT32 desktopwidth = 0, desktopheight = 0;
-
-static void I_CheckDesktopRes(void);
 
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
@@ -196,10 +190,6 @@ static INT32 custom_height = 0;
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
-
-#ifdef USE_FBO_OGL
-boolean downsample = false;
-#endif
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 {
@@ -518,11 +508,11 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		return;
 	}
 
-	if (windowmoved && rendermode == render_opengl)
+	if (windowmoved)
 	{
-		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
-		I_DownSample();
+		if (rendermode == render_opengl)
+			I_CheckDownSampleState(false);
 #endif
 		windowmoved = SDL_FALSE;
 	}
@@ -1229,9 +1219,7 @@ static void VID_Command_ModeList_f(void)
 	// List windowed modes
 	INT32 i = 0;
 
-	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n"
-	"Under opengl, fullscreen only supports native desktop resolution.\n"
-	"Under software, the mode is stretched up to desktop resolution.\n");
+	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n");
 
 	for (i = 0; i < MAXWINMODES; i++)
 	{
@@ -1257,78 +1245,41 @@ static void VID_Command_Mode_f (void)
 		setmodeneeded = modenum+1; // request vid mode change
 }
 
-// Get the desktop resolution from the current display the gamewindow resides on
-static void I_CheckDesktopRes(void)
-{
-	int currentDisplayIndex = -1;
-	SDL_DisplayMode curmode;
-
-	desktopwidth = 0;
-	desktopheight = 0;
-
-	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
-	// No valid index
-	if (currentDisplayIndex < 0)
-	{
-		return;
-	}
-
-	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
-	{
-		return;
-	}
-
-	desktopwidth = curmode.w;
-	desktopheight = curmode.h;
-}
-
-// Check if the game resolution matches the desktop resolution
-boolean I_CheckNativeRes(void)
-{
-	return (vid.width == desktopwidth && vid.height == desktopheight);
-}
-
 #ifdef USE_FBO_OGL
+static boolean vid_downsampling = false;
 
-void RefreshOGLSDLSurface(void)
+boolean I_IsDownsampling(void)
 {
-	if (rendermode == render_opengl)
-		OglSdlSurface(vid.width, vid.height);
+	return vid_downsampling;
 }
 
-void I_DownSample(void)
+void I_CheckDownSampleState(boolean forcerefresh)
 {
-	boolean needrefresh = false;
-
-	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
+	// no fbo support so we dont care
+	if (!supportFBO)
 	{
-		downsample = false;
+		vid_downsampling = false;
 		return;
 	}
 
-	if (I_CheckNativeRes() && (downsample == true))
+	// no sense to do this crap if we cant benefit from it
+	boolean newdownsamplestate = false;
+
+	if (cv_glframebuffer.value && (cv_glscreentextures.value == 2))
 	{
-		downsample = false;
-		RefreshOGLSDLSurface();
-		return;
+		int sdlw, sdlh;
+		SDL_GetWindowSize(window, &sdlw, &sdlh);
+		if (vid.width > sdlw || vid.height > sdlh)
+			newdownsamplestate = true;
 	}
 
-	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
+	// state changed or fbo was toggled
+	if (vid_downsampling != newdownsamplestate || forcerefresh)
 	{
-		downsample = true;
-		needrefresh = true;
-	}
-	else if (downsample == true)
-	{
-		downsample = false;
-		needrefresh = true;
-	}
-
-	if (needrefresh)
-	{
-		RefreshOGLSDLSurface();
-		needrefresh = false;
+		//printf("downsample changed from %d to %d\n", vid_downsampling, newdownsamplestate);
+		// needs to be reset before refreshing the gl surface!
+		vid_downsampling = newdownsamplestate;
+		OglSdlSurface(vid.width, vid.height);
 	}
 }
 #endif
@@ -1360,9 +1311,10 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 
 			// Reposition window only in windowed mode
 			SDL_SetWindowSize(window, width, height);
+			const int windowpos = SDL_GetWindowDisplayIndex(window);
 			SDL_SetWindowPosition(window,
-				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window)),
-				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window))
+				SDL_WINDOWPOS_CENTERED_DISPLAY(windowpos),
+				SDL_WINDOWPOS_CENTERED_DISPLAY(windowpos)
 			);
 		}
 	}
@@ -1382,9 +1334,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
-		I_DownSample();
+		I_CheckDownSampleState(false);
 #endif
 		OglSdlSurface(vid.width, vid.height);
 	}
@@ -1580,7 +1531,7 @@ void VID_PrepareModeList(void)
 static UINT32 refresh_rate;
 static UINT32 VID_GetRefreshRate(void)
 {
-	int index = SDL_GetWindowDisplayIndex(window);
+	int index;
 	SDL_DisplayMode m;
 
 	if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
@@ -1588,6 +1539,8 @@ static UINT32 VID_GetRefreshRate(void)
 		// Video not init yet.
 		return 0;
 	}
+
+	index = SDL_GetWindowDisplayIndex(window);
 
 	if (SDL_GetDesktopDisplayMode(index, &m) != 0)
 	{
@@ -1825,7 +1778,6 @@ void I_StartupGraphics(void)
 		rendermode = render_opengl;
 
 	msaa = 0; boolean msaa_set = false;
-	a2c = false; boolean a2c_set = false;
 
 	// MSAA antialiasing
 	if (M_CheckParm("-msaa") && M_IsNextParm())
@@ -1835,16 +1787,6 @@ void I_StartupGraphics(void)
 		{
 			msaa_set = true;
 		}
-	}
-
-	if (M_CheckParm("-a2c"))
-	{
-		a2c = true;
-		a2c_set = true;
-	}
-	else if (M_CheckParm("-noa2c"))
-	{
-		a2c_set = true;
 	}
 
     {
@@ -1890,17 +1832,8 @@ void I_StartupGraphics(void)
 						}
 						else
 						{
-							CONS_Printf("Using last know MSAA value: %u\n", msaa);
+							CONS_Printf("Using last known MSAA value: %u\n", msaa);
 						}
-					}
-				}
-
-				if (!a2c_set)
-				{
-					if (fasticmp(word, "a2c"))
-					{
-						a2c = true;
-						CONS_Printf("Using a2c because it was specified to be used earlier\n");
 					}
 				}
 			}
@@ -1937,9 +1870,6 @@ void I_StartupGraphics(void)
 
 #ifdef HWRENDER
 			fprintf(file, "msaa %u\n", msaa);
-
-			if (a2c)
-				fputs("a2c\n", file);
 #endif
 			fclose(file);
 		}

@@ -13,6 +13,12 @@
 
 #include <string.h>
 
+#ifdef HAVE_THREADS
+#define local_for_thread _Thread_local
+#else
+#define local_for_thread
+#endif
+
 #include "doomdef.h"
 #include "command.h"
 #include "m_argv.h"
@@ -31,8 +37,11 @@ char **myargv = NULL;
 boolean myargmalloc = false;
 
 /**	\brief founded the parm
+ *
+ * thread_local because it can potentially be used from multiple threads (global variables aaaaaa)
+ * (myargc and myargv don't have to be thread_local because they are never modified after being set up)
 */
-static INT32 found;
+static local_for_thread INT32 found;
 
 
 /**	\brief	The M_CheckParm function
@@ -91,7 +100,7 @@ INT32 M_CheckProtoParam(const char *check)
 const char *M_GetProtoParam(void)
 {
 	INT32 i;
-	static char *string;
+	char *string;
 
 	for (i = 1; i < myargc; i++)
 	{

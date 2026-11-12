@@ -17,14 +17,9 @@
 #include "g_game.h"
 #include "keys.h"
 #include "hu_stuff.h" // need HUFONT start & end
-#include "d_net.h"
 #include "console.h"
 
-#include "m_menu.h"
-
 #include "i_system.h"
-#include "i_video.h"
-#include "r_draw.h"
 #include "v_video.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
@@ -36,10 +31,11 @@ static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "
 // mouse values are used once
 consvar_t cv_mousexsens = {"mousexsens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mouseysens = {"mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_controlperkey = {"controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
-	{"turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"turnsmoothing",  "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"turnsmoothing2", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"turnsmoothing3", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"turnsmoothing4", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -81,6 +77,7 @@ consvar_t cv_rumble_##type [MAXSPLITSCREENPLAYERS] = {\
 	{"rumble4_" #type, "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}\
 };
 
+IMPL_RUMBLE_TYPE(wallbonk);
 IMPL_RUMBLE_TYPE(spinout);
 IMPL_RUMBLE_TYPE(sneakerboost);
 IMPL_RUMBLE_TYPE(offroad);
@@ -88,7 +85,6 @@ IMPL_RUMBLE_TYPE(bananadrag);
 IMPL_RUMBLE_TYPE(stairjank);
 IMPL_RUMBLE_TYPE(brakedrift);
 IMPL_RUMBLE_TYPE(driftcharge);
-
 
 static CV_PossibleValue_t gamepadled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
 consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
@@ -195,7 +191,6 @@ void G_MapEventsToControls(event_t *ev)
 			{
 				CONS_Debug(DBG_GAMELOGIC, "Bad downkey input %d\n",ev->data1);
 			}
-
 #endif
 			break;
 
@@ -951,16 +946,15 @@ void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color)
 
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_gamepadled[playernum].value == 0 || (window_notinfocus && cv_gamepadledifunfocused.value == 0)
-	 || color >= MAXTRANSLATIONS)
+	if (cv_gamepadled[playernum].value == 0 ||
+	   (window_notinfocus && cv_gamepadledifunfocused.value == 0) ||
+		color >= MAXTRANSLATIONS)
 	{
 		return;
 	}
 
 	if (!I_GamepadHasLED(playernum))
-	{
 		return;
-	}
 
 	// so we can override this
 	skincolor = color ? color : G_GetSkinColorForGamepad(playernum);
@@ -990,29 +984,21 @@ void G_DeviceLEDTick(void)
 	UINT8 i, newcolor;
 
 	if (numcontrollers == 0)
-	{
 		return;
-	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
-		{
 			continue;
-		}
 
 		// does not have a configurable led! :c
 		if (!I_GamepadHasLED(i))
-		{
 			continue;
-		}
 
 		newcolor = G_GetSkinColorForGamepad(i);
 
 		if (curcolor[i] == newcolor) // dont update if same colour
-		{
 			continue;
-		}
 
 		G_SetPlayerGamepadIndicatorColor(i, newcolor);
 		curcolor[i] = newcolor;
@@ -1046,9 +1032,7 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
 	if (cv_rumble[playernum].value == 0 || (window_notinfocus && cv_rumbleifunfocused.value == 0))
-	{
 		return;
-	}
 
 	// doesent need to be super precise
 	// but ensure this is within range (0-65535)
@@ -1077,46 +1061,34 @@ void G_DeviceRumbleTick(void)
 	UINT8 i;
 
 	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL || demo.playback)
-	{
 		return;
-	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
-		{
 			continue;
-		}
 
 		// does not support rumble! :c
 		if (!I_GamepadHasRumble(i))
-		{
 			continue;
-		}
 
 		if (camera[i].freecam)
-		{
 			continue;
-		}
 
 		// SDL rumble strength goes from a range or 0-65535 respectively
 		// the higher, the stronger it is
 		UINT16 low = 0, high = 0;
 		// for how long the action should rumble, in ms
-		UINT16 lenght = 57; // 57ms is a short pulse, matches super well with this updating once per tic
+		UINT16 length = 57; // 57ms is a short pulse, matches super well with this updating once per tic
 
 		const player_t *player = P_GetLocalPlayerForNum(i);
 
 		if (!player)
-		{
 			continue;
-		}
 
 		// allow lua to do some crap for spectators
 		if (player->spectator || !player->mo)
-		{
 			continue;
-		}
 
 		// reset the rumble if you exit or are ded lel
 		if (player->exiting ||
@@ -1127,21 +1099,28 @@ void G_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (cv_rumble_spinout[i].value
-			&& player->kartstuff[k_spinouttimer])
+		if (cv_rumble_wallbonk[i].value &&
+			(player->mo->eflags & MFE_JUSTBOUNCEDWALL))
+		{
+			high = RUMBLE_STRONG;
+			low = RUMBLE_MODERATE;
+		}
+		else if (cv_rumble_spinout[i].value &&
+				 player->kartstuff[k_spinouttimer])
 		{
 			//low = high = FRACUNIT / 6;
-			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
+			// try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
+			low = high = FixedMul(RUMBLE_VERYSTRONG, FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)));
 		}
-		else if (cv_rumble_sneakerboost[i].value
-			&& (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2))))
+		else if (cv_rumble_sneakerboost[i].value &&
+				(player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2))))
 		{
 			low = high = RUMBLE_STRONG;
 		}
-		else if (cv_rumble_offroad[i].value
-			&& (player->kartstuff[k_offroad])
-			&& (player->speed != 0)
-			&& P_IsObjectOnGround(player->mo))
+		else if (cv_rumble_offroad[i].value &&
+				(player->kartstuff[k_offroad]) &&
+				(player->speed != 0) &&
+				 P_IsObjectOnGround(player->mo))
 		{
 			// weaken this depending on if you got hyu or invinc
 			if (player->kartstuff[k_hyudorotimer])
@@ -1157,50 +1136,48 @@ void G_DeviceRumbleTick(void)
 				low = high = RUMBLE_MODERATE;
 			}
 		}
-		else if (cv_rumble_bananadrag[i].value
-			&& (player->kartstuff[k_bananadrag] > TICRATE)
-			&& (player->speed != 0)
-			&& P_IsObjectOnGround(player->mo))
+		else if (cv_rumble_bananadrag[i].value &&
+				(player->kartstuff[k_bananadrag] > TICRATE) &&
+				(player->speed != 0) &&
+				 P_IsObjectOnGround(player->mo))
 		{
 			if (leveltime & 1) // this is actually funny lel
 				high = RUMBLE_MODERATE;
 		}
-		else if (cv_rumble_stairjank[i].value
-			&& (player->stairjank > 8)
-			&& (player->speed != 0)
-			&& P_IsObjectOnGround(player->mo))
+		else if (cv_rumble_stairjank[i].value &&
+				(player->stairjank > 8) &&
+				(player->speed != 0) &&
+				 P_IsObjectOnGround(player->mo))
 		{
 			low = high = RUMBLE_VERYWEAK;
 		}
 
-		if (cv_rumble_brakedrift[i].value
-			&& player->kartstuff[k_brakedrift])
+		if (cv_rumble_brakedrift[i].value &&
+			player->kartstuff[k_brakedrift])
 		{
 			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 		}
 
 		// pulse when gettin new driftlevel
 		// let this come last
-		if (cv_rumble_driftcharge[i].value
-			&& player->kartstuff[k_driftcharge]
-			&& player->driftlevel)
+		if (cv_rumble_driftcharge[i].value &&
+			player->kartstuff[k_driftcharge] &&
+			player->driftlevel)
 		{
 			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 
 			// make it rumble slightly longer the higher your driftlevel!
 			if (player->driftlevel == 2)
-				lenght = 114;
+				length = 114;
 			else if (player->driftlevel == 3)
-				lenght = 174;
+				length = 174;
 		}
 
 		// hack alert! i just dont want this thing constantly resetting the rumble lol
 		if (low == 0 && high == 0)
-		{
 			continue;
-		}
 
-		G_PlayerDeviceRumble(i, low, high, lenght);
+		G_PlayerDeviceRumble(i, low, high, length);
 	}
 }
 

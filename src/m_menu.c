@@ -3984,6 +3984,14 @@ menudemo_t *demolist = NULL; // Replays that that have been checked to match wit
 menudemo_t *demolist_all = NULL; // All replays
 size_t demolist_all_size = 0;
 boolean replaynamesloaded = false;
+// Whenever we start a replay load thread, we increment this number and then thread will remember current value,
+// and by the end it will compare it with current value, and if it is equal it means thread can store data it has loaded.
+// If it's not equal, that means we started more than one thread (left and re-entered menu for example)
+size_t replaythreadnum = 0;
+
+// for replay dates
+#include <locale.h>
+const char *demodateformat = "%d.%m.%Y";
 
 #ifdef HAVE_THREADS
 I_mutex replayquerymutex;
@@ -4013,12 +4021,15 @@ static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
 
 static void ReplayNamesLoadThread(void* userdata)
 {
+	(void)userdata;
+
 	Lock_search_state();
 
 	size_t demolist_all_size_local = demolist_all_size;
 	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*demolist_all_size_local);
 	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*demolist_all_size_local);
-	char *replaydirpath = (char*)userdata;
+	size_t localreplaythreadnum = replaythreadnum;
+	const char *localdemodateformat = demodateformat;
 
 	Unlock_search_state();
 
@@ -4026,19 +4037,13 @@ static void ReplayNamesLoadThread(void* userdata)
 	{
 		if (demolist_all_local[i].type != MD_SUBDIR)
 		{
-			G_LoadDemoTitle(&demolist_all_local[i]);
-
-			// this is fucking horrid, but i wanna be able to search for dates
-			/*if (demolist_all_local[i].date[0] != '\0')
-			{
-				snprintf(demolist_all_local[i].title, sizeof(demolist_all_local[i].title), "%s %s", demolist_all_local[i].title, demolist_all_local[i].date);
-			}*/
+			G_LoadDemoTitle(&demolist_all_local[i], localdemodateformat);
 		}
 	}
 
 	Lock_search_state();
 
-	if (fastcmp(menupath, replaydirpath) && demolist_all)
+	if (replaythreadnum == localreplaythreadnum && demolist_all)
 	{
 		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*demolist_all_size);
 		replaynamesloaded = true;
@@ -4047,22 +4052,32 @@ static void ReplayNamesLoadThread(void* userdata)
 	Unlock_search_state();
 
 	// Was allocated before thread start, we need to free it
-	free(replaydirpath);
 	free(demolist_all_local);
 }
 
 static void LoadReplayNames(void)
 {
-	char *replaydirpath = strdup(menupath);
-
 	Lock_search_state();
+	replaythreadnum++;
 	replaynamesloaded = false;
+	if (cv_demodateformat.value == 2)
+		demodateformat = "%m.%d.%Y";
+	else if (cv_demodateformat.value == 1)
+		demodateformat = "%d.%m.%Y";
+	else
+	{
+		// get the date format here
+		// setlocale reads/writes global state
+		const char *locale = setlocale(LC_TIME, NULL);
+		// US ppl are special (:
+		demodateformat = (locale && strstr(locale, "en_US")) ? "%m.%d.%Y" : "%d.%m.%Y";
+	}
 	Unlock_search_state();
 
 #ifdef HAVE_THREADS
-	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, replaydirpath);
+	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, NULL);
 #else
-	ReplayNamesLoadThread(replaydirpath);
+	ReplayNamesLoadThread(NULL);
 #endif
 }
 
@@ -4101,7 +4116,11 @@ static void M_HutCheckReplays(size_t maxnum)
 		// Mark as done
 		replayqueryfound = replayquerycheck = sizedirmenu;
 
+		Lock_search_state();
+
 		memcpy(demolist, demolist_all, sizeof(menudemo_t) * sizedirmenu);
+
+		Unlock_search_state();
 
 		return;
 	}
@@ -4251,13 +4270,15 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 	char tmp[MAXREPLAYQUERY+1];
 	memcpy(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1);
 
-	Lock_search_state();
+	// Honestly not sure if locks for replaynamesloaded are necessary...
+	// Thread sanitizer does report race condition whenever replaynamesloaded is accessed without lock
+	// but really it is only ever set to false in main thread and only set to true in replay load thread,
+	// and both are done via locks. If replaynamesloaded is true, it is never gonna suddenly switch from true to false
+	// while we're in main thread, and if it would switch from false to true it is not really a big deal, we will just skip
+	// 1 frame where replay names were loaded
+
 	if (!replaynamesloaded)
-	{
-		Unlock_search_state();
 		return false;
-	}
-	Unlock_search_state();
 
 	if (M_TextInputHandle(&replayqueryinput, choice))
 	{
