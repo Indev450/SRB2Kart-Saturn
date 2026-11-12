@@ -56,6 +56,13 @@ static struct {
 	// UI colormap fade shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
 
+	// water postprocess shader
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_POSTPROCESS_FRAGMENT_WATER},
+
+	// heat postprocess shader
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_POSTPROCESS_FRAGMENT_HEAT},
+
+
 	{NULL, NULL},
 };
 
@@ -447,6 +454,8 @@ customshaderxlat_t shaderxlat[] =
 	{"Sky", SHADER_SKY},
 	{"PalettePostprocess", SHADER_PALETTE_POSTPROCESS},
 	{"UIColormapFade", SHADER_UI_COLORMAP_FADE},
+	{"PostProcessWater", SHADER_POSTPROCESS_WATER},
+	{"PostProcessHeat", SHADER_POSTPROCESS_HEAT},
 	{NULL, 0},
 };
 

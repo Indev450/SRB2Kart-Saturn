@@ -6302,8 +6302,7 @@ void HWR_RenderPlayerView(void)
 
 	if (HWR_UseShader())
 	{
-		if (cv_ripplewater.value)
-			GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 
 		if (cv_glmdls.value)
 		{
@@ -6312,7 +6311,7 @@ void HWR_RenderPlayerView(void)
 				const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
 				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
 				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
-				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Z,  -FINESINE(light_angle >> ANGLETOFINESHIFT));
+				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Z, -FINESINE(light_angle >> ANGLETOFINESHIFT));
 			}
 
 			GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_CONTRAST, maplighting.contrast);
@@ -6662,42 +6661,58 @@ static void HWR_DoPostProcessor(void)
 		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 
 	// Drunken vision! WooOOooo~
-	// 10 by 10 grid. 2 coordinates (xy)
-	float v[SCREENVERTS][SCREENVERTS][2];
-	float disStart = (leveltime-1) + FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
-	UINT8 x, y;
-	float WAVELENGTH;
-	float AMPLITUDE;
-	float FREQUENCY;
-
-	// Modifies the wave.
-	if (thiscam->postimg & POSTIMG_WATER)
+	// shader based, should be a bit faster!
+	if (HWR_UseShader())
 	{
-		WAVELENGTH = 5.0f;
-		AMPLITUDE = 40.0f;
-		FREQUENCY = 8.0f;
+		if (thiscam->postimg & POSTIMG_WATER)
+		{
+			GL_DoPostProcessor(POSTIMG_WATER);
+		}
+		else if (thiscam->postimg & POSTIMG_HEAT)
+		{
+			GL_DoPostProcessor(POSTIMG_HEAT);
+		}
 	}
 	else
 	{
-		WAVELENGTH = 10.0f;
-		AMPLITUDE = 60.0f;
-		FREQUENCY = 4.0f;
-	}
+		// 10 by 10 grid. 2 coordinates (xy)
+		float v[SCREENVERTS][SCREENVERTS][2];
+		float disStart = (leveltime-1) + FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
-	//static constexpr float scale = ((float)SCREENVERTS - 1.0f) / 9.0f; // well this evals to just 1.0f and what is x / 1? kek
+		UINT8 x, y;
+		float WAVELENGTH;
+		float AMPLITUDE;
+		float FREQUENCY;
 
-	for (x = 0; x < SCREENVERTS; x++)
-	{
-		for (y = 0; y < SCREENVERTS; y++)
+		// Modifies the wave.
+		if (thiscam->postimg & POSTIMG_WATER)
 		{
-			// Change X position based on its Y position.
-			v[x][y][0] = x-4.5f + sinf(((disStart+(static_cast<float>(y) * WAVELENGTH)) / FREQUENCY)) / AMPLITUDE; // (x / scale)
-			v[x][y][1] = y-4.5f; // (y / scale)
+			WAVELENGTH = 5.0f;
+			AMPLITUDE = 40.0f;
+			FREQUENCY = 8.0f;
 		}
-	}
+		else
+		{
+			WAVELENGTH = 10.0f;
+			AMPLITUDE = 60.0f;
+			FREQUENCY = 4.0f;
+		}
 
-	GL_PostImgRedraw(v);
+		//static constexpr float scale = ((float)SCREENVERTS - 1.0f) / 9.0f; // well this evals to just 1.0f and what is x / 1? kek
+
+		for (x = 0; x < SCREENVERTS; x++)
+		{
+			for (y = 0; y < SCREENVERTS; y++)
+			{
+				// Change X position based on its Y position.
+				v[x][y][0] = x-4.5f + sinf(((disStart+(static_cast<float>(y) * WAVELENGTH)) / FREQUENCY)) / AMPLITUDE; // (x / scale)
+				v[x][y][1] = y-4.5f; // (y / scale)
+			}
+		}
+
+		GL_PostImgRedraw(v);
+	}
 
 	// Capture the screen again for screen waving on the intermission
 	if (gamestate != GS_INTERMISSION)
