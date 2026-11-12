@@ -337,6 +337,72 @@
 		"gl_FragColor = texture2D(lighttable_tex, lighttable_coord);\n" \
 	"}\0" \
 
+// these are RRs postprocess shaders
+// for water and heat
+/*
+#define GLSL_POSTPROCESS_FRAGMENT_WATER \
+	"uniform sampler2D tex;\n" \
+	"uniform float leveltime;\n" \
+	"void main(void) {\n" \
+		"vec2 uv = gl_TexCoord[0].st;\n" \
+		"float y = 1.0 - uv.y;\n" \
+		"uv.x += sin(leveltime * 2.0 + y * 20.0) * 0.01;\n" \
+		"uv = clamp(uv, vec2(0.0), vec2(0.9999));\n" \
+		"gl_FragColor = texture2D(tex, uv);\n" \
+	"}\0"
+
+#define GLSL_POSTPROCESS_FRAGMENT_HEAT \
+	"uniform sampler2D tex;\n" \
+	"uniform float leveltime;\n" \
+	"void main(void) {\n" \
+		"vec2 uv = gl_TexCoord[0].st;\n" \
+		"float y = 1.0 - uv.y;\n" \
+		"float time = leveltime * 35.0;\n" \
+		"uv.x += max(sin((time / 35.0) * 1.2 - y * 5.0) - 0.995, 0.0);\n" \
+		"uv.x -= max(sin(((time + 24.0) / 35.0) * 0.2 - y * 1.5) - 0.990, 0.0);\n" \
+		"uv = clamp(uv, vec2(0.0), vec2(0.9999));\n" \
+		"gl_FragColor = texture2D(tex, uv);\n" \
+	"}\0"
+*/
+
+// for reference
+// sin(leveltime * X + (y) + Y) * Z
+// X = Speed, Y = Vertical phase, Z = Amplitude
+
+// this matches software at 720p wonderfully
+#define GLSL_POSTPROCESS_FRAGMENT_WATER \
+	"#version 120\n" \
+	"uniform sampler2D tex;\n" \
+	"uniform vec2 scr_resolution;\n" \
+	"uniform vec2 scr_tex_size;\n" \
+	"uniform float leveltime;\n" \
+	"void main(void) {\n" \
+		"vec2 uv = gl_TexCoord[0].st;\n" \
+		"vec2 maxuv = scr_resolution / scr_tex_size;\n" \
+		"float y = 1.0 - uv.y;\n" \
+		"uv.x += sin(leveltime * 3.0 + y * 15.0) * 0.0025;\n" \
+		"uv = clamp(uv, vec2(0.0), maxuv - vec2(0.0001));\n" \
+		"gl_FragColor = texture2D(tex, uv);\n" \
+	"}\0"
+
+// like the fixed function version, this is just the water wave again
+// a bit readjusted since the shader wave is more lean
+// makes it less neausiating anyways :p
+#define GLSL_POSTPROCESS_FRAGMENT_HEAT \
+	"#version 120\n" \
+	"uniform sampler2D tex;\n" \
+	"uniform vec2 scr_resolution;\n" \
+	"uniform vec2 scr_tex_size;\n" \
+	"uniform float leveltime;\n" \
+	"void main(void) {\n" \
+		"vec2 uv = gl_TexCoord[0].st;\n" \
+		"vec2 maxuv = scr_resolution / scr_tex_size;\n" \
+		"float y = 1.0 - uv.y;\n" \
+		"uv.x += sin(leveltime * 6.0 + y * 22.5) * 0.00125;\n" \
+		"uv = clamp(uv, vec2(0.0), maxuv - vec2(0.0001));\n" \
+		"gl_FragColor = texture2D(tex, uv);\n" \
+	"}\0"
+
 // ================
 //  Fallback shaders
 // ================

@@ -761,6 +761,10 @@ typedef enum
 
 	gluniform_scr_resolution,
 
+	// postprocess stuff
+	gluniform_scr_dup,
+	gluniform_scr_tex_size,
+
 	gluniform_max,
 } gluniform_t;
 
@@ -2329,6 +2333,10 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
 		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)screen_width, (GLfloat)screen_height, pglUniform2f);
+		// udup is before highres scale adjustments
+		UNIFORM_1(shader->uniforms[gluniform_scr_dup], (GLfloat)vid.udup, pglUniform1f);
+		// grrrrr stupid 2.0 support.. used similar to yfix, xfix
+		UNIFORM_2(shader->uniforms[gluniform_scr_tex_size], (GLfloat)screen_texsizew, (GLfloat)screen_texsizeh, pglUniform2f);
 
 		#undef UNIFORM_1
 		#undef UNIFORM_2
@@ -2461,6 +2469,11 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	// misc.
 	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
+
+	// postprocessor stuff (water/heat effect)
+	shader->uniforms[gluniform_scr_dup]               = GETUNI("scr_dup");
+	shader->uniforms[gluniform_scr_tex_size]          = GETUNI("scr_tex_size");
+
 #undef GETUNI
 
 	// set permanent uniform values
@@ -3597,6 +3610,55 @@ INT32 GL_GetTextureUsed(void)
 	return res;
 }
 
+void GL_DoPostProcessor(INT32 type)
+{
+	float fix[8];
+	float xfix, yfix;
+
+	if (gl_enable_screen_textures != 2)
+		return;
+
+	xfix = 1/((float)screen_texsizew/(float)screen_width);
+	yfix = 1/((float)screen_texsizeh/(float)screen_height);
+
+	fix[0] = fix[1] =
+	fix[2] = fix[7] = 0.0f;
+
+	fix[3] = fix[5] = yfix;
+	fix[4] = fix[6] = xfix;
+
+	// this shouldnt be necessary, since this comes after level draw
+	// but somehow it breaks without this??
+	pglMatrixMode(GL_PROJECTION);
+	pglPushMatrix();
+	pglLoadIdentity();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPushMatrix();
+	pglLoadIdentity();
+
+	GL_SetBlend(PF_NoDepthTest);
+
+	pglActiveTexture(GL_TEXTURE0);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_GENERIC1]);
+	tex_downloaded = screenTextures[HWD_SCREENTEXTURE_GENERIC1];
+
+	int shader = (type == POSTIMG_WATER) ? SHADER_POSTPROCESS_WATER : SHADER_POSTPROCESS_HEAT;
+	GL_SetShader(HWR_GetShaderFromTarget(shader));
+	GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
+	pglColor4ubv(white);
+
+	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+	pglVertexPointer(3, GL_FLOAT, 0, defaultscreenVerts);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+	GL_UnSetShader();
+
+	pglMatrixMode(GL_PROJECTION);
+	pglPopMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPopMatrix();
+}
+
 void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 {
 	INT32 x, y;
@@ -3715,7 +3777,6 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 
 	tex_downloaded = screenTextures[tex];
 }
-
 
 // Do screen fades!
 void GL_DoScreenWipe(int wipeStart, int wipeEnd)

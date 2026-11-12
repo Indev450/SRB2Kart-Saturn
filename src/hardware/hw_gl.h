@@ -70,6 +70,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height);
 
 void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2]);
+void GL_DoPostProcessor(INT32 type);
 
 boolean GL_InitShaders(void);
 void GL_LoadShader(int slot, char *code, hwdshaderstage_t stage);
