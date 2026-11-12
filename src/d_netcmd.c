@@ -1043,6 +1043,8 @@ void D_RegisterClientCommands(void)
 
 		CV_RegisterVar(&cv_rumble[i]);
 		CV_RegisterVar(&cv_rumble_strength[i]);
+
+		CV_RegisterVar(&cv_rumble_wallbonk[i]);
 		CV_RegisterVar(&cv_rumble_spinout[i]);
 		CV_RegisterVar(&cv_rumble_sneakerboost[i]);
 		CV_RegisterVar(&cv_rumble_offroad[i]);

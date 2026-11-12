@@ -1004,7 +1004,7 @@ static menuitem_t OP_ExpOptionsMenu[] =
 #ifdef HWRENDER
 	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 95},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			100},
+	{IT_STRING | IT_CVAR, 	NULL, "FBO support", 					&cv_glframebuffer, 			100},
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		110},
 	{IT_DISABLED, 			NULL, "", 								NULL,     			 		120}, // dummy text
 #else
@@ -1030,7 +1030,7 @@ static const char* OP_ExpTooltips[] =
 #ifdef HWRENDER
 	"Disabling Screen Textures may result in a performance boost\nbut will break certain effects.\nScreen textures are required at resolutions lower than your desktop resolution!",
 #ifdef USE_FBO_OGL
-	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nRequires a GPU with atleast OpenGL 2.1 support.",
+	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nThis can be set to automatically enable if the game resolution\nis higher than the current Display Resolution\nor enabled at all times.\nThis may improve performance in some cases.\nRequires a GPU with atleast OpenGL 2.1 support.",
 #endif
 	"Change the bit depth of the Lookup Palette in Palette rendering mode\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
 #endif

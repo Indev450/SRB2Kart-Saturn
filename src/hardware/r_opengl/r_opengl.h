@@ -98,9 +98,9 @@ extern PFNglGetString pglGetString;
 #endif
 
 #ifdef USE_FBO_OGL
-void GL_Framebuffer_Unbind(void);
-void GL_Framebuffer_Enable(void);
-void GL_Framebuffer_Disable(void);
+void GL_FBO_BindMainFrameBuffer(void);
+void GL_FBO_Enable(void);
+void GL_FBO_Disable(void);
 extern int supportFBO;
 #endif
 

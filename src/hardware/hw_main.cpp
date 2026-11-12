@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "../d_main.h"
 #include "../doomstat.h"
 #include "../doomdef.h"
 
@@ -120,7 +121,7 @@ ps_metric_t ps_hw_batchdrawtime = {};
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
 static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
-static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
+static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap, subsector_t *subsector);
 static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 static void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 
@@ -204,7 +205,8 @@ static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 b
 consvar_t cv_glscreentextures = {"gr_screentextures", "All", CV_CALL|CV_SAVE, glscreentextures_cons_t, CV_screentextures_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 #ifdef USE_FBO_OGL
-consvar_t cv_glframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_glframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t glframebuffer_cons_t[] = {{0, "Off"}, {1, "Downsample"}, {2, "Always"}, {0, NULL}};
+consvar_t cv_glframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL, glframebuffer_cons_t, CV_glframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 consvar_t cv_glmdls = {"gr_mdls", "Off", CV_SAVE|CV_CALL, CV_OnOff, M_UpdateOGLMenu, 0, NULL, NULL, 0, 0, NULL};
@@ -255,6 +257,7 @@ static void CV_screentextures_OnChange(void)
 #endif
 		intermissionbginit = false;
 	}
+
 	GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 	M_UpdateOGLMenu();
 }
@@ -263,12 +266,11 @@ static void CV_screentextures_OnChange(void)
 static void CV_glframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if ((cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2)
-	|| (!supportFBO && cv_glframebuffer.value != 0)) // screen FBO needs screen textures
-		CV_SetValue(&cv_glframebuffer, 0);
-
-	I_DownSample();
-	RefreshOGLSDLSurface();
+	// screen FBO needs screen textures currently
+	if (cv_glframebuffer.value != 0 && ((cv_glscreentextures.value != 2) || !supportFBO))
+		CV_StealthSetValue(&cv_glframebuffer, 0); // dont recursively call this lul
+	if (loaded_config) // dont do this crap on startup, this is handled elsewhere
+		I_CheckDownSampleState(true);
 	M_UpdateOGLMenu();
 	intermissionbginit = false;
 }
@@ -721,7 +723,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
-	if (gl_maphashorizonlines && subsector && !FOFsector && cv_glhorizonlines.value)
+	if (subsector && subsector->hashorizon && cv_glhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -801,6 +803,268 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 				// Draw
 				HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
 			}
+		}
+	}
+#undef SETUP3DVERT
+}
+
+static void HWR_RenderFOFHorizonPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
+{
+	FSurfaceInfo Surf = {};
+	polyvertex_t *pv;
+	pslope_t *slope = NULL;
+	INT32 shader = SHADER_NONE;
+
+	size_t nrPlaneVerts;
+	INT32 i;
+
+	float height; // constant y for all points on the convex flat polygon
+	static float flatxref = 0.0f, flatyref = 0.0f;
+	static float fflatsize = 64.0f;
+	static INT32 flatflag = 63;
+	size_t len;
+
+	float tempxsow, tempytow;
+	float scrollx = 0.0f, scrolly = 0.0f;
+	float anglef  = 0.0f, cosangf = 0.0f, sinangf = 0.0f;
+	angle_t angle = 0;
+
+	static FOutVector *planeVerts = NULL;
+	static UINT16 numAllocedPlaneVerts = 0;
+
+	poly_t *planepoly = xsub->planepoly;
+
+	if (!cv_glhorizonlines.value)
+		return;
+
+	if (!subsector || !subsector->hashorizon)
+		return;
+
+	// no convex poly were generated for this subsector
+	if (!planepoly)
+		return;
+
+	nrPlaneVerts = planepoly->numpts;
+
+	if (nrPlaneVerts < 3) // not even a triangle ?
+		return;
+
+	const sector_t *sec = FOFsector;
+
+	if (!(PolyFlags & PF_NoTexture))
+	{
+		HWR_GetFlat(lumpnum, R_NoEncore(FOFsector, !isceiling));
+	}
+
+	// Get the slope pointer to simplify future code
+	if (!isceiling && sec->f_slope)
+		slope = sec->f_slope;
+	else if (isceiling && sec->c_slope)
+		slope = sec->c_slope;
+
+	height = FixedToFloat(fixedheight);
+
+	// Allocate plane-vertex buffer if we need to
+	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
+	{
+		numAllocedPlaneVerts = (UINT16)nrPlaneVerts;
+		Z_Free(planeVerts);
+		Z_Malloc(numAllocedPlaneVerts * sizeof (FOutVector), PU_LEVEL, &planeVerts);
+	}
+
+	len = W_LumpLength(lumpnum);
+
+	switch (len)
+	{
+		case 4194304: // 2048x2048 lump
+			fflatsize = 2048.0f;
+			flatflag = 2047;
+			break;
+		case 1048576: // 1024x1024 lump
+			fflatsize = 1024.0f;
+			flatflag = 1023;
+			break;
+		case 262144: // 512x512 lump
+			fflatsize = 512.0f;
+			flatflag = 511;
+			break;
+		case 65536: // 256x256 lump
+			fflatsize = 256.0f;
+			flatflag = 255;
+			break;
+		case 16384: // 128x128 lump
+			fflatsize = 128.0f;
+			flatflag = 127;
+			break;
+		case 1024: // 32x32 lump
+			fflatsize = 32.0f;
+			flatflag = 31;
+			break;
+		default: // 64x64 lump
+			fflatsize = 64.0f;
+			flatflag = 63;
+			break;
+	}
+
+	pv = planepoly->pts;
+
+	// reference point for flat texture coord for each vertex around the polygon
+	flatxref = static_cast<float>(static_cast<fixed_t>(pv->x) & (~flatflag)) / fflatsize;
+	flatyref = static_cast<float>(static_cast<fixed_t>(pv->y) & (~flatflag)) / fflatsize;
+
+	if (!isceiling) // it's a floor
+	{
+		scrollx = FixedToFloat(sec->floor_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->floor_yoffs)/fflatsize;
+		angle = sec->floorpic_angle;
+	}
+	else // it's a ceiling
+	{
+		scrollx = FixedToFloat(sec->ceiling_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->ceiling_yoffs)/fflatsize;
+		angle = sec->ceilingpic_angle;
+	}
+
+	if (angle) // Only needs to be done if there's an altered angle
+	{
+		// This needs to be done so that it scrolls in a different direction after rotation like software
+		tempxsow = flatxref;
+		tempytow = flatyref;
+		anglef   = ANG2RAD(InvAngle(angle));
+
+		// This needs to be done so everything aligns after rotation
+		// It would be done so that rotation is done, THEN the translation, but I couldn't get it to rotate AND scroll like software does
+		cosangf = cosf(anglef);
+		sinangf = sinf(anglef);
+		flatxref = (tempxsow * cosangf) - (tempytow * sinangf);
+		flatyref = (tempxsow * sinangf) + (tempytow * cosangf);
+	}
+
+#define SETUP3DVERT(vert, vx, vy) {\
+		/* Hurdler: add scrolling texture on floor/ceiling */\
+		vert->s = (float)(((vx) / fflatsize) - flatxref + scrollx);\
+		vert->t = (float)(flatyref - ((vy) / fflatsize) + scrolly);\
+\
+		/* Need to rotate before translate */\
+		if (angle) /* Only needs to be done if there's an altered angle */\
+		{\
+			tempxsow = vert->s;\
+			tempytow = vert->t;\
+			vert->s = (tempxsow * cosangf) - (tempytow * sinangf);\
+			vert->t = (tempxsow * sinangf) + (tempytow * cosangf);\
+		}\
+\
+		if (slope)\
+		{\
+			fixedheight = P_GetSlopeZAt(slope, FloatToFixed((vx)), FloatToFixed((vy)));\
+			height = FixedToFloat(fixedheight);\
+		}\
+\
+		vert->x = (vx);\
+		vert->y = height;\
+		vert->z = (vy);\
+\
+}
+
+	HWR_Lighting(&Surf, lightlevel, planecolormap, false);
+
+	if (PolyFlags & (PF_Translucent|PF_Fog|PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative|PF_Environment))
+	{
+		Surf.PolyColor.s.alpha = (UINT8)alpha;
+		PolyFlags |= PF_Modulated;
+	}
+	else
+		PolyFlags |= PF_Masked|PF_Modulated;
+
+	if (HWR_UseShader())
+	{
+		if (PolyFlags & PF_Fog)
+			shader = SHADER_FOG;
+		else if (cv_ripplewater.value && (PolyFlags & PF_Ripple))
+			shader = SHADER_WATER;
+		else
+			shader = SHADER_FLOOR;
+
+		PolyFlags |= PF_ColorMapped;
+	}
+
+	// Horizon lines
+	FOutVector horizonpts[6];
+	float dist, vx, vy;
+	float x1, y1, xd, yd;
+	UINT8 numplanes, j;
+	vertex_t v; // For determining the closest distance from the line to the camera, to split render planes for minimum distortion;
+
+	static constexpr float renderdist    = 27000.0f; // How far out to properly render the plane
+	static constexpr float farrenderdist = 32768.0f; // From here, raise plane to horizon level to fill in the line with some texture distortion
+
+	const seg_t *line = &segs[subsector->firstline];
+
+	for (i = 0; i < subsector->numlines; i++, line++)
+	{
+		if (line->polyseg)
+			continue;
+
+		line_t* ld = line->linedef;
+
+		if (LIKELY(ld->special != HORIZONSPECIAL))
+			continue;
+
+		if (R_PointOnSegSide(viewx, viewy, line) != 0)
+			continue;
+
+		P_ClosestPointOnLine(viewx, viewy, ld, &v);
+		dist = FixedToFloat(R_PointToDist(v.x, v.y));
+
+		x1 = (line->fv1.x);
+		y1 = (line->fv1.y);
+
+		xd = (line->fv2.x) - x1;
+		yd = (line->fv2.y) - y1;
+
+		// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
+		dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
+
+		if (dist > 100.0f)
+			numplanes = 100;
+		else
+			numplanes = (UINT8)dist + 1;
+
+		for (j = 0; j < numplanes; j++)
+		{
+			// Left side
+			vx = x1 + xd * j / numplanes;
+			vy = y1 + yd * j / numplanes;
+			SETUP3DVERT((&horizonpts[1]), vx, vy);
+
+			dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
+			vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
+			vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
+			SETUP3DVERT((&horizonpts[0]), vx, vy);
+
+			// Right side
+			vx = x1 + xd * (j+1) / numplanes;
+			vy = y1 + yd * (j+1) / numplanes;
+			SETUP3DVERT((&horizonpts[2]), vx, vy);
+
+			dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
+			vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
+			vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
+			SETUP3DVERT((&horizonpts[3]), vx, vy);
+
+			// Horizon fills
+			vx = (horizonpts[0].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
+			vy = (horizonpts[0].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
+			SETUP3DVERT((&horizonpts[5]), vx, vy);
+			horizonpts[5].y = gl_viewz;
+
+			vx = (horizonpts[3].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
+			vy = (horizonpts[3].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
+			SETUP3DVERT((&horizonpts[4]), vx, vy);
+			horizonpts[4].y = gl_viewz;
+
+			// Draw
+			HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
 		}
 	}
 #undef SETUP3DVERT
@@ -2960,16 +3224,14 @@ static void HWR_Subsector(size_t num)
 						UINT8 alpha;
 
 						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
-
 						alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
-
 						HWR_AddTransparentFloor(0,
 												&extrasubsectors[num],
 												!bottom,
 												roverheight,
 												*gl_frontsector->lightlist[light].lightlevel,
 												alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-												true, rover->master->frontsector->extra_colormap);
+												true, rover->master->frontsector->extra_colormap, sub);
 					}
 					else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend) // SoM: Flags are more efficient
 					{
@@ -2981,13 +3243,12 @@ static void HWR_Subsector(size_t num)
 												roverheight,
 												*gl_frontsector->lightlist[light].lightlevel,
 												CLAMP(rover->alpha, 0, 255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent)),
-												false, gl_frontsector->lightlist[light].extra_colormap);
+												false, gl_frontsector->lightlist[light].extra_colormap, sub);
 					}
 					else
 					{
 						HWR_GetFlat(flatlump, R_NoEncore(rover->master->frontsector, bottom));
 						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
-
 						HWR_RenderPlane(sub, &extrasubsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flatlump,
 										rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 					}
@@ -4191,7 +4452,7 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 	wallinfo->wallcolormap = wallcolormap;
 }
 
-static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
+static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap, subsector_t *subsector)
 {
 	planeinfo_t *planeinfo = static_cast<planeinfo_t*>(HWR_CreateDrawNode(DRAWNODE_PLANE));
 
@@ -4205,6 +4466,9 @@ static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, b
 	planeinfo->blend = blend;
 	planeinfo->fogplane = fogplane;
 	planeinfo->planecolormap = planecolormap;
+
+	// horizonplanes need to be drawn BEFORE skywalls, so lets hope this works without too many issues....
+	HWR_RenderFOFHorizonPlane(subsector, planeinfo->xsub, planeinfo->isceiling, planeinfo->fixedheight, planeinfo->blend, planeinfo->lightlevel, planeinfo->lumpnum, planeinfo->FOFSector, (UINT8)planeinfo->alpha, planeinfo->planecolormap);
 }
 
 // Adding this for now until I can create extrasubsector info for polyobjects
@@ -5899,7 +6163,7 @@ void HWR_Startup(void)
 		HWR_TogglePaletteRendering();
 
 		if (msaa)
-			GL_SetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
+			GL_SetSpecialState(HWD_SET_MSAA, 1);
 
 		HWR_RegisterCommands();
 	}
@@ -5987,7 +6251,7 @@ void HWR_Shutdown(void)
 	GL_FlushScreenTextures();
 	HWR_ClearAllTextures();
 #ifdef USE_FBO_OGL
-	GL_Framebuffer_Disable();
+	GL_FBO_Disable();
 #endif
 }
 
