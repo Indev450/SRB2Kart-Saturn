@@ -476,9 +476,12 @@
 		"uv.x -= (upbar) * updistort;\n" \
 		"uv = clamp(uv, vec2(0.0), maxuv - vec2(0.0001));\n" \
 		"vec4 color = texture2D(tex, uv);\n" \
-		"float bar = step(0.00001, downbar + upbar);\n" \
-		"color.rgb = mix(color.rgb, color.rgb * (190.0 / 255.0), bar);\n" \
-		"color.a *= mix(1.0, 250.0 / 255.0, bar);\n" \
+		"float downcol = step(0.00001, downbar);\n" \
+		"float upcol = step(0.00001, upbar);\n" \
+		"color.rgb = mix(color.rgb, color.rgb * (190.0 / 255.0), downcol);\n" \
+		"color.rgb = mix(color.rgb, color.rgb * (190.0 / 255.0), upcol);\n" \
+		"color.a = mix(color.a, color.a * (250.0 / 255.0), downcol);\n" \
+		"color.a = mix(color.a, color.a * (250.0 / 255.0), upcol);\n" \
 		"gl_FragColor = color;\n" \
 	"}\0"
 
