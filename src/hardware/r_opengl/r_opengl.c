@@ -2328,7 +2328,7 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
-		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
+		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)screen_width, (GLfloat)screen_height, pglUniform2f);
 
 		#undef UNIFORM_1
 		#undef UNIFORM_2
