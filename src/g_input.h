@@ -118,6 +118,8 @@ extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble_strength[MAXSPLITSCREENPLAYERS];
+// rumble types
+extern consvar_t cv_rumble_wallbonk[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble_spinout[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble_sneakerboost[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble_offroad[MAXSPLITSCREENPLAYERS];
