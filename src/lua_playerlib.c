@@ -298,12 +298,12 @@ static int player_get(lua_State *L)
 		lua_pushstring(L, player_names[plr-players]);
 		break;
 	case player_mo:
-	{
-		if (plr->spectator)
-			lua_pushnil(L);
-		else
-			LUA_PushUserdata(L, plr->mo, META_MOBJ);
-	}
+		{
+			if (plr->spectator)
+				lua_pushnil(L);
+			else
+				LUA_PushUserdata(L, plr->mo, META_MOBJ);
+		}
 		break;
 	case player_cmd:
 		LUA_PushUserdata(L, &plr->cmd, META_TICCMD);
@@ -668,11 +668,11 @@ static int player_set(lua_State *L)
 		return 0; // In vanilla those are not handled and are added into player fields table, but they aren't accessible anyway so we can just ignore them
 		break;
 	case player_mo:
-	{
-		mobj_t *newmo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-		plr->mo->player = NULL; // remove player pointer from old mobj
-		(newmo->player = plr)->mo = newmo; // set player pointer for new mobj, and set new mobj as the player's mobj
-	}
+		{
+			mobj_t *newmo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
+			plr->mo->player = NULL; // remove player pointer from old mobj
+			(newmo->player = plr)->mo = newmo; // set player pointer for new mobj, and set new mobj as the player's mobj
+		}
 		break;
 	case player_cmd:
 		return NOSET;
@@ -692,17 +692,17 @@ static int player_set(lua_State *L)
 	case player_bob:
 		plr->bob = luaL_checkfixed(L, 3);*/
 		break;
-	case player_aiming: {
-		plr->aiming = luaL_checkangle(L, 3);
-		if (plr == &players[consoleplayer])
-			localaiming[0] = plr->aiming;
-		else if (plr == &players[displayplayers[1]])
-			localaiming[1] = plr->aiming;
-		else if (plr == &players[displayplayers[2]])
-			localaiming[2] = plr->aiming;
-		else if (plr == &players[displayplayers[3]])
-			localaiming[3] = plr->aiming;
-	}
+	case player_aiming:
+		{
+			plr->aiming = luaL_checkangle(L, 3);
+			for (UINT8 i = 0; i <= splitscreen; i++)
+			{
+				if (plr == &players[displayplayers[i]])
+				{
+					localaiming[i] = plr->aiming;
+				}
+			}
+		}
 		break;
 	case player_health:
 		plr->health = (INT32)luaL_checkinteger(L, 3);
@@ -732,12 +732,12 @@ static int player_set(lua_State *L)
 		plr->flashpal = (UINT16)luaL_checkinteger(L, 3);
 		break;
 	case player_skincolor:
-	{
-		UINT8 newcolor = (UINT8)luaL_checkinteger(L,3);
-		if (newcolor >= MAXSKINCOLORS)
-			return luaL_error(L, "player.skincolor %d out of range (0 - %d).", newcolor, MAXSKINCOLORS-1);
-		plr->skincolor = newcolor;
-	}
+		{
+			UINT8 newcolor = (UINT8)luaL_checkinteger(L,3);
+			if (newcolor >= MAXSKINCOLORS)
+				return luaL_error(L, "player.skincolor %d out of range (0 - %d).", newcolor, MAXSKINCOLORS-1);
+			plr->skincolor = newcolor;
+		}
 		break;
 	case player_score:
 		plr->score = (UINT32)luaL_checkinteger(L, 3);
@@ -907,12 +907,12 @@ static int player_set(lua_State *L)
 		plr->bonustime = luaL_checkboolean(L, 3);
 		break;
 	case player_capsule:
-	{
-		mobj_t *mo = NULL;
-		if (!lua_isnil(L, 3))
-			mo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-		P_SetTarget(&plr->capsule, mo);
-	}
+		{
+			mobj_t *mo = NULL;
+			if (!lua_isnil(L, 3))
+				mo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
+			P_SetTarget(&plr->capsule, mo);
+		}
 		break;
 	case player_mare:
 		plr->mare = (UINT8)luaL_checkinteger(L, 3);
@@ -963,19 +963,19 @@ static int player_set(lua_State *L)
 		plr->onconveyor = (INT32)luaL_checkinteger(L, 3);
 		break;
 	case player_awayviewmobj:
-	{
-		mobj_t *mo = NULL;
-		if (!lua_isnil(L, 3))
-			mo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-		P_SetTarget(&plr->awayviewmobj, mo);
-	}
+		{
+			mobj_t *mo = NULL;
+			if (!lua_isnil(L, 3))
+				mo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
+			P_SetTarget(&plr->awayviewmobj, mo);
+		}
 		break;
 	case player_awayviewtics:
-	{
-		plr->awayviewtics = (INT32)luaL_checkinteger(L, 3);
-		if (plr->awayviewtics && !plr->awayviewmobj) // awayviewtics must ALWAYS have an awayviewmobj set!!
-			P_SetTarget(&plr->awayviewmobj, plr->mo); // but since the script might set awayviewmobj immediately AFTER setting awayviewtics, use player mobj as filler for now.
-	}
+		{
+			plr->awayviewtics = (INT32)luaL_checkinteger(L, 3);
+			if (plr->awayviewtics && !plr->awayviewmobj) // awayviewtics must ALWAYS have an awayviewmobj set!!
+				P_SetTarget(&plr->awayviewmobj, plr->mo); // but since the script might set awayviewmobj immediately AFTER setting awayviewtics, use player mobj as filler for now.
+		}
 		break;
 	case player_awayviewaiming:
 		plr->awayviewaiming = luaL_checkangle(L, 3);
