@@ -146,9 +146,9 @@ FUNCINLINE static ATTRINLINE void HWR_DrawIntermissionBG(void)
 	GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
 }
 
-FUNCINLINE static ATTRINLINE void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+FUNCINLINE static ATTRINLINE void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize, boolean rewind)
 {
-	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
+	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize, rewind);
 }
 
 FUNCINLINE static ATTRINLINE void HWR_MakeScreenTexture(void)

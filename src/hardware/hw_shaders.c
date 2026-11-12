@@ -62,6 +62,11 @@ static struct {
 	// heat postprocess shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_POSTPROCESS_FRAGMENT_HEAT},
 
+	// vhs fuzz
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_VHS_FUZZ_SHADER},
+
+	// vhs bars
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_VHS_BAR_SHADER},
 
 	{NULL, NULL},
 };
@@ -456,6 +461,8 @@ customshaderxlat_t shaderxlat[] =
 	{"UIColormapFade", SHADER_UI_COLORMAP_FADE},
 	{"PostProcessWater", SHADER_POSTPROCESS_WATER},
 	{"PostProcessHeat", SHADER_POSTPROCESS_HEAT},
+	{"VHSFuzz", SHADER_VHS_FUZZ},
+	{"VHSBar", SHADER_VHS_BAR},
 	{NULL, 0},
 };
 
