@@ -401,7 +401,7 @@
 
 // this matches software at 720p wonderfully
 #define GLSL_POSTPROCESS_FRAGMENT_WATER \
-	"#version 130\n" \
+	"#version 120\n" \
 	"uniform sampler2D tex;\n" \
 	"uniform vec2 scr_resolution;\n" \
 	"uniform vec2 scr_tex_size;\n" \
