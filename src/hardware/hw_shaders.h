@@ -387,7 +387,7 @@
 	"void main(void) {\n" \
 		"vec2 uv = gl_TexCoord[0].st;\n" \
 		"float y = 1.0 - uv.y;\n" \
-		"float time = leveltime * 35;\n" \
+		"float time = leveltime * 35.0;\n" \
 		"uv.x += max(sin((time / 35.0) * 1.2 - y * 5.0) - 0.995, 0.0);\n" \
 		"uv.x -= max(sin(((time + 24.0) / 35.0) * 0.2 - y * 1.5) - 0.990, 0.0);\n" \
 		"uv = clamp(uv, vec2(0.0), vec2(0.9999));\n" \
