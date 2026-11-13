@@ -464,10 +464,7 @@ static boolean D_Display(void)
 	}
 
 	if (dedicated) // bail out after wipe logic
-	{
-		D_LimitFps();
 		return false;
-	}
 
 	// do buffered drawing
 	switch (gamestate)
@@ -730,24 +727,24 @@ static boolean D_Display(void)
 		time = 0;
 }*/
 
-static UINT64 precision = 0;
 static precise_t sleeptime = 0;
-static precise_t lasttime = 0;
+
+static boolean D_UseNewFramelimiter(void)
+{
+	//if (!cv_newframelimiter.value) return false;
+	return (rendermode != render_none && !dedicated && (R_GetFramerateCap() >= 45) && R_UsingFrameInterpolation());
+}
 
 static void D_LimitFps(void)
 {
-	static precise_t curtime = 0;
-	static precise_t start;
-	precise_t elapsed = 0;
-
-	sleeptime = 0;
+	precise_t curtime, start;
+	static precise_t lasttime = 0;
 
 	// timedemo runs uncapped!
 	if (singletics)
 		return;
 
-	// in the case of "match refresh rate" + vsync, don't sleep at all
-	if (cv_vidwait.value && cv_fpscap.value == 0)
+	if (!D_UseNewFramelimiter())
 		return;
 
 	const UINT32 framecap = R_GetFramerateCap();
@@ -756,23 +753,32 @@ static void D_LimitFps(void)
 	if (framecap == 0)
 		return;
 
+	// dont need to sleep if we vsync and our framecap is set to refresh rate or higher
+	if (cv_vidwait.value && (cv_fpscap.value == 0 || framecap > I_GetRefreshRate()))
+		return;
+
 	start = I_GetPreciseTime();
+
+	const UINT64 precision = I_GetPrecisePrecision();
 
 	// frametarget in precise_t ticks (ex. 60fps = ~16,666,666)
 	const precise_t frametarget = precision / framecap;
 
+	lasttime += frametarget;
+
+	// just sync this up if we missed the target
+	if ((INT64)(start - lasttime) >= 0)
+		lasttime = start;
+
 	while (1)
 	{
-		// check the current time against the "time of the old frame""
+		// check the current time against the "time of the old frame"
 		curtime = I_GetPreciseTime();
-		elapsed = curtime - lasttime;
 
 		// done waiting!
 		// continue as normal
-		if (elapsed >= frametarget)
+		if ((INT64)(curtime - lasttime) >= 0)
 		{
-			lasttime = curtime;
-
 			// time we spent :chaosleep:ing or doing absolutely nothing
 			// for frameskip calculations
 			sleeptime = curtime - start;
@@ -781,7 +787,7 @@ static void D_LimitFps(void)
 
 		// if we have more than 1ms to wait
 		// sleep for a bit to not trash the cpu lul
-		precise_t remaining = frametarget - elapsed;
+		precise_t remaining = lasttime - curtime;
 
 		if (remaining > (precise_t)(precision / 1000))
 		{
@@ -804,7 +810,10 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
+	UINT64 precision = 0;
 
+	boolean interp = false;
+	boolean doDisplay = false;
 	int frameskip = 0;
 
 	if (dedicated)
@@ -846,6 +855,8 @@ void D_SRB2Loop(void)
 
 		boolean ranwipe = false;
 
+		sleeptime = 0;
+
 		enterprecise = I_GetPreciseTime();
 
 		I_HandleInterrupt();
@@ -873,10 +884,11 @@ void D_SRB2Loop(void)
 		}
 
 #ifdef DEBUGFILE
-		if (!realtics)
-			if (debugload)
-				debugload--;
+		if (!realtics && debugload)
+			debugload--;
 #endif
+		interp = !dedicated && R_UsingFrameInterpolation();
+		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
 
@@ -890,19 +902,12 @@ void D_SRB2Loop(void)
 			// process tics (but maybe not if realtic == 0)
 			TryRunTics(realtics);
 
-			if (resetfpscap)
-			{
-				// hack to resync rendering and ticking
-				// after fpscap change
-				lasttime = 0;
-				frameskip = 0;
-				resetfpscap = false;
-			}
-
 			if (lastdraw || singletics || (gametic > rendergametic))
 			{
 				rendergametic = gametic;
 				rendertimeout = entertic + TICRATE/17;
+
+				doDisplay = true;
 			}
 			else if (rendertimeout < entertic) // in case the server hang or netsplit
 			{
@@ -915,12 +920,15 @@ void D_SRB2Loop(void)
 					{
 						P_RunChaseCameras();
 					}
+
 					R_UpdateViewInterpolation();
 				}
+
+				doDisplay = true;
 			}
 		}
 
-		if (!dedicated && R_UsingFrameInterpolation())
+		if (interp)
 		{
 			renderdeltatics = DoubleToFixed(deltatics);
 
@@ -939,15 +947,18 @@ void D_SRB2Loop(void)
 			R_SetTimeFrac(FRACUNIT);
 		}
 
-		if (!frameskip)
+		if (interp || doDisplay)
 		{
-			ranwipe = D_Display();
-		}
-		else if (!dedicated)
-		{
-			// always update console movement
-			// otherwise it will takes literal ages to open
-			CON_MoveConsole();
+			if (!frameskip)
+			{
+				ranwipe = D_Display();
+			}
+			else if (!dedicated)
+			{
+				// always update console movement
+				// otherwise it will takes literal ages to open
+				CON_MoveConsole();
+			}
 		}
 
 		// Only take screenshots after drawing.
@@ -1004,6 +1015,23 @@ void D_SRB2Loop(void)
 		else
 		{
 			frameskip = 0;
+		}
+
+		// old fps limiter
+		if (!singletics && !D_UseNewFramelimiter())
+		{
+			const UINT32 framecap = R_GetFramerateCap();
+			const precise_t capbudget = (framecap == 0) ? 0 : (precise_t)((double)precision / (double)framecap + 0.5); // + 0.5 instead of round
+
+			// in the case of "match refresh rate" + vsync, don't sleep at all
+			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
+
+			if ((elapsed > 0) && (capbudget > elapsed) && !vsync_with_match_refresh)
+			{
+				I_SleepDuration(capbudget - elapsed);
+			}
+
+			finishprecise = I_GetPreciseTime();
 		}
 
 		elapsed = finishprecise - enterprecise;

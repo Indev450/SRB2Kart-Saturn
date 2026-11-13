@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-extern boolean resetfpscap;
 extern consvar_t cv_fpscap, cv_fpscapbg;
 
 extern ps_metric_t ps_interp_frac;
