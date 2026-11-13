@@ -506,6 +506,13 @@ static UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's 
 	return surfcolor.s.alpha;
 }
 
+static boolean HWR_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
+{
+	if (HWR_ShouldUsePaletteRendering())
+		return P_ApplyLightOffset(baselightnum >> LIGHTSEGSHIFT, sector);
+	return P_ApplyLightOffsetFine(baselightnum, sector);
+}
+
 static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colormap)
 {
 	INT16 finallight = lightnum;
@@ -513,10 +520,9 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 	if (cv_glfakecontrast.value == 0 || (colormap && HWR_ShouldUsePaletteRendering()))
 		return (FUINT)finallight;
 
-	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
+	if (seg != NULL && HWR_ApplyLightOffset(lightnum, seg->frontsector))
 	{
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
-
 		finallight += offset;
 		finallight = CLAMP(finallight, 0, 255);
 	}
@@ -531,7 +537,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 	if (cv_glfakecontrast.value == 0 || cv_glslopecontrast.value == 0)
 		return (FUINT)finallight;
 
-	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
+	if (slope != NULL && sector != NULL && HWR_ApplyLightOffset(lightnum, sector))
 	{
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
 		finallight += (fof ? -offset : offset);
