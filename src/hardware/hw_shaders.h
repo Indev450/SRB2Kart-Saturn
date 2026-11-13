@@ -196,7 +196,11 @@
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
 	"#define STARTMAP_FUDGE 1.06\n" \
-	"#define SCALE_FUDGE 1.15\n"
+	"#ifdef SRB2_PALETTE_RENDERING\n" \
+		"#define SCALE_FUDGE 1.3\n" \
+	"#else\n" \
+		"#define SCALE_FUDGE 1.15\n" \
+	"#endif\n"
 
 #define GLSL_WALL_FUDGES \
 	"#define STARTMAP_FUDGE 1.05\n" \
