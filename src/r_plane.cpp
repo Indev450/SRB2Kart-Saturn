@@ -350,8 +350,8 @@ void R_ClearPlanes(void)
 	angle = (viewangle-ANGLE_90)>>ANGLETOFINESHIFT;
 
 	// scale will be unit scale at SCREENWIDTH/2 distance
-	basexscale =  FixedDiv (FINECOSINE(angle), centerxfrac);
-	baseyscale = -FixedDiv (FINESINE(angle),   centerxfrac);
+	basexscale =  FixedDiv(FINECOSINE(angle), centerxfrac);
+	baseyscale = -FixedDiv(FINESINE(angle),   centerxfrac);
 }
 
 static visplane_t *new_visplane(unsigned hash)
@@ -440,20 +440,20 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 		}
 	}
 
+	if (slope != NULL && P_ApplyLightOffset(lightlevel >> LIGHTSEGSHIFT, lighting_sector))
+	{
+		if (reverseLight && maplighting.directional == true)
+		{
+			lightlevel -= slope->lightOffset * 8;
+		}
+		else
+		{
+			lightlevel += slope->lightOffset * 8;
+		}
+	}
+
 	if (!pfloor)
 	{
-		if (slope != NULL && P_ApplyLightOffset(lightlevel >> LIGHTSEGSHIFT, lighting_sector))
-		{
-			if (reverseLight)
-			{
-				lightlevel -= slope->lightOffset * 8;
-			}
-			else
-			{
-				lightlevel += slope->lightOffset * 8;
-			}
-		}
-
 		hash = visplane_hash(picnum, lightlevel, height >> FRACBITS);
 
 		for (check = visplanes[hash]; check; check = check->next)

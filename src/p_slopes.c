@@ -66,22 +66,22 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 		nY = FixedDiv(nY, nLen);
 
 		/*
-		 * if (slope is ceiling)
-		 * {
-		 *	// There is no good way to calculate this condition here.
-		 *	// We reverse it in R_FindPlane now.
-		 *	nX = -nX;
-		 *	nY = -nY;
-		 *	}
-		 */
+		if (slope is ceiling)
+		{
+			// There is no good way to calculate this condition here.
+			// We reverse it in R_FindPlane now.
+			nX = -nX;
+			nY = -nY;
+		}
+		*/
 
 		light = FixedMul(nX, FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
 			  + FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
-				light = (light + FRACUNIT) / 2;
+		light = (light + FRACUNIT) / 2;
 	}
 	else
 	{
-		light = FixedDiv(R_PointToAngle2(0, 0, abs(slope->d.x), abs(slope->d.y)), ANGLE_90);
+		light = FixedDiv(R_PointToAngle2(0, 0, abs(slope->normal.y), abs(slope->normal.x)), ANGLE_90);
 	}
 
 	const int delta = abs(slope->zdelta)*3/2; // *3/2, to make 60 degree slopes match walls.
