@@ -342,25 +342,31 @@
 /*
 #define GLSL_POSTPROCESS_FRAGMENT_WATER \
 	"uniform sampler2D tex;\n" \
+	"uniform vec2 scr_resolution;\n" \
+	"uniform vec2 scr_tex_size;\n" \
 	"uniform float leveltime;\n" \
 	"void main(void) {\n" \
 		"vec2 uv = gl_TexCoord[0].st;\n" \
+		"vec2 maxuv = scr_resolution / scr_tex_size;\n" \
 		"float y = 1.0 - uv.y;\n" \
 		"uv.x += sin(leveltime * 2.0 + y * 20.0) * 0.01;\n" \
-		"uv = clamp(uv, vec2(0.0), vec2(0.9999));\n" \
+		"uv = clamp(uv, vec2(0.0), maxuv - vec2(0.0001));\n" \
 		"gl_FragColor = texture2D(tex, uv);\n" \
 	"}\0"
 
 #define GLSL_POSTPROCESS_FRAGMENT_HEAT \
 	"uniform sampler2D tex;\n" \
+	"uniform vec2 scr_resolution;\n" \
+	"uniform vec2 scr_tex_size;\n" \
 	"uniform float leveltime;\n" \
 	"void main(void) {\n" \
 		"vec2 uv = gl_TexCoord[0].st;\n" \
+		"vec2 maxuv = scr_resolution / scr_tex_size;\n" \
 		"float y = 1.0 - uv.y;\n" \
 		"float time = leveltime * 35.0;\n" \
 		"uv.x += max(sin((time / 35.0) * 1.2 - y * 5.0) - 0.995, 0.0);\n" \
 		"uv.x -= max(sin(((time + 24.0) / 35.0) * 0.2 - y * 1.5) - 0.990, 0.0);\n" \
-		"uv = clamp(uv, vec2(0.0), vec2(0.9999));\n" \
+		"uv = clamp(uv, vec2(0.0), maxuv - vec2(0.0001));\n" \
 		"gl_FragColor = texture2D(tex, uv);\n" \
 	"}\0"
 */
