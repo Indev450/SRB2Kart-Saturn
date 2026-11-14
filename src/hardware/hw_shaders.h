@@ -409,15 +409,20 @@
 		"gl_FragColor = texture2D(tex, uv);\n" \
 	"}\0"
 
-// screen fuzzyness
+// VHS effect as a shader
 // basically just what we did before as a shader lul
+// the bars are just the RR heat shader repurposed
 // thanks "stackoverflow.com/a/4275343" for the pseudo random stuff for glsl
-#define GLSL_VHS_FUZZ_SHADER \
+// and thanks "thndl.com/triangle-waves" and "gamedev.stackexchange.com/q/191829"
+// for the maths since im super bad at stuff
+// 0.159155 = 1/pi*2
+#define GLSL_VHS_SHADER \
 	"#version 120\n" \
 	"uniform sampler2D tex;\n" \
 	"uniform vec2 scr_resolution;\n" \
 	"uniform vec2 scr_tex_size;\n" \
 	"uniform float vhs_time;\n" \
+	"uniform float vhs_rewind;\n" \
 	"uniform float scr_dup;\n" \
 	"void main(void) {\n" \
 		"vec2 uv = gl_TexCoord[0].st;\n" \
@@ -426,27 +431,6 @@
 		"float ystep = (2.0 / scr_resolution.y) * scr_dup / 4.0;\n" \
 		"float rand = fract(sin((floor(y / ystep) + vhs_time) * 12.9898 + 78.233) * 43758.5453);\n" \
 		"uv.x -= floor(rand * 128.0) / -22000.0;\n" \
-		"uv.y = clamp(uv.y, 0.0, maxuv.y - 0.0001);\n" \
-		"uv.x = mod(uv.x, maxuv.x - 0.0001);\n" \
-		"gl_FragColor = texture2D(tex, uv);\n" \
-	"}\0"
-
-// repurposed the RR heat shader
-// since it kinda matched the vhs bars lul
-// thanks "thndl.com/triangle-waves" and "gamedev.stackexchange.com/q/191829"
-// for the maths since im super bad at stuff
-// 0.159155 = 1/pi*2
-#define GLSL_VHS_BAR_SHADER \
-	"#version 120\n" \
-	"uniform sampler2D tex;\n" \
-	"uniform vec2 scr_resolution;\n" \
-	"uniform vec2 scr_tex_size;\n" \
-	"uniform float vhs_time;\n" \
-	"uniform float vhs_rewind;\n" \
-	"void main(void) {\n" \
-		"vec2 uv = gl_TexCoord[0].st;\n" \
-		"vec2 maxuv = scr_resolution / scr_tex_size;\n" \
-		"float y = 1.0 - uv.y;\n" \
 		"float updistort = (vhs_rewind > 0.5) ? 0.266667 : 0.16;\n" \
 		"float downdistort = updistort / 2.0;\n" \
 		"float downspd = (vhs_rewind > 0.5) ? 2.0 : 1.0;\n" \
@@ -460,13 +444,12 @@
 		"vec4 color = texture2D(tex, uv);\n" \
 		"float downcol = step(0.00001, downbar);\n" \
 		"float upcol = step(0.00001, upbar);\n" \
-		"color.rgb = mix(color.rgb, color.rgb * (220.0 / 255.0), downcol);\n" \
-		"color.rgb = mix(color.rgb, color.rgb * (220.0 / 255.0), upcol);\n" \
+		"color.rgb = mix(color.rgb, color.rgb * (210.0 / 255.0), downcol);\n" \
+		"color.rgb = mix(color.rgb, color.rgb * (210.0 / 255.0), upcol);\n" \
 		"color.a = mix(color.a, color.a * (250.0 / 255.0), downcol);\n" \
 		"color.a = mix(color.a, color.a * (250.0 / 255.0), upcol);\n" \
 		"gl_FragColor = color;\n" \
 	"}\0"
-
 
 // ================
 //  Fallback shaders

@@ -3906,7 +3906,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 		tex_downloaded = screenTextures[HWD_SCREENTEXTURE_VHS];
 
-		GL_SetShader(HWR_GetShaderFromTarget(SHADER_VHS_FUZZ));
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_VHS));
 		GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
 		pglColor4ubv(white);
 
@@ -3916,26 +3916,6 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 		GL_UnSetShader();
-
-		// Upward and Downward bars
-		// theyre combined since the original shader also did this
-		// also saves us another screen copy + draw anyways
-		GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-		pglActiveTexture(GL_TEXTURE0);
-		pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
-		tex_downloaded = screenTextures[HWD_SCREENTEXTURE_VHS];
-
-		GL_SetShader(HWR_GetShaderFromTarget(SHADER_VHS_BAR));
-		GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
-		pglColor4ubv(white);
-
-		pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-		pglVertexPointer(3, GL_FLOAT, 0, defaultscreenVerts);
-		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-		GL_UnSetShader();
-
 	}
 	else // fallback fixed function version, this is quite slow
 	{
