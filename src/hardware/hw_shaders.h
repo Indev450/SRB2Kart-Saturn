@@ -460,7 +460,8 @@
 		"float ystep = (2.0 / scr_resolution.y) * scr_dup / 4.0;\n" \
 		"float rand = fract(sin((floor(y / ystep) + vhs_time) * 12.9898 + 78.233) * 43758.5453);\n" \
 		"uv.x -= floor(rand * 128.0) / -22000.0;\n" \
-		"uv = clamp(uv, vec2(0.0), maxuv - vec2(0.0001));\n" \
+		"uv.y = clamp(uv.y, 0.0, maxuv.y - 0.0001);\n" \
+		"uv.x = mod(uv.x, maxuv.x - 0.0001);\n" \
 		"gl_FragColor = texture2D(tex, uv);\n" \
 	"}\0"
 
@@ -484,7 +485,8 @@
 		"uv.x -= (downbar) * 0.25;\n" \
 		"float updistort = (vhs_rewind > 0.5) ? 0.4125: 0.25;\n" \
 		"uv.x += (upbar) * updistort;\n" \
-		"uv = clamp(uv, vec2(0.0), maxuv - vec2(0.0001));\n" \
+		"uv.y = clamp(uv.y, 0.0, maxuv.y - 0.0001);\n" \
+		"uv.x = mod(uv.x, maxuv.x - 0.0001);\n" \
 		"vec4 color = texture2D(tex, uv);\n" \
 		"float downcol = step(0.00001, downbar);\n" \
 		"float upcol = step(0.00001, upbar);\n" \
