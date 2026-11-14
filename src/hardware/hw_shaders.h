@@ -445,7 +445,7 @@
 
 // screen fuzzyness
 // basically just what we did before as a shader lul
-// thanks https://stackoverflow.com/a/4275343 for the pseudo random stuff for glsl
+// thanks "stackoverflow.com/a/4275343" for the pseudo random stuff for glsl
 #define GLSL_VHS_FUZZ_SHADER \
 	"#version 120\n" \
 	"uniform sampler2D tex;\n" \
@@ -467,6 +467,9 @@
 
 // repurposed the RR heat shader
 // since it kinda matched the vhs bars lul
+// thanks "thndl.com/triangle-waves" and "gamedev.stackexchange.com/q/191829"
+// for the maths since im super bad at stuff
+// 0.159155 = 1/pi*2
 #define GLSL_VHS_BAR_SHADER \
 	"#version 120\n" \
 	"uniform sampler2D tex;\n" \
@@ -478,20 +481,21 @@
 		"vec2 uv = gl_TexCoord[0].st;\n" \
 		"vec2 maxuv = scr_resolution / scr_tex_size;\n" \
 		"float y = 1.0 - uv.y;\n" \
+		"float updistort = (vhs_rewind > 0.5) ? 0.266667 : 0.16;\n" \
+		"float downdistort = updistort / 2.0;\n" \
 		"float downspd = (vhs_rewind > 0.5) ? 2.0 : 1.0;\n" \
-		"float downbar = max(sin(vhs_time * downspd - y * 5.0) - 0.95, 0.0);\n" \
 		"float upspd = (vhs_rewind > 0.5) ? 3.0 : 1.8;\n" \
-		"float upbar = max(sin((vhs_time * -1.0) * upspd - y * 5.0) - 0.95, 0.0);\n" \
-		"uv.x -= (downbar) * 0.25;\n" \
-		"float updistort = (vhs_rewind > 0.5) ? 0.4125: 0.25;\n" \
-		"uv.x += (upbar) * updistort;\n" \
+		"float downbar = max((1.0 - abs(2.0 * fract((vhs_time * downspd - y * 5.0) * 0.159155) - 1.0)) - 0.87, 0.0);\n" \
+		"float upbar = max((1.0 - abs(2.0 * fract(((vhs_time * -1.0) * upspd - y * 5.0) * 0.159155) - 1.0)) - 0.88, 0.0);\n" \
+		"uv.x -= downbar * downdistort;\n" \
+		"uv.x += upbar * updistort;\n" \
 		"uv.y = clamp(uv.y, 0.0, maxuv.y - 0.0001);\n" \
 		"uv.x = mod(uv.x, maxuv.x - 0.0001);\n" \
 		"vec4 color = texture2D(tex, uv);\n" \
 		"float downcol = step(0.00001, downbar);\n" \
 		"float upcol = step(0.00001, upbar);\n" \
-		"color.rgb = mix(color.rgb, color.rgb * (190.0 / 255.0), downcol);\n" \
-		"color.rgb = mix(color.rgb, color.rgb * (190.0 / 255.0), upcol);\n" \
+		"color.rgb = mix(color.rgb, color.rgb * (220.0 / 255.0), downcol);\n" \
+		"color.rgb = mix(color.rgb, color.rgb * (220.0 / 255.0), upcol);\n" \
 		"color.a = mix(color.a, color.a * (250.0 / 255.0), downcol);\n" \
 		"color.a = mix(color.a, color.a * (250.0 / 255.0), upcol);\n" \
 		"gl_FragColor = color;\n" \
