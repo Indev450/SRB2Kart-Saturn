@@ -1900,7 +1900,7 @@ void V_DrawVhsEffect(boolean rewind)
 
 	pos = 0;
 
-	for (y = 0; y < vid.height; y+=2)
+	for (y = 0; y < vid.height; y += 2)
 	{
 		thismapstart = normalmapstart;
 		offs = 0;
@@ -1917,7 +1917,7 @@ void V_DrawVhsEffect(boolean rewind)
 			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
 		}
 
-		offs += M_RandomKey(vid.dup<<1);
+		offs += M_RandomKey(vid.udup<<1);
 
 		// lazy way to avoid crashes
 		if ((y == 0 && offs < 0) || (y >= vid.height-2 && offs > 0))
