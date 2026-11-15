@@ -762,7 +762,6 @@ typedef enum
 	gluniform_scr_resolution,
 
 	// postprocess stuff
-	gluniform_scr_dup,
 	gluniform_scr_tex_size,
 
 	// vhs
@@ -2340,8 +2339,7 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
 		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)screen_width, (GLfloat)screen_height, pglUniform2f);
-		// udup is before highres scale adjustments
-		UNIFORM_1(shader->uniforms[gluniform_scr_dup], (GLfloat)vid.udup, pglUniform1f);
+
 		// grrrrr stupid 2.0 support.. used similar to yfix, xfix
 		UNIFORM_2(shader->uniforms[gluniform_scr_tex_size], (GLfloat)screen_texsizew, (GLfloat)screen_texsizeh, pglUniform2f);
 
@@ -2481,7 +2479,6 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
 
 	// postprocessor stuff (water/heat effect)
-	shader->uniforms[gluniform_scr_dup]               = GETUNI("scr_dup");
 	shader->uniforms[gluniform_scr_tex_size]          = GETUNI("scr_tex_size");
 
 	// vhs stuff
@@ -3944,7 +3941,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 		const float ystep = 2.f/scrhf * (float)vid.udup/4.f;
 
-		for (i = 0; i < 1; i += ystep)
+		for (i = 0.0; i < 1.0; i += ystep)
 		{
 			// avoid calling rand thousands of times
 			r ^= r >> 13;

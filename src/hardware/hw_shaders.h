@@ -427,20 +427,19 @@
 	"uniform vec2 scr_tex_size;\n" \
 	"uniform float vhs_time;\n" \
 	"uniform float vhs_rewind;\n" \
-	"uniform float scr_dup;\n" \
 	"void main(void) {\n" \
 		"vec2 uv = gl_TexCoord[0].st;\n" \
 		"vec2 maxuv = scr_resolution / scr_tex_size;\n" \
-		"float y = 1.0 - uv.y;\n" \
-		"float ystep = (2.0 / scr_resolution.y) * scr_dup / 4.0;\n" \
-		"float rand = fract(sin((floor(y / ystep) + vhs_time) * 12.9898 + 78.233) * 43758.5453);\n" \
+		"float y = (1.0 - uv.y);\n" \
+		"float ystep = floor(y * (800 / 2.0));\n" \
+		"float rand = fract(sin((ystep + vhs_time) * 12.9898 + 78.233) * 43758.5453);\n" \
 		"uv.x -= floor(rand * 128.0) / -22000.0;\n" \
 		"float updistort = (vhs_rewind > 0.5) ? 0.266667 : 0.16;\n" \
 		"float downdistort = updistort / 2.0;\n" \
 		"float downspd = (vhs_rewind > 0.5) ? 2.0 : 1.0;\n" \
 		"float upspd = (vhs_rewind > 0.5) ? 3.0 : 1.8;\n" \
 		"float downbar = max((1.0 - abs(2.0 * fract((vhs_time * downspd - y * 5.0) * 0.159155) - 1.0)) - 0.87, 0.0);\n" \
-		"float upbar = max((1.0 - abs(2.0 * fract(((vhs_time * -1.0) * upspd - y * 5.0) * 0.159155) - 1.0)) - 0.88, 0.0);\n" \
+		"float upbar = max((1.0 - abs(2.0 * fract(((vhs_time * -1.0) * upspd - y * 5.0) * 0.159155) - 1.0)) - 0.87, 0.0);\n" \
 		"uv.x -= downbar * downdistort;\n" \
 		"uv.x += upbar * updistort;\n" \
 		"uv.y = clamp(uv.y, 0.0, maxuv.y - 0.0001);\n" \
