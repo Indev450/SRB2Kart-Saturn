@@ -3884,10 +3884,10 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	// thanks RR for their heat effect being basically the vhs bars, made this lots easier lul
 	if (HWR_UseShader())
 	{
-		// leveltime pauses with the game so we need to keep our own ticker here
+		// leveltime pauses with the game so we need to keep our own counter here
 		static tic_t lleveltime = 0;
 		if (renderisnewtic) lleveltime++;
-		shader_vhs_time = (((float)(lleveltime-1)) + FIXED_TO_FLOAT(R_GetTimeFrac(RTF_CAMERA))) / TICRATE; // RTF_CAMERA interpolates during pause gladly...
+		shader_vhs_time = (((float)(lleveltime-1)) + FIXED_TO_FLOAT(R_GetTimeFrac(RTF_MENU))) / TICRATE;
 
 		// easier to account for within the shader
 		shader_vhs_rewind = rewind ? 1.0f : 0.0f;
