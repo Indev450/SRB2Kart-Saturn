@@ -11,8 +11,6 @@ DEDICATED?=0
 endif
 endif
 
-NOEXECINFO=1
-
 ifeq (${SDL},1)
 EXENAME?=srb2haiku
 else ifeq (${DEDICATED},1)
