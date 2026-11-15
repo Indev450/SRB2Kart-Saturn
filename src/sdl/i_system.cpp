@@ -86,12 +86,9 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include "i_ttf.h"
 #endif
 
-#include "SDL_cpuinfo.h"
-#define HAVE_SDLCPUINFO
-
-#if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
-#if defined (__linux__)
-#include <sys/vfs.h>
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+#if defined (__linux__) || defined (__HAIKU__)
+#include <sys/statvfs.h>
 #elif defined(__APPLE__)
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -99,6 +96,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <sys/sysctl.h>
 #include <mach/mach.h>
 #else
+#include <sys/statvfs.h>
 #include <sys/param.h>
 #include <sys/mount.h>
 /*For meminfo*/
@@ -111,7 +109,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 #endif
 
-#if defined (__linux__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
+#if defined (__linux__) || defined (UNIXCOMMON)
 #ifndef NOTERMIOS
 #include <termios.h>
 #include <sys/ioctl.h> // ioctl
@@ -126,7 +124,9 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #if defined (__unix__) || (defined (UNIXCOMMON) && !defined (__APPLE__))
 #include <errno.h>
 #include <sys/wait.h>
+#ifndef __HAIKU__ // haiku's crash dialog is just objectively better
 #define NEWSIGNALHANDLER
+#endif
 #endif
 
 #ifndef NOMUMBLE
@@ -201,7 +201,6 @@ static char returnWadPath[256];
 #include "../i_sound.h"
 #include "../i_system.h"
 #include "../i_threads.h"
-#include "../screen.h" //vid.WndParent
 #include "../d_net.h"
 #include "../g_game.h"
 #include "../g_demo.h"
@@ -213,9 +212,6 @@ static char returnWadPath[256];
 #include "../i_joy.h"
 
 #include "../m_argv.h"
-
-#include "../r_main.h" // Frame interpolation/uncapped
-#include "../r_fps.h"
 
 #include "../s_sound.h"
 
@@ -280,7 +276,7 @@ static void tty_Clear(void)
 	write(STDOUT_FILENO, "\r", 1);
 	if (tty_con.cursor>0)
 	{
-		for (i=0; i<tty_con.cursor; i++)
+		for (i = 0; i < tty_con.cursor; i++)
 		{
 			write(STDOUT_FILENO, " ", 1);
 		}
@@ -2297,18 +2293,13 @@ void I_ShutdownSystem(void)
 void I_GetDiskFreeSpace(INT64 *freespace)
 {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#if defined (SOLARIS) || defined (__HAIKU__)
-	*freespace = INT32_MAX;
-	return;
-#else // Both Linux and BSD have this, apparently.
-	struct statfs stfs;
-	if (statfs(".", &stfs) == -1)
+	struct statvfs stfs;
+	if (statvfs(srb2home, &stfs) == -1)
 	{
 		*freespace = INT32_MAX;
 		return;
 	}
 	*freespace = stfs.f_bavail * stfs.f_bsize;
-#endif
 #elif defined (_WIN32)
 	static p_GetDiskFreeSpaceExA pfnGetDiskFreeSpaceEx = NULL;
 	static boolean testwin95 = false;
@@ -2319,6 +2310,7 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 		pfnGetDiskFreeSpaceEx = (p_GetDiskFreeSpaceExA)(LPVOID)GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetDiskFreeSpaceExA");
 		testwin95 = true;
 	}
+
 	if (pfnGetDiskFreeSpaceEx)
 	{
 		if (pfnGetDiskFreeSpaceEx(NULL, &lfreespace, &usedbytes, NULL))
