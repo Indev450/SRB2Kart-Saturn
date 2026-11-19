@@ -5681,6 +5681,11 @@ static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, 
 		else
 			vbo->v = 1.0f + ((float)(sky->rows - r) / (float)sky->rows) + 0.5f;
 	}
+	else
+	{
+		vbo->u = 0.5f / sky->width;
+		vbo->v = 0.5f / sky->height;
+	}
 
 	if (r != 4)
 	{
