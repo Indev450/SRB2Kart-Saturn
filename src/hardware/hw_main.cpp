@@ -530,7 +530,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 	return (FUINT)finallight;
 }
 
-static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t *sector, const boolean fof)
+static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t *sector, const boolean reverseLight)
 {
 	INT16 finallight = lightnum;
 
@@ -540,7 +540,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 	if (slope != NULL && sector != NULL && HWR_ApplyLightOffset(lightnum, sector))
 	{
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
-		finallight += (fof ? -offset : offset);
+		finallight += ((reverseLight && maplighting.directional) ? -offset : offset);
 		finallight = CLAMP(finallight, 0, 255);
 	}
 
@@ -704,7 +704,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
 	if (slope)
-		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
+		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector && !isceiling) || (!FOFsector && isceiling));
 
 	// sneaker panel patches are either 64x64 or 128x128
 	if (lightlevel < 255 && (flatflag == 63 || flatflag == 127)
