@@ -1027,20 +1027,22 @@ void G_ResetAllDeviceRumbles(void)
 	}
 }
 
-void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void G_PlayerDeviceRumble(INT32 playernum, UINT32 low_strength, UINT32 high_strength, UINT32 duration)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
 	if (cv_rumble[playernum].value == 0 || (window_notinfocus && cv_rumbleifunfocused.value == 0))
 		return;
 
+	UINT16 lo, hi;
+
 	// doesent need to be super precise
 	// but ensure this is within range (0-65535)
 	// placed here so it applies to lua aswell
-	low_strength = (UINT16)min(FixedMul(low_strength, cv_rumble_strength[playernum].value), UINT16_MAX);
-	high_strength = (UINT16)min(FixedMul(high_strength, cv_rumble_strength[playernum].value), UINT16_MAX);
+	lo = (UINT16)min(FixedMul(low_strength, cv_rumble_strength[playernum].value), UINT16_MAX);
+	hi = (UINT16)min(FixedMul(high_strength, cv_rumble_strength[playernum].value), UINT16_MAX);
 
-	I_GamepadRumble(playernum, low_strength, high_strength, duration);
+	I_GamepadRumble(playernum, lo, hi, duration);
 }
 
 // rumble strengths
@@ -1077,9 +1079,9 @@ void G_DeviceRumbleTick(void)
 
 		// SDL rumble strength goes from a range or 0-65535 respectively
 		// the higher, the stronger it is
-		UINT16 low = 0, high = 0;
+		UINT32 low = 0, high = 0;
 		// for how long the action should rumble, in ms
-		UINT16 length = 57; // 57ms is a short pulse, matches super well with this updating once per tic
+		UINT32 length = 57; // 57ms is a short pulse, matches super well with this updating once per tic
 
 		const player_t *player = P_GetLocalPlayerForNum(i);
 
@@ -1095,7 +1097,7 @@ void G_DeviceRumbleTick(void)
 			player->playerstate == PST_DEAD ||
 			player->kartstuff[k_respawn] > 1)
 		{
-			G_PlayerDeviceRumble(i, low, high, 0);
+			G_PlayerDeviceRumble(i, 0, 0, 0);
 			continue;
 		}
 
@@ -1150,27 +1152,42 @@ void G_DeviceRumbleTick(void)
 				 P_IsObjectOnGround(player->mo))
 		{
 			low = high = RUMBLE_VERYWEAK;
+			length = 43;
 		}
 
 		if (cv_rumble_brakedrift[i].value &&
 			player->kartstuff[k_brakedrift])
 		{
-			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
+			high += RUMBLE_VERYWEAK;
 		}
 
 		// pulse when gettin new driftlevel
-		// let this come last
 		if (cv_rumble_driftcharge[i].value &&
 			player->kartstuff[k_driftcharge] &&
 			player->driftlevel)
 		{
-			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
+			high += RUMBLE_VERYWEAK;
 
 			// make it rumble slightly longer the higher your driftlevel!
 			if (player->driftlevel == 2)
 				length = 114;
 			else if (player->driftlevel == 3)
 				length = 174;
+			else
+				length = 71;
+		}
+
+		// grow makes rumble more intense >:3
+		if (player->kartstuff[k_growshrinktimer] > 0)
+		{
+			high *= 2;
+			low *= 2;
+		}
+		// shrink does the opposite uwu
+		else if (player->kartstuff[k_growshrinktimer] < 0)
+		{
+			high /= 2;
+			low /= 2;
 		}
 
 		// hack alert! i just dont want this thing constantly resetting the rumble lol

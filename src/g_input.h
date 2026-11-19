@@ -153,7 +153,7 @@ void G_DeviceLEDTick(void);
 void G_ResetDeviceLED(void);
 
 void G_ResetAllDeviceRumbles(void);
-void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void G_PlayerDeviceRumble(INT32 playernum, UINT32 low_strength, UINT32 high_strength, UINT32 duration);
 void G_DeviceRumbleTick(void);
 
 // peace to my little coder fingers!

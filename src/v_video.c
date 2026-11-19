@@ -1839,8 +1839,11 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 void V_DrawVhsEffect(boolean rewind)
 {
 	fixed_t uby, dby;
-	// upbary is the bar going from top to bottom for some reason
-	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
+	static fixed_t upbary_normal = 100*FRACUNIT, downbary_normal = 150*FRACUNIT;
+	static fixed_t upbary_rewind = 100*FRACUNIT, downbary_rewind = 150*FRACUNIT;
+
+	fixed_t *upbary = rewind ? &upbary_rewind : &upbary_normal;
+	fixed_t *downbary = rewind ? &downbary_rewind : &downbary_normal;
 
 	UINT8 barsize, updistort, downdistort;
 
@@ -1864,20 +1867,20 @@ void V_DrawVhsEffect(boolean rewind)
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (fixed_t)(vid.udup * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (vid.udup * (rewind ? 2 : 1));
+	*upbary -= renderdeltatics * (fixed_t)(vid.udup * (rewind ? 3 : 1.8f));
+	*downbary += renderdeltatics * (vid.udup * (rewind ? 2 : 1));
 
-	if (upbary < -barsize*FRACUNIT)
-		upbary = vid.height << FRACBITS;
-	if (upbary > vid.height << FRACBITS)
-		upbary = -barsize*FRACUNIT;
-	if (downbary > vid.height << FRACBITS)
-		downbary = -barsize*FRACUNIT;
-	if (downbary < -barsize*FRACUNIT)
-		downbary = vid.height << FRACBITS;
+	if (*upbary < -barsize*FRACUNIT)
+		*upbary = vid.height << FRACBITS;
+	if (*upbary > vid.height << FRACBITS)
+		*upbary = -barsize*FRACUNIT;
+	if (*downbary > vid.height << FRACBITS)
+		*downbary = -barsize*FRACUNIT;
+	if (*downbary < -barsize*FRACUNIT)
+		*downbary = vid.height << FRACBITS;
 
-	uby = upbary >> FRACBITS;
-	dby = downbary >> FRACBITS;
+	uby = *upbary >> FRACBITS;
+	dby = *downbary >> FRACBITS;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
@@ -1897,7 +1900,7 @@ void V_DrawVhsEffect(boolean rewind)
 
 	pos = 0;
 
-	for (y = 0; y < vid.height; y+=2)
+	for (y = 0; y < vid.height; y += 2)
 	{
 		thismapstart = normalmapstart;
 		offs = 0;
@@ -1914,7 +1917,7 @@ void V_DrawVhsEffect(boolean rewind)
 			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
 		}
 
-		offs += M_RandomKey(vid.dup<<1);
+		offs += M_RandomKey(vid.udup<<1);
 
 		// lazy way to avoid crashes
 		if ((y == 0 && offs < 0) || (y >= vid.height-2 && offs > 0))

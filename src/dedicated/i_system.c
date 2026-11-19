@@ -64,10 +64,9 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <conio.h>
 #endif
 
-#if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
-#include <time.h>
-#if defined (__linux__)
-#include <sys/vfs.h>
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+#if defined (__linux__) || defined (__HAIKU__)
+#include <sys/statvfs.h>
 #elif defined(__APPLE__)
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -75,6 +74,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <sys/sysctl.h>
 #include <mach/mach.h>
 #else
+#include <sys/statvfs.h>
 #include <sys/param.h>
 #include <sys/mount.h>
 /*For meminfo*/
@@ -87,7 +87,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 #endif
 
-#if defined (__linux__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
+#if defined (__linux__) || defined (UNIXCOMMON)
 #ifndef NOTERMIOS
 #include <termios.h>
 #include <sys/ioctl.h> // ioctl
@@ -99,7 +99,9 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <poll.h>
 #include <errno.h>
 #include <sys/wait.h>
+#ifndef __HAIKU__ // haiku's crash dialog is just objectively better
 #define NEWSIGNALHANDLER
+#endif
 #endif
 
 #ifndef NOMUMBLE
@@ -131,7 +133,9 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <time.h>
+#endif
 
 /// Locations to directly check for srb2.srb in
 const char *wadDefaultPaths[] = {
@@ -1688,6 +1692,7 @@ void I_ShutdownSystem(void)
 	for (c = MAX_QUIT_FUNCS-1; c >= 0; c--)
 		if (quit_funcs[c])
 			(*quit_funcs[c])();
+
 #ifdef LOGMESSAGES
 	if (logstream)
 	{
@@ -1704,18 +1709,13 @@ void I_ShutdownSystem(void)
 void I_GetDiskFreeSpace(INT64 *freespace)
 {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#if defined (SOLARIS) || defined (__HAIKU__)
-	*freespace = INT32_MAX;
-	return;
-#else // Both Linux and BSD have this, apparently.
-	struct statfs stfs;
-	if (statfs(".", &stfs) == -1)
+	struct statvfs stfs;
+	if (statvfs(srb2home, &stfs) == -1)
 	{
 		*freespace = INT32_MAX;
 		return;
 	}
 	*freespace = stfs.f_bavail * stfs.f_bsize;
-#endif
 #elif defined (_WIN32)
 	static p_GetDiskFreeSpaceExA pfnGetDiskFreeSpaceEx = NULL;
 	static boolean testwin95 = false;
@@ -1726,6 +1726,7 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 		pfnGetDiskFreeSpaceEx = (p_GetDiskFreeSpaceExA)(LPVOID)GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetDiskFreeSpaceExA");
 		testwin95 = true;
 	}
+
 	if (pfnGetDiskFreeSpaceEx)
 	{
 		if (pfnGetDiskFreeSpaceEx(NULL, &lfreespace, &usedbytes, NULL))

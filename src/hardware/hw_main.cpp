@@ -504,6 +504,13 @@ static UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's 
 	return surfcolor.s.alpha;
 }
 
+static boolean HWR_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
+{
+	if (HWR_ShouldUsePaletteRendering())
+		return P_ApplyLightOffset(baselightnum >> LIGHTSEGSHIFT, sector);
+	return P_ApplyLightOffsetFine(baselightnum, sector);
+}
+
 static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colormap)
 {
 	INT16 finallight = lightnum;
@@ -511,7 +518,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 	if (cv_glfakecontrast.value == 0 || (colormap && HWR_ShouldUsePaletteRendering()))
 		return (FUINT)finallight;
 
-	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
+	if (seg != NULL && HWR_ApplyLightOffset(lightnum, seg->frontsector))
 	{
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
 
@@ -522,18 +529,17 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 	return (FUINT)finallight;
 }
 
-static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t *sector, const boolean fof)
+static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t *sector, const boolean reverseLight)
 {
 	INT16 finallight = lightnum;
 
 	if (cv_glfakecontrast.value == 0 || cv_glslopecontrast.value == 0)
 		return (FUINT)finallight;
 
-	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
+	if (slope != NULL && sector != NULL && HWR_ApplyLightOffset(lightnum, sector))
 	{
 		const INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
-
-		finallight += (fof ? -offset : offset);
+		finallight += ((reverseLight && maplighting.directional) ? -offset : offset);
 		finallight = CLAMP(finallight, 0, 255);
 	}
 
@@ -697,7 +703,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
 	if (slope)
-		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
+		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector && !isceiling) || (!FOFsector && isceiling));
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap, P_SectorUsesDirectionalLighting(gl_frontsector));
 
@@ -1274,7 +1280,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
 	// between the two vertices is not zero.
 	if (std::fpclassify(diff) == FP_ZERO)
-		pegmul = 0.0;
+		pegmul = 0.0f;
 	else
 		pegmul = (pegb - pegt) / diff;
 
@@ -1286,7 +1292,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	endpegb = wallVerts[1].t;
 
 	if (std::fpclassify(diff) == FP_ZERO)
-		endpegmul = 0.0;
+		endpegmul = 0.0f;
 	else
 		endpegmul = (endpegb - endpegt) / diff;
 
@@ -3850,7 +3856,16 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	realbot = bot = baseWallVerts[0].y;
 	towtop = baseWallVerts[3].t;
 	towbot = baseWallVerts[0].t;
-	towmult = (towbot - towtop) / (top - bot);
+
+	float diff = (top - bot);
+
+	// If both heights of a side lay on the same position, then this sprite is a triangle.
+	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
+	// between the two vertices is not zero.
+	if (std::fpclassify(diff) == FP_ZERO)
+		towmult = 0.0f;
+	else
+		towmult = (towbot - towtop) / diff;
 
 	endrealtop = endtop = baseWallVerts[2].y;
 	endrealbot = baseWallVerts[1].y;
@@ -4021,7 +4036,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	if ((endtop <= endrealbot) && (top <= realbot))
 		return;
 
-	// If we're ever down here, somehow the above loop hasn't draw all the light levels of sprite
+	// If we're ever down here, somehow the above loop hasn't drawn all the light levels of sprite
 	wallVerts[3].t = towtop + ((realtop - top) * towmult);
 	wallVerts[2].t = towtop + ((endrealtop - endtop) * towmult);
 	wallVerts[0].t = towtop + ((realtop - bot) * towmult);
@@ -5376,6 +5391,11 @@ static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, 
 			vbo->v = ((float)r / (float)sky->rows) + 0.5f;
 		else
 			vbo->v = 1.0f + ((float)(sky->rows - r) / (float)sky->rows) + 0.5f;
+	}
+	else
+	{
+		vbo->u = 0.5f / sky->width;
+		vbo->v = 0.5f / sky->height;
 	}
 
 	if (r != 4)
