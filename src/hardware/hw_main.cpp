@@ -733,9 +733,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		if (PolyFlags & PF_Fog)
 			shader = SHADER_FOG;
 		else if (cv_ripplewater.value && (PolyFlags & PF_Ripple))
-		{
 			shader = SHADER_WATER;
-		}
 		else
 			shader = SHADER_FLOOR;
 
