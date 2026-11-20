@@ -339,7 +339,6 @@ enum hwdshaderinfo
 	HWD_SHADERINFO_LIGHT_Z,
 	HWD_SHADERINFO_LIGHT_CONTRAST,
 	HWD_SHADERINFO_LIGHT_BACKLIGHT,
-	HWD_SHADERINFO_FLATSIZE,
 };
 
 typedef enum hwdshaderinfo hwdshaderinfo_t;

@@ -771,8 +771,6 @@ typedef enum
 	// misc.
 	gluniform_leveltime,
 
-	gluniform_flatsize,
-
 	gluniform_scr_resolution,
 
 	// postprocess stuff
@@ -813,8 +811,6 @@ static float shader_light_y = 0.0f;
 static float shader_light_z = 0.0f;
 static INT32 shader_light_contrast = 0;
 static INT32 shader_light_backlight = 0;
-
-static INT32 shader_flatsize = 64;
 
 static float shader_vhs_rewind = 1.0f;
 static float shader_vhs_time = 0.0f;
@@ -1114,9 +1110,6 @@ void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value)
 			break;
 		case HWD_SHADERINFO_LIGHT_BACKLIGHT:
 			shader_light_backlight = value;
-			break;
-		case HWD_SHADERINFO_FLATSIZE:
-			shader_flatsize = value;
 			break;
 		default:
 			break;
@@ -2251,7 +2244,6 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 	if (!pTexInfo)
 	{
 		GL_SetNoTexture();
-		GL_SetShaderInfo(HWD_SHADERINFO_FLATSIZE, 0);
 		return;
 	}
 
@@ -2285,8 +2277,6 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 		else // initialization of the linked list
 			TexCacheTail = TexCacheHead = newTex;
 	}
-
-	GL_SetShaderInfo(HWD_SHADERINFO_FLATSIZE, (INT32)pTexInfo->width);
 }
 
 static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
@@ -2361,9 +2351,6 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
 		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)screen_width, (GLfloat)screen_height, pglUniform2f);
-
-		// super annoying, if only we could ditch glsl 1.20 and older.....
-		UNIFORM_1(shader->uniforms[gluniform_flatsize], (GLfloat)shader_flatsize, pglUniform1f);
 
 		// grrrrr stupid 2.0 support.. used similar to yfix, xfix
 		UNIFORM_2(shader->uniforms[gluniform_scr_tex_size], (GLfloat)screen_texsizew, (GLfloat)screen_texsizeh, pglUniform2f);
@@ -2502,8 +2489,6 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	// misc.
 	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
-
-	shader->uniforms[gluniform_flatsize]              = GETUNI("flat_size");
 
 	// postprocessor stuff (water/heat effect)
 	shader->uniforms[gluniform_scr_tex_size]          = GETUNI("scr_tex_size");

@@ -235,16 +235,17 @@
 #define GLSL_WATER_CONST \
 	"const float freq = 0.07;\n" \
 	"const float amp = 0.07;\n" \
-	"const float speed = 3.8;\n" \
+	"const float amp_t = 0.025;\n" \
+	"const float speed = 4.0;\n" \
 	"const float pi = 3.14159;\n" \
-	"const float falltresh = 0.007;\n"
+	"const float falltresh = 0.007;\n" \
 
 #define GLSL_WATER_TEXEL \
 	"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
 	"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
 	"float falloff = 1.0 / (1.0 + water_z * falltresh);\n" \
-	"float distort = sin(a) * amp * falloff * (64.0 / flat_size);\n" \
-	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - distort, gl_TexCoord[0].t));\n"
+	"float distort = sin(a) * amp * falloff;\n" \
+	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - distort, gl_TexCoord[0].t));\n" \
 
 #define GLSL_WATER_FRAGMENT_SHADER \
 	"#version 120\n" \
@@ -257,7 +258,6 @@
 	"uniform vec4 poly_color;\n" \
 	"uniform float lighting;\n" \
 	"uniform float leveltime;\n" \
-	"uniform float flat_size;\n" \
 	GLSL_DOOM_COLORMAP \
 	"void main(void) {\n" \
 		GLSL_WATER_TEXEL \
@@ -272,7 +272,6 @@
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
 	"uniform float leveltime;\n" \
-	"uniform float flat_size;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
